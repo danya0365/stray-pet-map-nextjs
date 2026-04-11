@@ -1,5 +1,6 @@
 import type {
   IPetPostRepository,
+  NearByFilter,
   PetPostFilters,
   PetPostQuery,
   PetPostQueryResult,
@@ -217,10 +218,16 @@ export class MockPetPostRepository implements IPetPostRepository {
       filtered = this.applySearch(filtered, params.search);
     }
 
+    if (params.nearBy) {
+      filtered = this.applyNearBy(filtered, params.nearBy);
+    }
+
+    const sortBy = params.sortBy ?? (params.nearBy ? "distance" : "createdAt");
     filtered = this.applySort(
       filtered,
-      params.sortBy ?? "createdAt",
-      params.sortOrder ?? "desc",
+      sortBy,
+      params.sortOrder ?? (sortBy === "distance" ? "asc" : "desc"),
+      params.nearBy,
     );
 
     const total = filtered.length;
@@ -384,12 +391,43 @@ export class MockPetPostRepository implements IPetPostRepository {
     );
   }
 
+  private applyNearBy(items: PetPost[], nearBy: NearByFilter): PetPost[] {
+    return items.filter((item) => {
+      const dist = this.haversineKm(
+        nearBy.latitude,
+        nearBy.longitude,
+        item.latitude,
+        item.longitude,
+      );
+      return dist <= nearBy.radiusKm;
+    });
+  }
+
   private applySort(
     items: PetPost[],
     sortBy: string,
     sortOrder: string,
+    nearBy?: NearByFilter,
   ): PetPost[] {
     const direction = sortOrder === "asc" ? 1 : -1;
+
+    if (sortBy === "distance" && nearBy) {
+      return items.sort((a, b) => {
+        const distA = this.haversineKm(
+          nearBy.latitude,
+          nearBy.longitude,
+          a.latitude,
+          a.longitude,
+        );
+        const distB = this.haversineKm(
+          nearBy.latitude,
+          nearBy.longitude,
+          b.latitude,
+          b.longitude,
+        );
+        return (distA - distB) * direction;
+      });
+    }
 
     return items.sort((a, b) => {
       const aVal = a[sortBy as keyof PetPost] ?? "";
@@ -398,6 +436,25 @@ export class MockPetPostRepository implements IPetPostRepository {
       if (aVal > bVal) return 1 * direction;
       return 0;
     });
+  }
+
+  private haversineKm(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 
   private applyOffsetPagination(

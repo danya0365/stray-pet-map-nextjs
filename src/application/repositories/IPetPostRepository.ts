@@ -39,12 +39,19 @@ export interface PetPostFilters {
   profileId?: string;
 }
 
-export type PetPostSortField = "createdAt" | "updatedAt" | "title";
+export interface NearByFilter {
+  latitude: number;
+  longitude: number;
+  radiusKm: number;
+}
+
+export type PetPostSortField = "createdAt" | "updatedAt" | "title" | "distance";
 export type SortOrder = "asc" | "desc";
 
 export interface PetPostQuery {
   filters?: PetPostFilters;
   search?: string;
+  nearBy?: NearByFilter;
   sortBy?: PetPostSortField;
   sortOrder?: SortOrder;
   pagination: PaginationMode;
