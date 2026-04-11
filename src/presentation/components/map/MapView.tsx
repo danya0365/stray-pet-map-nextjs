@@ -15,7 +15,7 @@ const statusFilters: {
   label: string;
   variant: "success" | "warning" | "danger";
 }[] = [
-  { value: "available", label: "รอรับเลี้ยง", variant: "success" },
+  { value: "available", label: "น้องหาบ้าน", variant: "success" },
   { value: "pending", label: "มีคนสนใจ", variant: "warning" },
   { value: "missing", label: "ตามหาน้อง", variant: "danger" },
 ];

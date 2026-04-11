@@ -17,7 +17,7 @@ const statusConfig: Record<
   PetPost["status"],
   { label: string; variant: "success" | "warning" | "primary" | "danger" }
 > = {
-  available: { label: "รอรับเลี้ยง", variant: "success" },
+  available: { label: "น้องหาบ้าน", variant: "success" },
   pending: { label: "มีคนสนใจ", variant: "warning" },
   adopted: { label: "มีบ้านแล้ว", variant: "primary" },
   missing: { label: "ตามหาน้อง", variant: "danger" },

@@ -12,7 +12,7 @@ const statusOptions: {
   label: string;
   variant: "success" | "warning" | "danger" | "primary";
 }[] = [
-  { value: "available", label: "รอรับเลี้ยง", variant: "success" },
+  { value: "available", label: "น้องหาบ้าน", variant: "success" },
   { value: "pending", label: "มีคนสนใจ", variant: "warning" },
   { value: "missing", label: "ตามหาน้อง", variant: "danger" },
   { value: "adopted", label: "มีบ้านแล้ว", variant: "primary" },

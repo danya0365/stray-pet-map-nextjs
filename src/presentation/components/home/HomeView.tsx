@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import {
-  MapPin,
-  Search,
-  Heart,
-  PawPrint,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
 import type { HomeViewModel } from "@/presentation/presenters/home/HomePresenter";
 import { useHomePresenter } from "@/presentation/presenters/home/useHomePresenter";
+import {
+  ArrowRight,
+  Heart,
+  Loader2,
+  MapPin,
+  PawPrint,
+  Search,
+} from "lucide-react";
+import Link from "next/link";
 import { PetPostCard } from "./PetPostCard";
 
 const features = [
@@ -90,7 +90,7 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
                 <p className="text-2xl font-bold text-primary">
                   {viewModel.stats.availablePosts}
                 </p>
-                <p className="text-xs text-foreground/50">รอรับเลี้ยง</p>
+                <p className="text-xs text-foreground/50">น้องหาบ้าน</p>
               </div>
               <div className="rounded-xl bg-card p-3 shadow-sm border border-border/40">
                 <p className="text-2xl font-bold text-secondary">
@@ -113,9 +113,7 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
       <section className="border-t border-border/40 px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-2xl font-bold sm:text-3xl">
-              น้องๆ รอบ้านใหม่
-            </h2>
+            <h2 className="text-2xl font-bold sm:text-3xl">น้องๆ รอบ้านใหม่</h2>
             <Link
               href="/search"
               className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"

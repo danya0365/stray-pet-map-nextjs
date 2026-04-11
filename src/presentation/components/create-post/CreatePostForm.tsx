@@ -48,7 +48,7 @@ const GENDER_OPTIONS = [
 const STATUS_OPTIONS = [
   {
     value: "available" as const,
-    label: "รอรับเลี้ยง",
+    label: "น้องหาบ้าน",
     desc: "น้องพร้อมมีเจ้าของใหม่",
     icon: "🏠",
   },
