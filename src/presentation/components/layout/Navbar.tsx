@@ -1,8 +1,17 @@
 "use client";
 
+import {
+  Heart,
+  LogIn,
+  MapPin,
+  Menu,
+  PawPrint,
+  PlusCircle,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { PawPrint, MapPin, Heart, Search, LogIn, Menu, X } from "lucide-react";
-import { useSyncExternalStore, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 
 const emptySubscribe = () => () => {};
@@ -10,6 +19,7 @@ const emptySubscribe = () => () => {};
 const navLinks = [
   { href: "/map", label: "แผนที่", icon: MapPin },
   { href: "/search", label: "ค้นหา", icon: Search },
+  { href: "/posts/create", label: "โพสต์น้อง", icon: PlusCircle },
   { href: "/favorites", label: "รายการโปรด", icon: Heart },
 ];
 
@@ -18,7 +28,7 @@ export function Navbar() {
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
-    () => false
+    () => false,
   );
 
   return (

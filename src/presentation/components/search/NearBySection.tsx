@@ -111,22 +111,22 @@ export function NearBySection({ nearBy, onChange }: NearBySectionProps) {
         ) : (
           <div className="flex flex-col gap-3">
             {/* Location info */}
-            <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2.5 dark:bg-emerald-900/20">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-3 py-2.5">
               <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
                 <div>
-                  <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <p className="text-xs font-medium text-foreground">
                     {address ||
                       `${nearBy.latitude.toFixed(4)}, ${nearBy.longitude.toFixed(4)}`}
                   </p>
-                  <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60">
+                  <p className="text-[10px] text-foreground/50">
                     รัศมี {nearBy.radiusKm} กม.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowPicker(true)}
-                className="rounded-md p-1 text-emerald-600 transition-colors hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                className="rounded-md p-1 text-foreground/40 transition-colors hover:bg-card hover:text-foreground"
                 type="button"
                 title="เปลี่ยนตำแหน่ง"
               >
