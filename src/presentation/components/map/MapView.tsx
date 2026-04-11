@@ -1,16 +1,20 @@
 "use client";
 
-import { useCallback } from "react";
-import { Loader2, Filter, X } from "lucide-react";
+import type { PetPost, PetPostStatus } from "@/domain/entities/pet-post";
+import { Badge } from "@/presentation/components/ui";
 import type { MapViewModel } from "@/presentation/presenters/map/MapPresenter";
 import { useMapPresenter } from "@/presentation/presenters/map/useMapPresenter";
-import type { PetPost, PetPostStatus } from "@/domain/entities/pet-post";
+import { Filter, Loader2, X } from "lucide-react";
+import { useCallback } from "react";
 import { MapContainer } from "./MapContainer";
-import { PetMarker } from "./PetMarker";
 import { MarkerPopup } from "./MarkerPopup";
-import { Badge } from "@/presentation/components/ui";
+import { PetMarker } from "./PetMarker";
 
-const statusFilters: { value: PetPostStatus; label: string; variant: "success" | "warning" | "danger" }[] = [
+const statusFilters: {
+  value: PetPostStatus;
+  label: string;
+  variant: "success" | "warning" | "danger";
+}[] = [
   { value: "available", label: "รอรับเลี้ยง", variant: "success" },
   { value: "pending", label: "มีคนสนใจ", variant: "warning" },
   { value: "missing", label: "ตามหาน้อง", variant: "danger" },
@@ -134,7 +138,7 @@ export function MapView({ initialViewModel }: MapViewProps) {
         )}
 
         {(viewModel || !loading) && (
-          <MapContainer>
+          <MapContainer className="h-full w-full">
             {viewModel?.posts.map((post) => (
               <PetMarker
                 key={post.id}
