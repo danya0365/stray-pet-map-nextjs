@@ -1,0 +1,37 @@
+/* ============================================
+   MapLibre Popup Overrides
+   ============================================ */
+
+.maplibregl-popup-content {
+  padding: 0 !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  overflow: hidden;
+  background: var(--card) !important;
+}
+
+.maplibregl-popup-close-button {
+  z-index: 10;
+  top: 4px !important;
+  right: 4px !important;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-size: 16px;
+  color: #fff !important;
+  background: rgb(0 0 0 / 0.3) !important;
+  backdrop-filter: blur(4px);
+  line-height: 1;
+}
+
+.maplibregl-popup-close-button:hover {
+  background: rgb(0 0 0 / 0.5) !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--card) !important;
+}

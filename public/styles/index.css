@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* ============================================
+   StrayPetMap — Main Entry Point
+   All styles are organized into separate modules:
+
+   1. theme.css      → @theme tokens, variables, dark mode
+   2. base.css       → Base element styles (body)
+   3. components.css → MapLibre overrides, component styles
+   ============================================ */
+
+@import "./theme.css";
+
+@layer base {
+  @import "./base.css";
+}
+
+@layer components {
+  @import "./components.css";
+}
