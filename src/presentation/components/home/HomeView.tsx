@@ -1,5 +1,6 @@
 "use client";
 
+import { SuccessStoriesSection } from "@/presentation/components/success-stories/SuccessStoriesSection";
 import type { HomeViewModel } from "@/presentation/presenters/home/HomePresenter";
 import { useHomePresenter } from "@/presentation/presenters/home/useHomePresenter";
 import {
@@ -144,6 +145,9 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
           )}
         </div>
       </section>
+
+      {/* Success Stories */}
+      <SuccessStoriesSection limit={3} />
 
       {/* Features */}
       <section className="border-t border-border/40 bg-muted/50 px-4 py-16 sm:py-24">

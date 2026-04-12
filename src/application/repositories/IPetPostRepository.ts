@@ -2,6 +2,7 @@ import type {
   CreatePetPostPayload,
   PetGender,
   PetPost,
+  PetPostOutcome,
   PetPostPurpose,
   PetPostStats,
   PetPostStatus,
@@ -33,6 +34,8 @@ export type PaginationMode = OffsetPagination | CursorPagination;
 export interface PetPostFilters {
   purpose?: PetPostPurpose | PetPostPurpose[]; // กรองตามจุดประสงค์โพสต์
   status?: PetPostStatus | PetPostStatus[]; // กรองตามสถานะระบบ
+  outcome?: PetPostOutcome | PetPostOutcome[]; // กรองตามผลลัพธ์
+  isArchived?: boolean; // กรองตามสถานะ archive
   petTypeId?: string;
   gender?: PetGender;
   province?: string;
@@ -88,4 +91,20 @@ export interface IPetPostRepository {
   delete(id: string): Promise<boolean>;
 
   getStats(filters?: PetPostFilters): Promise<PetPostStats>;
+
+  // ดึงเรื่องราวความสำเร็จ (โพสต์ที่ outcome = owner_found หรือ rehomed)
+  getSuccessStories(limit?: number): Promise<PetPost[]>;
+
+  // ดึงโพสต์ที่หมดอายุ (สำหรับ auto-archive)
+  findExpiredPosts(
+    expiryDays: number,
+  ): Promise<{ id: string; createdAt: string }[]>;
+
+  // ดึงโพสต์ที่ใกล้หมดอายุ (สำหรับแจ้งเตือน)
+  findExpiringSoonPosts(
+    expiryDays: number,
+    warningDays: number,
+  ): Promise<
+    { id: string; title: string; createdAt: string; purpose: string }[]
+  >;
 }

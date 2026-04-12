@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle,
   Clock,
@@ -25,6 +26,33 @@ import Link from "next/link";
 import { PetDetailMiniMap } from "./PetDetailMiniMap";
 
 dayjs.extend(relativeTime);
+
+// Helper: คำนวณวันที่เหลือก่อนหมดอายุ
+function getDaysUntilExpiry(createdAt: string, expiryDays = 90): number {
+  const created = dayjs(createdAt);
+  const expiry = created.add(expiryDays, "day");
+  return expiry.diff(dayjs(), "day");
+}
+
+// Helper: แสดง warning banner สำหรับโพสต์ใกล้หมดอายุ
+function ExpiryWarning({ createdAt }: { createdAt: string }) {
+  const daysLeft = getDaysUntilExpiry(createdAt);
+  const EXPIRY_WARNING_DAYS = 14; // แจ้งเตือนก่อน 2 สัปดาห์
+
+  if (daysLeft > EXPIRY_WARNING_DAYS || daysLeft <= 0) return null;
+
+  return (
+    <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+      <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+      <div className="flex-1">
+        <p className="text-sm font-medium">โพสต์ใกล้หมดอายุ</p>
+        <p className="text-xs text-amber-700">
+          โพสต์นี้จะถูกปิดอัตโนมัติในอีก {daysLeft} วัน หากยังไม่ได้ปิดโพสต์
+        </p>
+      </div>
+    </div>
+  );
+}
 dayjs.locale("th");
 
 const statusConfig: Record<
@@ -78,6 +106,11 @@ export function PetDetailView({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      {/* Expiry Warning (แสดงเฉพาะเจ้าของ) */}
+      {isOwner && !post.outcome && !post.isArchived && (
+        <ExpiryWarning createdAt={post.createdAt} />
+      )}
+
       {/* Back */}
       <Link
         href="/"

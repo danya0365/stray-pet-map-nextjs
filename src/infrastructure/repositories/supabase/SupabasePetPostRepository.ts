@@ -313,11 +313,26 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   ) {
     if (!filters) return query;
 
+    if (filters.purpose) {
+      const purposes = Array.isArray(filters.purpose)
+        ? filters.purpose
+        : [filters.purpose];
+      query = query.in("purpose", purposes);
+    }
     if (filters.status) {
       const statuses = Array.isArray(filters.status)
         ? filters.status
         : [filters.status];
       query = query.in("status", statuses);
+    }
+    if (filters.outcome) {
+      const outcomes = Array.isArray(filters.outcome)
+        ? filters.outcome
+        : [filters.outcome];
+      query = query.in("outcome", outcomes);
+    }
+    if (filters.isArchived !== undefined) {
+      query = query.eq("is_archived", filters.isArchived);
     }
     if (filters.petTypeId) {
       query = query.eq("pet_type_id", filters.petTypeId);
@@ -411,5 +426,83 @@ export class SupabasePetPostRepository implements IPetPostRepository {
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  // ดึงเรื่องราวความสำเร็จ (โพสต์ที่ outcome = owner_found หรือ rehomed)
+  async getSuccessStories(limit = 6): Promise<PetPost[]> {
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("*, pet_types(*)")
+      .in("outcome", ["owner_found", "rehomed"])
+      .eq("is_archived", true)
+      .not("resolved_at", "is", null)
+      .order("resolved_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error("Error fetching success stories:", error);
+      throw error;
+    }
+
+    return (data as PetPostWithType[]).map((row) => this.mapToDomain(row));
+  }
+
+  // ดึงโพสต์ที่หมดอายุ (สำหรับ auto-archive)
+  async findExpiredPosts(
+    expiryDays: number,
+  ): Promise<{ id: string; createdAt: string }[]> {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() - expiryDays);
+
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("id, created_at")
+      .is("outcome", null)
+      .eq("is_archived", false)
+      .lt("created_at", expiryDate.toISOString());
+
+    if (error) {
+      console.error("Error finding expired posts:", error);
+      throw error;
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      createdAt: row.created_at ?? new Date().toISOString(),
+    }));
+  }
+
+  // ดึงโพสต์ที่ใกล้หมดอายุ (สำหรับแจ้งเตือน)
+  async findExpiringSoonPosts(
+    expiryDays: number,
+    warningDays: number,
+  ): Promise<
+    { id: string; title: string; createdAt: string; purpose: string }[]
+  > {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() - expiryDays);
+
+    const warningDate = new Date();
+    warningDate.setDate(warningDate.getDate() - (expiryDays - warningDays));
+
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("id, title, created_at, purpose")
+      .is("outcome", null)
+      .eq("is_archived", false)
+      .gte("created_at", expiryDate.toISOString())
+      .lt("created_at", warningDate.toISOString());
+
+    if (error) {
+      console.error("Error finding expiring soon posts:", error);
+      throw error;
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      createdAt: row.created_at ?? new Date().toISOString(),
+      purpose: row.purpose,
+    }));
   }
 }
