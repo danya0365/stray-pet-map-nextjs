@@ -96,10 +96,10 @@
 
 ### ระดับ Medium Priority
 
-- [x] **Adoption Request** — ✅ SupabaseAdoptionRequestRepository พร้อมแล้ว ต้องสร้าง UI ในหน้า PetDetail
+- [x] **Adoption Request** — ✅ Complete — API Routes + ApiAdoptionRequestRepository + AdoptionRequestModal (PetDetail) พร้อมใช้งาน
 - [x] **Favorites / Bookmark** — ✅ หน้า `/favorites` + SupabaseFavoriteRepository พร้อม ต้อง integrate UI
 - [ ] **Search ขั้นสูง** — Filter ตาม ชนิด, พันธุ์, สี, ระยะทาง, สถานะ (ตอนนี้มีแค่สถานะ)
-- [x] **หน้า Profile** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
+- [ ] **หน้า Profile** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
 - [ ] **Reverse Geocoding** — แปลง lat/lng เป็นชื่อที่อยู่อัตโนมัติ (เพื่อ auto-suggest title ดีขึ้น)
 
 ### ระดับ Low Priority
