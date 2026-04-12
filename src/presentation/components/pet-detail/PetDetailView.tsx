@@ -1,5 +1,6 @@
 "use client";
 
+import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
 import dayjs from "dayjs";
@@ -213,6 +214,12 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
 
           {/* Secondary Actions */}
           <div className="flex gap-2">
+            <div className="flex flex-1 items-center justify-center rounded-xl border border-border bg-card">
+              <FavoriteButton petPostId={post.id} size="md" />
+              <span className="pr-3 text-xs font-medium text-foreground/60">
+                บันทึก
+              </span>
+            </div>
             <button
               type="button"
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted"

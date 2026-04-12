@@ -60,6 +60,7 @@ export interface CreatePetPostData {
   longitude: number;
   address?: string;
   province?: string;
+  status?: PetPostStatus;
   thumbnailUrl?: string;
 }
 

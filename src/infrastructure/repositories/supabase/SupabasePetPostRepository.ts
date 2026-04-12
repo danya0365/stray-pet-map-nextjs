@@ -183,7 +183,7 @@ export class SupabasePetPostRepository implements IPetPostRepository {
         longitude: payload.longitude,
         address: payload.address ?? "",
         province: payload.province ?? "",
-        status: "available",
+        status: payload.status ?? "available",
         thumbnail_url: payload.thumbnailUrl ?? "",
       })
       .select("*, pet_types(*)")

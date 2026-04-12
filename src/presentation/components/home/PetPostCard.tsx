@@ -1,6 +1,7 @@
 "use client";
 
 import type { PetPost } from "@/domain/entities/pet-post";
+import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { Badge } from "@/presentation/components/ui";
 import { cn } from "@/presentation/lib/cn";
 import dayjs from "dayjs";
@@ -62,14 +63,23 @@ export function PetPostCard({ post, className }: PetPostCardProps) {
           </Badge>
         </div>
 
-        {/* Pet type badge */}
-        {post.petType && (
-          <div className="absolute right-3 top-3">
+        {/* Pet type badge + Favorite */}
+        <div className="absolute right-3 top-3 flex items-center gap-1">
+          {post.petType && (
             <span className="rounded-full bg-black/40 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
               {post.petType.icon} {post.petType.name}
             </span>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Favorite button */}
+        <div className="absolute bottom-3 right-3">
+          <FavoriteButton
+            petPostId={post.id}
+            size="sm"
+            className="bg-black/30 text-white backdrop-blur-sm hover:bg-black/50"
+          />
+        </div>
       </div>
 
       {/* Content */}

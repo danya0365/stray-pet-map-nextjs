@@ -1,6 +1,8 @@
 "use client";
 
 import type { PetType } from "@/domain/entities/pet-post";
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createClient } from "@/infrastructure/supabase/client";
 import { LocationPickerModal } from "@/presentation/components/search/LocationPickerModal";
 import { cn } from "@/presentation/lib/cn";
 import {
@@ -21,6 +23,7 @@ import {
   SkipForward,
   Syringe,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -155,6 +158,7 @@ interface CreatePostFormProps {
 }
 
 export function CreatePostForm({ petTypes }: CreatePostFormProps) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationAddress, setLocationAddress] = useState<string | null>(null);
@@ -162,6 +166,8 @@ export function CreatePostForm({ petTypes }: CreatePostFormProps) {
   const [submitState, setSubmitState] = useState<
     "idle" | "submitting" | "success"
   >("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createdPostId, setCreatedPostId] = useState<string | null>(null);
 
   const {
     register,
@@ -246,9 +252,38 @@ export function CreatePostForm({ petTypes }: CreatePostFormProps) {
 
   const onSubmit = useCallback(async (data: CreatePostFormValues) => {
     setSubmitState("submitting");
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log("Create post data:", data);
-    setSubmitState("success");
+    setSubmitError(null);
+
+    try {
+      const supabase = createClient();
+      const repo = new SupabasePetPostRepository(supabase);
+
+      const post = await repo.create({
+        petTypeId: data.petTypeId,
+        title: data.title,
+        description: data.description,
+        breed: data.breed,
+        color: data.color,
+        gender: data.gender,
+        estimatedAge: data.estimatedAge,
+        isVaccinated: data.isVaccinated ?? undefined,
+        isNeutered: data.isNeutered ?? undefined,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        address: data.address,
+        province: data.province,
+        status: data.status,
+        thumbnailUrl: data.thumbnailUrl,
+      });
+
+      setCreatedPostId(post.id);
+      setSubmitState("success");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "เกิดข้อผิดพลาด กรุณาลองใหม่";
+      setSubmitError(message);
+      setSubmitState("idle");
+    }
   }, []);
 
   // ── Success screen ─────────────────────────────────
@@ -263,16 +298,28 @@ export function CreatePostForm({ petTypes }: CreatePostFormProps) {
         <p className="mb-6 text-sm text-foreground/60">
           น้องของคุณถูกโพสต์เรียบร้อยแล้ว
         </p>
-        <button
-          onClick={() => {
-            setSubmitState("idle");
-            setStep(1);
-          }}
-          className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-          type="button"
-        >
-          โพสต์อีกตัว
-        </button>
+        <div className="flex gap-3">
+          {createdPostId && (
+            <button
+              onClick={() => router.push(`/pets/${createdPostId}`)}
+              className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+              type="button"
+            >
+              ดูโพสต์
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setSubmitState("idle");
+              setCreatedPostId(null);
+              setStep(1);
+            }}
+            className="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-foreground/60 transition-colors hover:bg-muted"
+            type="button"
+          >
+            โพสต์อีกตัว
+          </button>
+        </div>
       </div>
     );
   }
@@ -319,6 +366,12 @@ export function CreatePostForm({ petTypes }: CreatePostFormProps) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
+        {submitError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            {submitError}
+          </div>
+        )}
+
         {/* ── Step 1: Status + Photo + Pet Type ── */}
         {step === 1 && (
           <div className="flex flex-col gap-6">
