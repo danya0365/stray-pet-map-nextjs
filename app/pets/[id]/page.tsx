@@ -1,4 +1,4 @@
-import { PetDetailView } from "@/presentation/components/pet-detail/PetDetailView";
+import { PetDetailContainer } from "@/presentation/components/pet-detail/PetDetailContainer";
 import { createServerPetDetailPresenter } from "@/presentation/presenters/pet-detail/PetDetailPresenterServerFactory";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -52,5 +52,5 @@ export default async function PetDetailPage({ params }: PetDetailPageProps) {
     notFound();
   }
 
-  return <PetDetailView viewModel={viewModel} />;
+  return <PetDetailContainer initialViewModel={viewModel} />;
 }

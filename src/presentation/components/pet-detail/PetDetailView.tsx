@@ -1,11 +1,11 @@
 "use client";
 
+import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
 import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
-import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -22,8 +22,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { PetDetailMiniMap } from "./PetDetailMiniMap";
 
 dayjs.extend(relativeTime);
@@ -45,56 +43,38 @@ const genderLabel: Record<string, string> = {
   unknown: "ไม่ทราบ",
 };
 
+// View Props - รับ state และ callbacks จาก Presenter
 interface PetDetailViewProps {
   viewModel: PetDetailViewModel;
+  isOwner: boolean;
+  canClose: boolean;
+  isAdoptionModalOpen: boolean;
+  isCloseModalOpen: boolean;
+  isClosingPost: boolean;
+  onOpenAdoptionModal: () => void;
+  onCloseAdoptionModal: () => void;
+  onOpenCloseModal: () => void;
+  onCloseCloseModal: () => void;
+  onAdoptClick: () => void;
+  onClosePost: (outcome: PetPostOutcome) => Promise<void>;
 }
 
-export function PetDetailView({ viewModel }: PetDetailViewProps) {
+// View Component - 100% Logic-Free รับ state และ callbacks จาก props
+export function PetDetailView({
+  viewModel,
+  isOwner,
+  canClose,
+  isAdoptionModalOpen,
+  isCloseModalOpen,
+  isClosingPost,
+  onCloseAdoptionModal,
+  onCloseCloseModal,
+  onAdoptClick,
+  onOpenCloseModal,
+  onClosePost,
+}: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
-  const { user } = useAuthStore();
-  const router = useRouter();
-  const [showAdoptionModal, setShowAdoptionModal] = useState(false);
-
-  const handleAdoptClick = () => {
-    if (!user) {
-      router.push("/auth/login");
-      return;
-    }
-    setShowAdoptionModal(true);
-  };
-
-  const [showCloseModal, setShowCloseModal] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-
-  const isOwner = user?.id === post.profileId;
-  const canClose = isOwner && !post.outcome && !post.isArchived;
-
-  const handleClosePost = async (
-    outcome: "owner_found" | "rehomed" | "cancelled",
-  ) => {
-    setIsClosing(true);
-    try {
-      const res = await fetch(`/api/pet-posts/${post.id}/close`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outcome }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to close post");
-      }
-
-      setShowCloseModal(false);
-      router.refresh(); // Refresh page to show updated status
-    } catch (error) {
-      console.error("Close post error:", error);
-      alert("ไม่สามารถปิดโพสต์ได้ กรุณาลองใหม่");
-    } finally {
-      setIsClosing(false);
-    }
-  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -237,7 +217,7 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
               {(post.status === "available" || post.status === "pending") && (
                 <button
                   type="button"
-                  onClick={handleAdoptClick}
+                  onClick={onAdoptClick}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
                 >
                   <Heart className="h-4 w-4" />
@@ -260,7 +240,7 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
               {/* Close Post Button (Owner only) */}
               <button
                 type="button"
-                onClick={() => setShowCloseModal(true)}
+                onClick={onOpenCloseModal}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-500 bg-white px-6 py-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
               >
                 <CheckCircle className="h-4 w-4" />
@@ -287,7 +267,7 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
               {(post.status === "available" || post.status === "pending") && (
                 <button
                   type="button"
-                  onClick={handleAdoptClick}
+                  onClick={onAdoptClick}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
                 >
                   <Heart className="h-4 w-4" />
@@ -342,19 +322,20 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
         </div>
       </div>
 
+      {/* Modals */}
       <AdoptionRequestModal
-        isOpen={showAdoptionModal}
-        onClose={() => setShowAdoptionModal(false)}
+        isOpen={isAdoptionModalOpen}
+        onClose={onCloseAdoptionModal}
         petPostId={post.id}
         petTitle={post.title}
       />
 
       <ClosePostModal
-        isOpen={showCloseModal}
-        onClose={() => setShowCloseModal(false)}
+        isOpen={isCloseModalOpen}
+        onClose={onCloseCloseModal}
         purpose={post.purpose}
-        onConfirm={handleClosePost}
-        isLoading={isClosing}
+        onConfirm={onClosePost}
+        isLoading={isClosingPost}
       />
     </div>
   );

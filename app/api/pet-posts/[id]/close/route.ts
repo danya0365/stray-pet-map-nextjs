@@ -1,5 +1,6 @@
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 
