@@ -260,6 +260,56 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_badges: {
+        Row: {
+          awarded_at: string
+          color: string
+          created_at: string
+          description: string
+          earned_value: number | null
+          icon: string
+          id: string
+          name: string
+          profile_id: string
+          tier: Database["public"]["Enums"]["badge_tier"]
+          type: Database["public"]["Enums"]["badge_type"]
+        }
+        Insert: {
+          awarded_at?: string
+          color: string
+          created_at?: string
+          description: string
+          earned_value?: number | null
+          icon: string
+          id?: string
+          name: string
+          profile_id: string
+          tier: Database["public"]["Enums"]["badge_tier"]
+          type: Database["public"]["Enums"]["badge_type"]
+        }
+        Update: {
+          awarded_at?: string
+          color?: string
+          created_at?: string
+          description?: string
+          earned_value?: number | null
+          icon?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          tier?: Database["public"]["Enums"]["badge_tier"]
+          type?: Database["public"]["Enums"]["badge_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_badges_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_roles: {
         Row: {
           granted_at: string | null
@@ -421,9 +471,53 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profile_badge_counts: {
+        Row: {
+          avatar_url: string | null
+          badge_count: number | null
+          display_name: string | null
+          last_awarded_at: string | null
+          profile_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_badges_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_post_stats: {
+        Row: {
+          community_cats: number | null
+          found_owners: number | null
+          lost_pet_posts: number | null
+          profile_id: string | null
+          rehome_posts: number | null
+          successful_adoptions: number | null
+          total_posts: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_posts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      check_and_award_badges: {
+        Args: { target_profile_id: string }
+        Returns: {
+          awarded_badge: string
+          tier: string
+        }[]
+      }
       create_profile: {
         Args: { avatar_url?: string; full_name?: string; username: string }
         Returns: string
@@ -521,6 +615,16 @@ export type Database = {
     }
     Enums: {
       adoption_request_status: "pending" | "approved" | "rejected" | "cancelled"
+      badge_tier: "bronze" | "silver" | "gold" | "platinum"
+      badge_type:
+        | "first_post"
+        | "successful_adoption"
+        | "pet_finder"
+        | "rescue_hero"
+        | "active_helper"
+        | "super_helper"
+        | "quick_responder"
+        | "verified_rescuer"
       pet_gender: "male" | "female" | "unknown"
       pet_post_outcome:
         | "owner_found"
@@ -666,6 +770,17 @@ export const Constants = {
   public: {
     Enums: {
       adoption_request_status: ["pending", "approved", "rejected", "cancelled"],
+      badge_tier: ["bronze", "silver", "gold", "platinum"],
+      badge_type: [
+        "first_post",
+        "successful_adoption",
+        "pet_finder",
+        "rescue_hero",
+        "active_helper",
+        "super_helper",
+        "quick_responder",
+        "verified_rescuer",
+      ],
       pet_gender: ["male", "female", "unknown"],
       pet_post_outcome: [
         "owner_found",
