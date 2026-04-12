@@ -79,9 +79,10 @@ const TIERS: RoadMapTierData[] = [
         id: "s-geocoding",
         icon: "📍",
         title: "Reverse Geocoding อัตโนมัติ",
-        description:
-          "แปลง GPS → ชื่อที่อยู่อัตโนมัติ ไม่ต้องพิมพ์เอง",
+        description: "แปลง GPS → ชื่อที่อยู่อัตโนมัติ ไม่ต้องพิมพ์เอง",
         status: "in_progress",
+        plannedQuarter: "Q2 2026",
+        // ฟีเจอร์นี้กำลังทำอยู่แล้ว ไม่มี fast-track goal
       },
       {
         id: "s-filter",
@@ -89,6 +90,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Filter ขั้นสูง",
         description: "กรองตามพันธุ์, สี, และระยะทางจากตำแหน่งของคุณ",
         status: "locked",
+        plannedQuarter: "Q3 2026",
+        donationGoal: 3000,
       },
       {
         id: "s-report",
@@ -96,6 +99,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Report โพสต์ไม่เหมาะสม",
         description: "ระบบรายงานโพสต์ที่ผิดกฎเกณฑ์",
         status: "locked",
+        plannedQuarter: "Q3 2026",
+        donationGoal: 4000,
       },
     ],
   },
@@ -117,6 +122,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Push Notification",
         description: "แจ้งเตือนเมื่อมีคนสนใจรับน้องของคุณ",
         status: "locked",
+        plannedQuarter: "Q4 2026",
+        donationGoal: 8000,
       },
       {
         id: "sp-profile",
@@ -124,6 +131,8 @@ const TIERS: RoadMapTierData[] = [
         title: "หน้า Profile เต็มรูปแบบ",
         description: "จัดการโพสต์, ประวัติการรับเลี้ยง, และสถิติส่วนตัว",
         status: "locked",
+        plannedQuarter: "Q4 2026",
+        donationGoal: 10000,
       },
       {
         id: "sp-og",
@@ -131,6 +140,8 @@ const TIERS: RoadMapTierData[] = [
         title: "OG Tags / Share Card",
         description: "แชร์โพสต์น้องเป็น card สวยๆ บน Line / Facebook",
         status: "locked",
+        plannedQuarter: "Q4 2026",
+        donationGoal: 12000,
       },
     ],
   },
@@ -153,6 +164,8 @@ const TIERS: RoadMapTierData[] = [
         description:
           "สะสม point จากทุกกิจกรรม — ไต่ยศจาก \"ผู้เริ่มต้น\" → \"ผู้พิทักษ์สัตว์\"",
         status: "locked",
+        plannedQuarter: "Q1 2027",
+        donationGoal: 18000,
       },
       {
         id: "bl-leaderboard",
@@ -160,6 +173,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Leaderboard รายจังหวัด",
         description: "แข่งขันกันในระดับจังหวัด — จัดอันดับรายสัปดาห์/เดือน",
         status: "locked",
+        plannedQuarter: "Q1 2027",
+        donationGoal: 22000,
       },
       {
         id: "bl-impact",
@@ -167,6 +182,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Impact Card",
         description: "สรุปผลกระทบของคุณ — share ลง social ได้ทันที",
         status: "locked",
+        plannedQuarter: "Q2 2027",
+        donationGoal: 25000,
       },
       {
         id: "bl-streak",
@@ -174,6 +191,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Streak & วันต่อเนื่อง",
         description: "ติดตามวันที่คุณช่วยเหลือสัตว์ต่อเนื่อง",
         status: "locked",
+        plannedQuarter: "Q2 2027",
+        donationGoal: 28000,
       },
     ],
   },
@@ -193,9 +212,10 @@ const TIERS: RoadMapTierData[] = [
         id: "ch-donation",
         icon: "💳",
         title: "ระบบบริจาคในแอป",
-        description:
-          "บริจาคให้น้องโดยตรงผ่าน QR PromptPay / TrueMoney Wallet",
+        description: "บริจาคให้น้องโดยตรงผ่าน QR PromptPay / TrueMoney Wallet",
         status: "locked",
+        plannedQuarter: "Q3 2027",
+        donationGoal: 40000,
       },
       {
         id: "ch-pwa",
@@ -203,6 +223,8 @@ const TIERS: RoadMapTierData[] = [
         title: "PWA & Offline Mode",
         description: "ติดตั้งเป็น App บนมือถือ — ใช้ได้แม้ไม่มีเน็ต",
         status: "locked",
+        plannedQuarter: "Q3 2027",
+        donationGoal: 45000,
       },
       {
         id: "ch-admin",
@@ -210,6 +232,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Admin Dashboard",
         description: "จัดการโพสต์, ดู reports, และสถิติระบบ",
         status: "locked",
+        plannedQuarter: "Q4 2027",
+        donationGoal: 50000,
       },
       {
         id: "ch-vet",
@@ -217,6 +241,8 @@ const TIERS: RoadMapTierData[] = [
         title: "ไดเรกทอรี่คลินิก/หมอ",
         description: "ค้นหาคลินิกสัตว์ใกล้บ้านบนแผนที่",
         status: "locked",
+        plannedQuarter: "Q4 2027",
+        donationGoal: 55000,
       },
     ],
   },
@@ -238,6 +264,8 @@ const TIERS: RoadMapTierData[] = [
         title: "AI จดจำน้อง",
         description: "ค้นหาน้องด้วยรูปภาพ — AI บอกชนิด สายพันธุ์ ได้เลย",
         status: "locked",
+        plannedQuarter: "Q2 2028",
+        donationGoal: 70000,
       },
       {
         id: "lg-realtime",
@@ -245,6 +273,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Real-time Map",
         description: "แผนที่อัพเดทแบบ live — เห็น pin ใหม่ทันที",
         status: "locked",
+        plannedQuarter: "Q2 2028",
+        donationGoal: 80000,
       },
       {
         id: "lg-multilang",
@@ -252,6 +282,8 @@ const TIERS: RoadMapTierData[] = [
         title: "Multi-language",
         description: "รองรับ EN / TH — เปิดรับอาสาสมัครทั่วโลก",
         status: "locked",
+        plannedQuarter: "Q3 2028",
+        donationGoal: 90000,
       },
       {
         id: "lg-api",
@@ -259,10 +291,13 @@ const TIERS: RoadMapTierData[] = [
         title: "Open API",
         description: "เปิด API ให้หน่วยงานพันธมิตรและองค์กรสัตว์เชื่อมต่อ",
         status: "locked",
+        plannedQuarter: "Q3 2028",
+        donationGoal: 95000,
       },
     ],
   },
 ];
+
 
 // ────────────────────────────────────────────────────────────
 // Simulated current donation stats

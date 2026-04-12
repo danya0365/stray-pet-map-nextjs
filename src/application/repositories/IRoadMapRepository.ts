@@ -20,6 +20,18 @@ export interface RoadMapFeature {
   title: string;
   description: string;
   status: FeatureStatus;
+  /**
+   * กำหนดการปกติ — ฟีเจอร์นี้จะทำแน่นอนภายใน quarter นี้
+   * ไม่ว่ายอดบริจาคจะถึงหรือไม่
+   * ตัวอย่าง: "Q3 2026", "Q4 2026"
+   */
+  plannedQuarter?: string;
+  /**
+   * Fast-track goal — ถ้ายอดบริจาคสะสมถึงจำนวนนี้
+   * เราจะเริ่มทำทันที โดยไม่ต้องรอ deadline
+   * ตั้งใจให้น้อยกว่า targetAmount ของ tier หรือเท่ากัน
+   */
+  donationGoal?: number;
 }
 
 export interface RoadMapTierData {
