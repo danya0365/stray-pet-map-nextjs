@@ -120,7 +120,7 @@ function LeaderboardItem({
 
         {/* Avatar & Info */}
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {profile.avatarUrl ? (
+          {profile.avatarUrl && profile.avatarUrl.startsWith("http") ? (
             <Image
               src={profile.avatarUrl}
               alt={profile.displayName}

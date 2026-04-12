@@ -37,23 +37,21 @@ export function BadgeProgressBar({
   return (
     <div className={cn("space-y-1.5", className)}>
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-700">{label}</span>
-        <span className="text-xs text-gray-500">
+        <span className="font-medium">{label}</span>
+        <span className="text-xs text-muted-foreground">
           {current} / {target}
           {nextTierLabel && (
-            <span className="ml-1 text-amber-600">({nextTierLabel})</span>
+            <span className="ml-1 text-primary">({nextTierLabel})</span>
           )}
         </span>
       </div>
 
       {/* Progress Bar */}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-all duration-300",
-            percentage >= 100
-              ? "bg-gradient-to-r from-amber-400 to-yellow-500"
-              : "bg-gradient-to-r from-blue-400 to-blue-500",
+            percentage >= 100 ? "bg-primary" : "bg-primary/60",
           )}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
@@ -74,42 +72,40 @@ export function BadgeProgressCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-gray-100 bg-white p-4 shadow-sm",
+        "rounded-xl border border-border bg-card p-4 shadow-sm",
         className,
       )}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-medium text-gray-900">{label}</span>
+        <span className="font-medium">{label}</span>
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-xs font-medium",
             percentage >= 100
-              ? "bg-amber-100 text-amber-700"
-              : "bg-gray-100 text-gray-600",
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground",
           )}
         >
           {percentage}%
         </span>
       </div>
 
-      <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+      <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-all duration-300",
-            percentage >= 100
-              ? "bg-gradient-to-r from-amber-400 to-yellow-500"
-              : "bg-gradient-to-r from-blue-400 to-blue-500",
+            percentage >= 100 ? "bg-primary" : "bg-primary/60",
           )}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-gray-500">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
           {current} / {target}
         </span>
         {nextTierLabel && (
-          <span className="text-amber-600">เป้าหมาย: {nextTierLabel}</span>
+          <span className="text-primary">เป้าหมาย: {nextTierLabel}</span>
         )}
       </div>
     </div>

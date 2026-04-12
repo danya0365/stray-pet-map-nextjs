@@ -12,6 +12,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { BadgeHomeSection } from "../badges/BadgeHomeSection";
 import { PetPostCard } from "./PetPostCard";
 
 const features = [
@@ -148,6 +149,8 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
 
       {/* Success Stories */}
       <SuccessStoriesSection limit={3} />
+
+      <BadgeHomeSection limit={6} />
 
       {/* Features */}
       <section className="border-t border-border/40 bg-muted/50 px-4 py-16 sm:py-24">
