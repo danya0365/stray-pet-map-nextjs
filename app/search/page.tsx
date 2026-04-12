@@ -3,13 +3,15 @@ import { createServerSearchPresenter } from "@/presentation/presenters/search/Se
 import type { Metadata } from "next";
 import Link from "next/link";
 
-const presenter = createServerSearchPresenter();
-
 export function generateMetadata(): Metadata {
-  return presenter.generateMetadata();
+  return {
+    title: "ค้นหาน้อง | StrayPetMap",
+    description: "ค้นหาสัตว์จรตามสถานะ ชนิด หรือตำแหน่ง",
+  };
 }
 
 export default async function SearchPage() {
+  const presenter = await createServerSearchPresenter();
   let viewModel = null;
   let fetchError = false;
 
@@ -27,9 +29,7 @@ export default async function SearchPage() {
           <h1 className="mb-2 text-2xl font-bold text-foreground">
             เกิดข้อผิดพลาด
           </h1>
-          <p className="mb-4 text-foreground/60">
-            ไม่สามารถโหลดข้อมูลได้
-          </p>
+          <p className="mb-4 text-foreground/60">ไม่สามารถโหลดข้อมูลได้</p>
           <Link
             href="/"
             className="rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"

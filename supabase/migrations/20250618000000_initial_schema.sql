@@ -1,7 +1,7 @@
--- Live Learning Database Schema
+-- Stray Pet Map Database Schema
 -- Created: 2025-06-18
 -- Author: Marosdee Uma
--- Description: Initial schema for Live Learning application following Clean Architecture principles
+-- Description: Initial schema for Stray Pet Map application following Clean Architecture principles
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -19,7 +19,7 @@ AS $$
 $$;
 
 -- Create custom types
-CREATE TYPE public.profile_role AS ENUM ('student', 'instructor', 'admin');
+CREATE TYPE public.profile_role AS ENUM ('user', 'moderator', 'admin');
 
 
 -- Create profiles table (extends auth.users)
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.profile_roles (
   id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  role public.profile_role NOT NULL DEFAULT 'student',
+  role public.profile_role NOT NULL DEFAULT 'user',
   granted_by UUID REFERENCES auth.users(id),
   granted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(profile_id)
@@ -102,7 +102,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Insert a default 'user' role for the newly created profile
   INSERT INTO public.profile_roles (profile_id, role, granted_by)
-  VALUES (NEW.id, 'student'::public.profile_role, NEW.auth_id);
+  VALUES (NEW.id, 'user'::public.profile_role, NEW.auth_id);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

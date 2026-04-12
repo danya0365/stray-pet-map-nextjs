@@ -1,16 +1,15 @@
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { MapPresenter } from "./MapPresenter";
-import { MockPetPostRepository } from "@/infrastructure/repositories/mock/MockPetPostRepository";
 
 export class MapPresenterServerFactory {
-  static create(): MapPresenter {
-    const repository = new MockPetPostRepository();
-
-    // TODO: Switch to Supabase Repository when backend is ready
-
+  static async create(): Promise<MapPresenter> {
+    const supabase = await createServerSupabaseClient();
+    const repository = new SupabasePetPostRepository(supabase);
     return new MapPresenter(repository);
   }
 }
 
-export function createServerMapPresenter(): MapPresenter {
+export async function createServerMapPresenter(): Promise<MapPresenter> {
   return MapPresenterServerFactory.create();
 }

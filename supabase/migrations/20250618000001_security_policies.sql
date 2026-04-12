@@ -1,7 +1,7 @@
--- Live Learning Security Policies
+-- Stray Pet Map Security Policies
 -- Created: 2025-06-18
 -- Author: Marosdee Uma
--- Description: Row Level Security (RLS) policies for Live Learning application
+-- Description: Row Level Security (RLS) policies for Stray Pet Map application
 
 -- Enable Row Level Security on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -37,10 +37,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION public.is_instructor_or_admin()
+CREATE OR REPLACE FUNCTION public.is_moderator_or_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN public.get_active_profile_role() IN ('instructor'::public.profile_role, 'admin'::public.profile_role);
+  RETURN public.get_active_profile_role() IN ('moderator'::public.profile_role, 'admin'::public.profile_role);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -109,15 +109,15 @@ CREATE POLICY "Only admins can update profile roles"
   USING (is_admin())
   WITH CHECK (is_admin());
 
--- Insert policy: authenticated users can create their own profile_roles only as 'student'; admins can create for anyone with any role
-CREATE POLICY "Authenticated users can create their own profile_roles as student"
+-- Insert policy: authenticated users can create their own profile_roles only as 'user'; admins can create for anyone with any role
+CREATE POLICY "Authenticated users can create their own profile_roles as user"
   ON public.profile_roles FOR INSERT
   WITH CHECK (
     auth.role() = 'authenticated'
     AND (
       public.is_admin()
       OR (
-        role = 'student'::public.profile_role
+        role = 'user'::public.profile_role
         AND profile_id = public.get_active_profile_id()
       )
     )

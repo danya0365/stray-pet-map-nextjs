@@ -1,7 +1,7 @@
--- Live Learning Storage Configuration
+-- Stray Pet Map Storage Configuration
 -- Created: 2025-06-18
 -- Author: Marosdee Uma
--- Description: Supabase Storage configuration for Live Learning application
+-- Description: Supabase Storage configuration for Stray Pet Map application
 
 -- Create storage buckets
 INSERT INTO storage.buckets (id, name, public, avif_autodetection)

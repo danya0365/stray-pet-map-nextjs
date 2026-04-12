@@ -1,6 +1,9 @@
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { SearchPresenter } from "./SearchPresenter";
-import { MockPetPostRepository } from "@/infrastructure/repositories/mock/MockPetPostRepository";
 
-export function createServerSearchPresenter(): SearchPresenter {
-  return new SearchPresenter(new MockPetPostRepository());
+export async function createServerSearchPresenter(): Promise<SearchPresenter> {
+  const supabase = await createServerSupabaseClient();
+  const repository = new SupabasePetPostRepository(supabase);
+  return new SearchPresenter(repository);
 }

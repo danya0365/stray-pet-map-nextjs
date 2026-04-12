@@ -1,13 +1,15 @@
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { PetDetailPresenter } from "./PetDetailPresenter";
-import { MockPetPostRepository } from "@/infrastructure/repositories/mock/MockPetPostRepository";
 
 export class PetDetailPresenterServerFactory {
-  static create(): PetDetailPresenter {
-    const repository = new MockPetPostRepository();
+  static async create(): Promise<PetDetailPresenter> {
+    const supabase = await createServerSupabaseClient();
+    const repository = new SupabasePetPostRepository(supabase);
     return new PetDetailPresenter(repository);
   }
 }
 
-export function createServerPetDetailPresenter(): PetDetailPresenter {
+export async function createServerPetDetailPresenter(): Promise<PetDetailPresenter> {
   return PetDetailPresenterServerFactory.create();
 }

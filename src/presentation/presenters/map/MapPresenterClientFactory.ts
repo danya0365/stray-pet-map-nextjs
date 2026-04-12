@@ -1,14 +1,13 @@
 "use client";
 
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createClient } from "@/infrastructure/supabase/client";
 import { MapPresenter } from "./MapPresenter";
-import { MockPetPostRepository } from "@/infrastructure/repositories/mock/MockPetPostRepository";
 
 export class MapPresenterClientFactory {
   static create(): MapPresenter {
-    const repository = new MockPetPostRepository();
-
-    // TODO: Switch to API Repository when backend is ready
-
+    const supabase = createClient();
+    const repository = new SupabasePetPostRepository(supabase);
     return new MapPresenter(repository);
   }
 }

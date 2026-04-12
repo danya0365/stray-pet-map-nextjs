@@ -1,17 +1,16 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
 import { PetDetailView } from "@/presentation/components/pet-detail/PetDetailView";
 import { createServerPetDetailPresenter } from "@/presentation/presenters/pet-detail/PetDetailPresenterServerFactory";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 interface PetDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-const presenter = createServerPetDetailPresenter();
-
 export async function generateMetadata({
   params,
 }: PetDetailPageProps): Promise<Metadata> {
+  const presenter = await createServerPetDetailPresenter();
   const { id } = await params;
   const viewModel = await presenter.getViewModel(id);
 
@@ -23,6 +22,7 @@ export async function generateMetadata({
 }
 
 export default async function PetDetailPage({ params }: PetDetailPageProps) {
+  const presenter = await createServerPetDetailPresenter();
   const { id } = await params;
 
   let viewModel = null;

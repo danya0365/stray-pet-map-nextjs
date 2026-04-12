@@ -5,13 +5,15 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const presenter = createServerMapPresenter();
-
 export function generateMetadata(): Metadata {
-  return presenter.generateMetadata();
+  return {
+    title: "แผนที่น้อง | StrayPetMap",
+    description: "ดูตำแหน่งสัตว์จรบนแผนที่",
+  };
 }
 
 export default async function MapPage() {
+  const presenter = await createServerMapPresenter();
   let viewModel = null;
   let fetchError = false;
 

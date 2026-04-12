@@ -3,7 +3,7 @@ import { createServerHomePresenter } from "@/presentation/presenters/home/HomePr
 import Link from "next/link";
 
 export default async function HomePage() {
-  const presenter = createServerHomePresenter();
+  const presenter = await createServerHomePresenter();
 
   let viewModel = null;
   let fetchError = false;

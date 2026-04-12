@@ -1,5 +1,6 @@
 "use client";
 
+import type { PetType } from "@/domain/entities/pet-post";
 import { LocationPickerModal } from "@/presentation/components/search/LocationPickerModal";
 import { cn } from "@/presentation/lib/cn";
 import {
@@ -34,10 +35,7 @@ const STEPS = [
 
 const TOTAL_STEPS = STEPS.length;
 
-const PET_TYPES = [
-  { id: "type-dog", label: "สุนัข", icon: "🐕", desc: "น้องหมา" },
-  { id: "type-cat", label: "แมว", icon: "🐈", desc: "น้องแมว" },
-];
+// PET_TYPES is now passed via props
 
 const GENDER_OPTIONS = [
   { value: "male" as const, label: "ผู้", icon: "♂️" },
@@ -60,8 +58,8 @@ const STATUS_OPTIONS = [
   },
 ];
 
-const BREED_SUGGESTIONS: Record<string, string[]> = {
-  "type-dog": [
+const BREED_SUGGESTIONS_BY_SLUG: Record<string, string[]> = {
+  dog: [
     "ไทยหลังอาน",
     "ชิวาวา",
     "ปอมเมอเรเนียน",
@@ -71,7 +69,7 @@ const BREED_SUGGESTIONS: Record<string, string[]> = {
     "บีเกิล",
     "พันทาง",
   ],
-  "type-cat": [
+  cat: [
     "วิเชียรมาศ",
     "เปอร์เซีย",
     "สก็อตติชโฟลด์",
@@ -120,8 +118,9 @@ function buildTitleSuggestions(
   petTypeId: string | undefined,
   status: string | undefined,
   address: string | null,
+  petTypes: PetType[],
 ): string[] {
-  const petLabel = PET_TYPES.find((p) => p.id === petTypeId)?.label ?? "น้อง";
+  const petLabel = petTypes.find((p) => p.id === petTypeId)?.name ?? "น้อง";
   const shortAddress = address
     ? address.split(",").slice(0, 2).join(",").trim()
     : null;
@@ -151,7 +150,11 @@ function buildTitleSuggestions(
 
 // ── Main component ─────────────────────────────────────
 
-export function CreatePostForm() {
+interface CreatePostFormProps {
+  petTypes: PetType[];
+}
+
+export function CreatePostForm({ petTypes }: CreatePostFormProps) {
   const [step, setStep] = useState(1);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationAddress, setLocationAddress] = useState<string | null>(null);
@@ -409,7 +412,7 @@ export function CreatePostForm() {
                 ชนิดสัตว์ *
               </p>
               <div className="grid grid-cols-2 gap-3">
-                {PET_TYPES.map((pt) => (
+                {petTypes.map((pt) => (
                   <button
                     key={pt.id}
                     type="button"
@@ -432,7 +435,7 @@ export function CreatePostForm() {
                           : "text-foreground/60",
                       )}
                     >
-                      {pt.label}
+                      {pt.name}
                     </span>
                   </button>
                 ))}
@@ -534,6 +537,7 @@ export function CreatePostForm() {
                   watchPetType,
                   watchStatus,
                   locationAddress,
+                  petTypes,
                 );
                 if (suggestions.length === 0) return null;
                 return (
@@ -616,7 +620,9 @@ export function CreatePostForm() {
               label="พันธุ์"
               placeholder="พิมพ์พันธุ์เอง..."
               suggestions={
-                BREED_SUGGESTIONS[watchPetType] ?? BREED_SUGGESTIONS["type-dog"]
+                BREED_SUGGESTIONS_BY_SLUG[
+                  petTypes.find((p) => p.id === watchPetType)?.slug ?? "dog"
+                ] ?? BREED_SUGGESTIONS_BY_SLUG["dog"]
               }
               value={watch("breed") ?? ""}
               onChange={(v) => setValue("breed", v)}
@@ -709,7 +715,7 @@ export function CreatePostForm() {
 
               <ReviewRow
                 label="ชนิด"
-                value={PET_TYPES.find((p) => p.id === watchPetType)?.label}
+                value={petTypes.find((p) => p.id === watchPetType)?.name}
               />
               <ReviewRow label="ชื่อเรื่อง" value={watch("title")} />
               <ReviewRow

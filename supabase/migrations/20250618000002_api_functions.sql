@@ -1,7 +1,7 @@
--- Live Learning API Functions
+-- Stray Pet Map API Functions
 -- Created: 2025-06-18
 -- Author: Marosdee Uma
--- Description: Supabase API functions for Live Learning application
+-- Description: Supabase API functions for Stray Pet Map application
 
 
 -- Function to create a new profile (can be called by authenticated users)
@@ -39,7 +39,7 @@ DECLARE
   profile_role public.profile_role;
 BEGIN
   SELECT role INTO profile_role FROM public.profile_roles WHERE profile_id = $1;
-  RETURN COALESCE(profile_role, 'student'::public.profile_role);
+  RETURN COALESCE(profile_role, 'user'::public.profile_role);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -56,12 +56,12 @@ BEGIN
   
   -- If no active profile, return 'user' as default role
   IF active_profile_id IS NULL THEN
-    RETURN 'student'::public.profile_role;
+    RETURN 'user'::public.profile_role;
   END IF;
   
   -- Get the role for this profile
   SELECT role INTO user_role FROM public.profile_roles WHERE profile_id = active_profile_id;
-  RETURN COALESCE(user_role, 'student'::public.profile_role);
+  RETURN COALESCE(user_role, 'user'::public.profile_role);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

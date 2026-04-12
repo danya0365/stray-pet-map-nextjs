@@ -1,11 +1,13 @@
 "use client";
 
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createClient } from "@/infrastructure/supabase/client";
 import { PetDetailPresenter } from "./PetDetailPresenter";
-import { MockPetPostRepository } from "@/infrastructure/repositories/mock/MockPetPostRepository";
 
 export class PetDetailPresenterClientFactory {
   static create(): PetDetailPresenter {
-    const repository = new MockPetPostRepository();
+    const supabase = createClient();
+    const repository = new SupabasePetPostRepository(supabase);
     return new PetDetailPresenter(repository);
   }
 }

@@ -495,7 +495,7 @@ export type Database = {
         }
       }
       is_admin: { Args: never; Returns: boolean }
-      is_instructor_or_admin: { Args: never; Returns: boolean }
+      is_moderator_or_admin: { Args: never; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       migrate_profile_roles: { Args: never; Returns: undefined }
       set_profile_active: { Args: { profile_id: string }; Returns: boolean }
@@ -511,7 +511,7 @@ export type Database = {
       adoption_request_status: "pending" | "approved" | "rejected" | "cancelled"
       pet_gender: "male" | "female" | "unknown"
       pet_post_status: "available" | "pending" | "adopted" | "missing"
-      profile_role: "student" | "instructor" | "admin"
+      profile_role: "user" | "moderator" | "admin"
       report_reason:
         | "spam"
         | "fake_info"
@@ -649,7 +649,7 @@ export const Constants = {
       adoption_request_status: ["pending", "approved", "rejected", "cancelled"],
       pet_gender: ["male", "female", "unknown"],
       pet_post_status: ["available", "pending", "adopted", "missing"],
-      profile_role: ["student", "instructor", "admin"],
+      profile_role: ["user", "moderator", "admin"],
       report_reason: [
         "spam",
         "fake_info",
