@@ -16,6 +16,11 @@ import type {
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// ── Query Builder Type ─────────────────────────────────
+// Use a generic type that accepts any Supabase query builder
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type QueryBuilder = any;
+
 // ── DB row types ───────────────────────────────────────────
 
 type PetPostRow = Database["public"]["Tables"]["pet_posts"]["Row"];
@@ -308,9 +313,9 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   // ============================================================
 
   private applyFilters(
-    query: ReturnType<SupabaseClient<Database>["from"]>,
+    query: QueryBuilder,
     filters?: PetPostFilters,
-  ) {
+  ): QueryBuilder {
     if (!filters) return query;
 
     if (filters.purpose) {
