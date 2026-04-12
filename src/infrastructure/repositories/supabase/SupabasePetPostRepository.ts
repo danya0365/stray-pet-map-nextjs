@@ -9,6 +9,7 @@ import type {
   PetPost,
   PetPostPurpose,
   PetPostStats,
+  PetPostStatus,
   PetType,
   UpdatePetPostData,
 } from "@/domain/entities/pet-post";
@@ -202,8 +203,8 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   // Auto-set status based on purpose
   private getStatusFromPurpose(
     purpose: PetPostPurpose,
-    explicitStatus?: string,
-  ): string {
+    explicitStatus?: PetPostStatus,
+  ): PetPostStatus {
     // ถ้า user ระบุ status เอง ใช้ค่านั้นเลย (สำหรับ admin หรือ update flow พิเศษ)
     if (explicitStatus) return explicitStatus;
 
