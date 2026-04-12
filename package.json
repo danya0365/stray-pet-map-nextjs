@@ -6,6 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "supabase-start": "supabase start",
+    "supabase-stop": "supabase stop",
+    "supabase-reset": "supabase reset",
+    "supabase-migrate": "supabase db reset",
+    "supabase-generate": "supabase gen types typescript --local --schema public > src/domain/types/supabase.ts",
+    "supabase-db-diff": "supabase db diff --schema public",
     "lint": "eslint"
   },
   "dependencies": {
