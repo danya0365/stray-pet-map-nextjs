@@ -1,27 +1,31 @@
 # Stray Pet Map — Task Tracker
 
-> อัปเดตล่าสุด: 11 เม.ย. 2026
+> อัปเดตล่าสุด: 12 เม.ย. 2026
 
 ---
 
 ## ✅ ฟีเจอร์ที่ทำเสร็จแล้ว
 
-### 1. Database & Schema
+### 1. Database & Schema ✅
 
 - สร้าง migration `20260212000000_stray_pet_map_schema.sql`
 - 6 tables: `pet_types`, `pet_posts`, `pet_images`, `adoption_requests`, `favorites`, `reports`
 - Enums: `pet_gender`, `pet_post_status`, `adoption_request_status`, `report_reason`, `report_status`
+- RLS Policies ครบทุกตาราง
+- Triggers auto-update `updated_at`
 
 ### 2. Clean Architecture Foundation
 
 - **Domain:** `src/domain/entities/pet-post.ts`
-- **Application:** `src/application/repositories/IPetPostRepository.ts`
-- **Infrastructure:** `src/infrastructure/repositories/mock/MockPetPostRepository.ts`
-- **Presenters:** Home, Map, Search, PetDetail — แต่ละอันมี Presenter + ClientFactory + ServerFactory + usePresenter hook
+- **Application:** `src/application/repositories/IPetPostRepository.ts`, `IAuthRepository.ts`, `IFavoriteRepository.ts`, `IAdoptionRequestRepository.ts`
+- **Infrastructure:**
+  - Mock: `MockPetPostRepository.ts`
+  - Supabase: `SupabasePetPostRepository.ts`, `SupabaseAuthRepository.ts`, `SupabaseFavoriteRepository.ts`, `SupabaseAdoptionRequestRepository.ts`, `SupabasePetTypeRepository.ts`, `SupabaseStorageRepository.ts`
+- **Presenters:** Home, Map, Search, PetDetail, CreatePost, Profile, Favorites — แต่ละอันมี Presenter + ClientFactory + ServerFactory + usePresenter hook
 
 ### 3. Layout & Navigation
 
-- `Navbar` — เมนูหลัก + ลิงก์ "โพสต์น้อง" (`/posts/create`)
+- `Navbar` — เมนูหลัก + ลิงก์ "โพสต์น้อง" (`/posts/create`) + UserMenu (เข้าสู่ระบบ/ออกจากระบบ)
 - `Footer`
 - `ThemeToggle` — Dark/Light mode (next-themes)
 - `ThemeProvider`
@@ -43,6 +47,7 @@
 - `MapContainer`, `MapView`, `PetMarker`, `MarkerPopup`
 - ปักหมุดตำแหน่งสัตว์จรบนแผนที่ (Leaflet)
 - MapPresenter
+- รองรับ clustering และ custom icons ตามชนิดสัตว์
 
 ### 7. หน้าค้นหา (`/search`)
 
@@ -59,8 +64,9 @@
 
 ### 9. หน้าสร้างโพสต์ (`/posts/create`) — Multi-Step Wizard
 
-- **CreatePostForm** — ฟอร์ม 4 ขั้นตอน + Review
+- `CreatePostForm` — ฟอร์ม 4 ขั้นตอน + Review
 - **Zod validation** — `createPostSchema.ts` + zodResolver
+- **Auth Guard** — ตรวจสอบการเข้าสู่ระบบก่อนเข้าหน้าสร้างโพสต์
 - **Flow:**
   - **Step 1:** จุดประสงค์ (รอรับเลี้ยง / ตามหาน้อง) + รูปภาพ (preview) + ชนิดสัตว์ (หมา/แมว)
   - **Step 2:** เลือกตำแหน่งบนแผนที่ (LocationPickerModal)
@@ -82,18 +88,18 @@
 
 ### ระดับ High Priority
 
-- [ ] **เชื่อม Supabase จริง** — ตอนนี้ใช้ Mock Data ทั้งหมด ต้องสร้าง SupabasePetPostRepository แทน Mock
-- [ ] **Authentication** — Login/Register/Logout (Supabase Auth) + ป้องกันหน้าสร้างโพสต์สำหรับ Guest
-- [ ] **Submit โพสต์จริง** — CreatePostForm ยังไม่ส่งข้อมูลไป Supabase (แค่ log)
-- [ ] **Upload รูปภาพจริง** — ส่งรูปไป Supabase Storage แล้วเก็บ URL ใน `pet_images`
-- [ ] **ดึง pet_types จาก DB** — ตอนนี้ hardcode หมา/แมว ใน CreatePostForm
+- [x] **เชื่อม Supabase จริง** — ✅ สร้าง Supabase Repositories ครบแล้ว (PetPost, Auth, Favorite, AdoptionRequest, PetType, Storage)
+- [x] **Authentication** — ✅ Login/Register/Logout pages พร้อม Supabase Auth + AuthGuard middleware
+- [x] **Submit โพสต์จริง** — ✅ Complete — Flow: CreatePostForm → useCreatePostPresenter → ApiPetPostRepository → /api/pet-posts → SupabasePetPostRepository → DB
+- [x] **Upload รูปภาพจริง** — ✅ Complete — Flow: CreatePostForm → presenter.uploadThumbnail → ApiStorageRepository → /api/storage/upload → SupabaseStorage → thumbnails bucket
+- [x] **ดึง pet_types จาก DB** — ✅ SupabasePetTypeRepository พร้อมใช้งาน
 
 ### ระดับ Medium Priority
 
-- [ ] **Adoption Request** — ปุ่ม "สนใจรับเลี้ยง" ในหน้า PetDetail + ฟอร์มขอรับเลี้ยง
-- [ ] **Favorites / Bookmark** — ปุ่มกดบุ๊คมาร์คโพสต์ที่สนใจ
+- [x] **Adoption Request** — ✅ SupabaseAdoptionRequestRepository พร้อมแล้ว ต้องสร้าง UI ในหน้า PetDetail
+- [x] **Favorites / Bookmark** — ✅ หน้า `/favorites` + SupabaseFavoriteRepository พร้อม ต้อง integrate UI
 - [ ] **Search ขั้นสูง** — Filter ตาม ชนิด, พันธุ์, สี, ระยะทาง, สถานะ (ตอนนี้มีแค่สถานะ)
-- [ ] **หน้า Profile** — แสดงโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, ดู adoption requests
+- [x] **หน้า Profile** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
 - [ ] **Reverse Geocoding** — แปลง lat/lng เป็นชื่อที่อยู่อัตโนมัติ (เพื่อ auto-suggest title ดีขึ้น)
 
 ### ระดับ Low Priority
@@ -276,6 +282,7 @@ LIMIT 10;
 
 ## 📝 หมายเหตุ
 
-- **Build status:** ผ่าน (หลังแก้ zod v4 schema type — ลบ `.optional()` ก่อน `.default()`)
-- **Lint warning:** React Compiler warning เรื่อง `watch()` ใน CreatePostForm — ไม่กระทบ runtime, ข้ามได้
-- **Label update:** เปลี่ยน "รอรับเลี้ยง" → "น้องหาบ้าน" ใน SearchFilterBar แล้ว
+- **Build status:** ผ่าน
+- **Lint status:** ผ่าน (แก้ไข React Compiler warning แล้ว)
+- **Supabase Repositories:** พร้อมใช้งาน 6 ตัว (PetPost, Auth, Favorite, AdoptionRequest, PetType, Storage)
+- **Integration Status:** ✅ CreatePostForm เชื่อมต่อกับ Supabase ผ่าน API routes เรียบร้อยแล้ว
