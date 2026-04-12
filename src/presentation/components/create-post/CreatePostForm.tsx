@@ -3,6 +3,7 @@
 import type { PetType } from "@/domain/entities/pet-post";
 import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
 import { createClient } from "@/infrastructure/supabase/client";
+import { uploadThumbnail } from "@/infrastructure/supabase/storage";
 import { LocationPickerModal } from "@/presentation/components/search/LocationPickerModal";
 import { cn } from "@/presentation/lib/cn";
 import {
@@ -162,6 +163,7 @@ export function CreatePostForm({ petTypes }: CreatePostFormProps) {
   const [step, setStep] = useState(1);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationAddress, setLocationAddress] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<
     "idle" | "submitting" | "success"
@@ -239,52 +241,61 @@ export function CreatePostForm({ petTypes }: CreatePostFormProps) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const url = reader.result as string;
-        setImagePreview(url);
-        setValue("thumbnailUrl", url);
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     },
-    [setValue],
+    [],
   );
 
-  const onSubmit = useCallback(async (data: CreatePostFormValues) => {
-    setSubmitState("submitting");
-    setSubmitError(null);
+  const onSubmit = useCallback(
+    async (data: CreatePostFormValues) => {
+      setSubmitState("submitting");
+      setSubmitError(null);
 
-    try {
-      const supabase = createClient();
-      const repo = new SupabasePetPostRepository(supabase);
+      try {
+        const supabase = createClient();
+        const repo = new SupabasePetPostRepository(supabase);
 
-      const post = await repo.create({
-        petTypeId: data.petTypeId,
-        title: data.title,
-        description: data.description,
-        breed: data.breed,
-        color: data.color,
-        gender: data.gender,
-        estimatedAge: data.estimatedAge,
-        isVaccinated: data.isVaccinated ?? undefined,
-        isNeutered: data.isNeutered ?? undefined,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        address: data.address,
-        province: data.province,
-        status: data.status,
-        thumbnailUrl: data.thumbnailUrl,
-      });
+        // Upload image if selected
+        let thumbnailUrl = data.thumbnailUrl;
+        if (imageFile) {
+          const result = await uploadThumbnail(supabase, imageFile);
+          thumbnailUrl = result.url;
+        }
 
-      setCreatedPostId(post.id);
-      setSubmitState("success");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "เกิดข้อผิดพลาด กรุณาลองใหม่";
-      setSubmitError(message);
-      setSubmitState("idle");
-    }
-  }, []);
+        const post = await repo.create({
+          petTypeId: data.petTypeId,
+          title: data.title,
+          description: data.description,
+          breed: data.breed,
+          color: data.color,
+          gender: data.gender,
+          estimatedAge: data.estimatedAge,
+          isVaccinated: data.isVaccinated ?? undefined,
+          isNeutered: data.isNeutered ?? undefined,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          address: data.address,
+          province: data.province,
+          status: data.status,
+          thumbnailUrl,
+        });
+
+        setCreatedPostId(post.id);
+        setSubmitState("success");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "เกิดข้อผิดพลาด กรุณาลองใหม่";
+        setSubmitError(message);
+        setSubmitState("idle");
+      }
+    },
+    [imageFile],
+  );
 
   // ── Success screen ─────────────────────────────────
 

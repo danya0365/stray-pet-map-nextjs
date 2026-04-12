@@ -1,8 +1,10 @@
 "use client";
 
+import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
+import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -18,6 +20,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { PetDetailMiniMap } from "./PetDetailMiniMap";
 
 dayjs.extend(relativeTime);
@@ -46,6 +50,17 @@ interface PetDetailViewProps {
 export function PetDetailView({ viewModel }: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const [showAdoptionModal, setShowAdoptionModal] = useState(false);
+
+  const handleAdoptClick = () => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+    setShowAdoptionModal(true);
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -186,6 +201,7 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
           {(post.status === "available" || post.status === "pending") && (
             <button
               type="button"
+              onClick={handleAdoptClick}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
             >
               <Heart className="h-4 w-4" />
@@ -237,6 +253,13 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
           </div>
         </div>
       </div>
+
+      <AdoptionRequestModal
+        isOpen={showAdoptionModal}
+        onClose={() => setShowAdoptionModal(false)}
+        petPostId={post.id}
+        petTitle={post.title}
+      />
     </div>
   );
 }

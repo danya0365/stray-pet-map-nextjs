@@ -1,7 +1,11 @@
 "use client";
 
 import type { PetPostFilters } from "@/application/repositories/IPetPostRepository";
-import type { PetGender, PetPostStatus } from "@/domain/entities/pet-post";
+import type {
+  PetGender,
+  PetPostStatus,
+  PetType,
+} from "@/domain/entities/pet-post";
 import { Badge } from "@/presentation/components/ui";
 import { cn } from "@/presentation/lib/cn";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
@@ -18,7 +22,7 @@ const statusOptions: {
   { value: "adopted", label: "มีบ้านแล้ว", variant: "primary" },
 ];
 
-const petTypeOptions = [
+const fallbackPetTypeOptions = [
   { value: "type-dog", label: "🐕 สุนัข" },
   { value: "type-cat", label: "🐈 แมว" },
 ];
@@ -35,6 +39,7 @@ interface SearchFilterBarProps {
   onSearchChange: (text: string) => void;
   onFiltersChange: (filters: PetPostFilters) => void;
   resultCount?: number;
+  petTypes?: PetType[];
 }
 
 export function SearchFilterBar({
@@ -43,6 +48,7 @@ export function SearchFilterBar({
   onSearchChange,
   onFiltersChange,
   resultCount,
+  petTypes,
 }: SearchFilterBarProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(search);
@@ -195,7 +201,13 @@ export function SearchFilterBar({
               >
                 ทั้งหมด
               </button>
-              {petTypeOptions.map((opt) => (
+              {(petTypes && petTypes.length > 0
+                ? petTypes.map((pt) => ({
+                    value: pt.id,
+                    label: `${pt.icon} ${pt.name}`,
+                  }))
+                : fallbackPetTypeOptions
+              ).map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setPetType(opt.value)}
