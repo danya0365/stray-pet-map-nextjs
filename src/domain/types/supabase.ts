@@ -142,13 +142,17 @@ export type Database = {
           gender: Database["public"]["Enums"]["pet_gender"]
           id: string
           is_active: boolean
+          is_archived: boolean
           is_neutered: boolean | null
           is_vaccinated: boolean | null
           latitude: number
           longitude: number
+          outcome: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id: string | null
           profile_id: string
           province: string | null
+          purpose: Database["public"]["Enums"]["pet_post_purpose"]
+          resolved_at: string | null
           status: Database["public"]["Enums"]["pet_post_status"]
           thumbnail_url: string | null
           title: string
@@ -164,13 +168,17 @@ export type Database = {
           gender?: Database["public"]["Enums"]["pet_gender"]
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_neutered?: boolean | null
           is_vaccinated?: boolean | null
           latitude: number
           longitude: number
+          outcome?: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id?: string | null
           profile_id: string
           province?: string | null
+          purpose?: Database["public"]["Enums"]["pet_post_purpose"]
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["pet_post_status"]
           thumbnail_url?: string | null
           title: string
@@ -186,13 +194,17 @@ export type Database = {
           gender?: Database["public"]["Enums"]["pet_gender"]
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_neutered?: boolean | null
           is_vaccinated?: boolean | null
           latitude?: number
           longitude?: number
+          outcome?: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id?: string | null
           profile_id?: string
           province?: string | null
+          purpose?: Database["public"]["Enums"]["pet_post_purpose"]
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["pet_post_status"]
           thumbnail_url?: string | null
           title?: string
@@ -510,6 +522,13 @@ export type Database = {
     Enums: {
       adoption_request_status: "pending" | "approved" | "rejected" | "cancelled"
       pet_gender: "male" | "female" | "unknown"
+      pet_post_outcome:
+        | "owner_found"
+        | "rehomed"
+        | "cancelled"
+        | "expired"
+        | "admin_closed"
+      pet_post_purpose: "lost_pet" | "rehome_pet" | "community_cat"
       pet_post_status: "available" | "pending" | "adopted" | "missing"
       profile_role: "user" | "moderator" | "admin"
       report_reason:
@@ -648,6 +667,14 @@ export const Constants = {
     Enums: {
       adoption_request_status: ["pending", "approved", "rejected", "cancelled"],
       pet_gender: ["male", "female", "unknown"],
+      pet_post_outcome: [
+        "owner_found",
+        "rehomed",
+        "cancelled",
+        "expired",
+        "admin_closed",
+      ],
+      pet_post_purpose: ["lost_pet", "rehome_pet", "community_cat"],
       pet_post_status: ["available", "pending", "adopted", "missing"],
       profile_role: ["user", "moderator", "admin"],
       report_reason: [

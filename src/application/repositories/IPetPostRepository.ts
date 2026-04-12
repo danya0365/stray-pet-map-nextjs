@@ -2,6 +2,7 @@ import type {
   CreatePetPostPayload,
   PetGender,
   PetPost,
+  PetPostPurpose,
   PetPostStats,
   PetPostStatus,
   UpdatePetPostData,
@@ -30,7 +31,8 @@ export type PaginationMode = OffsetPagination | CursorPagination;
 // ============================================================
 
 export interface PetPostFilters {
-  status?: PetPostStatus | PetPostStatus[];
+  purpose?: PetPostPurpose | PetPostPurpose[]; // กรองตามจุดประสงค์โพสต์
+  status?: PetPostStatus | PetPostStatus[]; // กรองตามสถานะระบบ
   petTypeId?: string;
   gender?: PetGender;
   province?: string;

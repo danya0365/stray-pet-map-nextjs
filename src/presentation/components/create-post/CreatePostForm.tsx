@@ -30,10 +30,10 @@ import { useForm } from "react-hook-form";
 // ── Constants ──────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: "จุดประสงค์", icon: "📷" },
-  { id: 2, label: "ตำแหน่ง", icon: "�" },
-  { id: 3, label: "ข้อมูลหลัก", icon: "�" },
-  { id: 4, label: "เพิ่มเติม", icon: "💊" },
+  { id: 1, label: "จุดประสงค์", icon: "🎯" },
+  { id: 2, label: "ตำแหน่ง", icon: "📍" },
+  { id: 3, label: "ข้อมูลหลัก", icon: "" },
+  { id: 4, label: "เพิ่มเติม", icon: "" },
 ] as const;
 
 const TOTAL_STEPS = STEPS.length;
@@ -46,18 +46,30 @@ const GENDER_OPTIONS = [
   { value: "unknown" as const, label: "ไม่ทราบ", icon: "❓" },
 ];
 
-const STATUS_OPTIONS = [
+const PURPOSE_OPTIONS = [
   {
-    value: "available" as const,
-    label: "น้องหาบ้าน",
-    desc: "น้องพร้อมมีเจ้าของใหม่",
-    icon: "🏠",
+    value: "lost_pet" as const,
+    label: "ตามหาน้อง",
+    desc: "โพสต์เพื่อให้ทุกคนช่วยกันตามหาและให้เบาะแส",
+    icon: "🔍",
+    color: "bg-red-50 border-red-200 hover:border-red-300",
+    iconBg: "bg-red-100",
   },
   {
-    value: "missing" as const,
-    label: "ตามหาน้อง",
-    desc: "น้องหายไป ช่วยตามหา",
-    icon: "🔍",
+    value: "rehome_pet" as const,
+    label: "น้องหาบ้าน",
+    desc: "หาบ้านใหม่ให้น้องที่เจ้าของเดิมเลี้ยงไม่ไหว/ไม่สามารถดูแลต่อ",
+    icon: "🏠",
+    color: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
+    iconBg: "bg-emerald-100",
+  },
+  {
+    value: "community_cat" as const,
+    label: "น้องแมวจร",
+    desc: "หาบ้านให้น้องแมวจรที่พบตามสถานที่ต่างๆ",
+    icon: "�",
+    color: "bg-amber-50 border-amber-200 hover:border-amber-300",
+    iconBg: "bg-amber-100",
   },
 ];
 
@@ -180,13 +192,13 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
     resolver: zodResolver(createPostSchema),
     defaultValues: {
       gender: "unknown",
-      status: "available",
+      purpose: "rehome_pet",
     },
   });
 
   const watchPetType = watch("petTypeId");
   const watchGender = watch("gender");
-  const watchStatus = watch("status");
+  const watchPurpose = watch("purpose");
   const watchLat = watch("latitude");
   const watchIsVaccinated = watch("isVaccinated");
   const watchIsNeutered = watch("isNeutered");
@@ -196,7 +208,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
   const canGoNext = useCallback(async (): Promise<boolean> => {
     switch (step) {
       case 1:
-        return await trigger(["status", "petTypeId"]);
+        return await trigger(["purpose", "petTypeId"]);
       case 2:
         return await trigger(["latitude", "longitude"]);
       case 3:
@@ -267,7 +279,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
             longitude: data.longitude,
             address: data.address,
             province: data.province,
-            status: data.status,
+            purpose: data.purpose,
             thumbnailUrl: data.thumbnailUrl,
           },
           imageFile,
@@ -376,33 +388,40 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                 จุดประสงค์ *
               </p>
               <div className="flex flex-col gap-2">
-                {STATUS_OPTIONS.map((opt) => (
+                {PURPOSE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() =>
-                      setValue("status", opt.value, { shouldValidate: true })
+                      setValue("purpose", opt.value, { shouldValidate: true })
                     }
                     className={cn(
-                      "flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
-                      watchStatus === opt.value
-                        ? "border-primary bg-primary/5 shadow-sm"
+                      "flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all",
+                      watchPurpose === opt.value
+                        ? cn("border-primary shadow-sm", opt.color)
                         : "border-border hover:bg-muted/50",
                     )}
                   >
-                    <span className="text-2xl">{opt.icon}</span>
+                    <span
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-full text-xl",
+                        opt.iconBg,
+                      )}
+                    >
+                      {opt.icon}
+                    </span>
                     <div>
                       <p
                         className={cn(
                           "text-sm font-semibold",
-                          watchStatus === opt.value
+                          watchPurpose === opt.value
                             ? "text-primary"
                             : "text-foreground/70",
                         )}
                       >
                         {opt.label}
                       </p>
-                      <p className="text-xs text-foreground/40">{opt.desc}</p>
+                      <p className="text-xs text-foreground/50">{opt.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -578,7 +597,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               {(() => {
                 const suggestions = buildTitleSuggestions(
                   watchPetType,
-                  watchStatus,
+                  watchPurpose,
                   locationAddress,
                   petTypes,
                 );
@@ -764,7 +783,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               <ReviewRow
                 label="จุดประสงค์"
                 value={
-                  STATUS_OPTIONS.find((s) => s.value === watchStatus)?.label
+                  PURPOSE_OPTIONS.find((s) => s.value === watchPurpose)?.label
                 }
               />
               <ReviewRow

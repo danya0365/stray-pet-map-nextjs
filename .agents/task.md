@@ -88,7 +88,7 @@
 
 ### ระดับ High Priority
 
-- [x] **เชื่อม Supabase จริง** — ✅ สร้าง Supabase Repositories ครบแล้ว (PetPost, Auth, Favorite, AdoptionRequest, PetType, Storage)
+- [x] **เชื่อม Supabase จริง** — ✅ สร้าง Supabase Repositories ครบแล้ว พร้อม **Post Purpose Redesign** — แยก `purpose` (จุดประสงค์โพสต์ที่ user เลือก) ออกจาก `status` (สถานะระบบ)
 - [x] **Authentication** — ✅ Login/Register/Logout pages พร้อม Supabase Auth + AuthGuard middleware
 - [x] **Submit โพสต์จริง** — ✅ Complete — Flow: CreatePostForm → useCreatePostPresenter → ApiPetPostRepository → /api/pet-posts → SupabasePetPostRepository → DB
 - [x] **Upload รูปภาพจริง** — ✅ Complete — Flow: CreatePostForm → presenter.uploadThumbnail → ApiStorageRepository → /api/storage/upload → SupabaseStorage → thumbnails bucket
