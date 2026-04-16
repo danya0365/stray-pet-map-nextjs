@@ -128,7 +128,7 @@ const DESCRIPTION_TEMPLATES = [
 
 function buildTitleSuggestions(
   petTypeId: string | undefined,
-  status: string | undefined,
+  purpose: string | undefined,
   address: string | null,
   petTypes: PetType[],
 ): string[] {
@@ -139,7 +139,8 @@ function buildTitleSuggestions(
 
   const suggestions: string[] = [];
 
-  if (status === "available") {
+  // rehome_pet or community_cat = looking for home (available for adoption)
+  if (purpose === "rehome_pet" || purpose === "community_cat") {
     suggestions.push(
       `${petLabel}รอรับเลี้ยง${shortAddress ? ` พบที่${shortAddress}` : ""}`,
     );
@@ -147,7 +148,8 @@ function buildTitleSuggestions(
       suggestions.push(`พบ${petLabel}จร ${shortAddress}`);
     }
     suggestions.push(`${petLabel}น่ารัก หาบ้านให้หน่อย`);
-  } else if (status === "missing") {
+  } else if (purpose === "lost_pet") {
+    // lost_pet = missing pet
     suggestions.push(
       `ตามหา${petLabel}${shortAddress ? ` หายจาก${shortAddress}` : ""}`,
     );
