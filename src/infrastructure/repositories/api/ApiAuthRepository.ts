@@ -74,4 +74,27 @@ export class ApiAuthRepository implements IAuthRepository {
   async signOut(): Promise<void> {
     await fetch(`${this.baseUrl}/logout`, { method: "POST" });
   }
+
+  async getProfiles(): Promise<AuthProfile[]> {
+    const res = await fetch(`${this.baseUrl}/profiles`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.profiles ?? [];
+  }
+
+  async switchProfile(profileId: string): Promise<AuthProfile | null> {
+    const res = await fetch(`${this.baseUrl}/switch-profile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "สลับโปรไฟล์ไม่สำเร็จ");
+    }
+
+    const data = await res.json();
+    return data.profile ?? null;
+  }
 }

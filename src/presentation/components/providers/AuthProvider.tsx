@@ -3,7 +3,7 @@
 /**
  * AuthProvider
  * ✅ Uses ApiAuthRepository — no direct Supabase access from client
- * ✅ Fetches user + profile on mount via presenter pattern
+ * ✅ Fetches user + profile + all profiles on mount via presenter pattern
  */
 
 import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
@@ -11,7 +11,8 @@ import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useEffect, useRef } from "react";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setUser, setProfile, setInitialized, reset } = useAuthStore();
+  const { setUser, setProfile, setProfiles, setInitialized, reset } =
+    useAuthStore();
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -20,14 +21,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const init = async () => {
       const authRepo = new ApiAuthRepository();
-      const [user, profile] = await Promise.all([
+      const [user, profile, allProfiles] = await Promise.all([
         authRepo.getUser(),
         authRepo.getProfile(),
+        authRepo.getProfiles(),
       ]);
 
       if (user) {
         setUser(user);
         setProfile(profile);
+        setProfiles(allProfiles);
       } else {
         reset();
       }
@@ -35,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     init();
-  }, [setUser, setProfile, setInitialized, reset]);
+  }, [setUser, setProfile, setProfiles, setInitialized, reset]);
 
   return <>{children}</>;
 }

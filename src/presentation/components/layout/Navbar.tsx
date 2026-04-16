@@ -1,9 +1,12 @@
 "use client";
 
+import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
 import { useAuthPresenter } from "@/presentation/presenters/auth/useAuthPresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import {
+  Check,
   Heart,
+  Loader2,
   LogIn,
   LogOut,
   MapPin,
@@ -11,6 +14,7 @@ import {
   PlusCircle,
   Search,
   Settings,
+  SwitchCamera,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -28,8 +32,38 @@ const navLinks = [
 export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const router = useRouter();
-  const { user, profile, isInitialized } = useAuthStore();
+  const {
+    user,
+    profile,
+    profiles,
+    isInitialized,
+    isSwitchingProfile,
+    setProfile,
+    setSwitchingProfile,
+  } = useAuthStore();
   const [{}, { signOut }] = useAuthPresenter();
+
+  const handleSwitchProfile = useCallback(
+    async (profileId: string) => {
+      if (isSwitchingProfile) return;
+
+      setSwitchingProfile(true);
+      try {
+        const authRepo = new ApiAuthRepository();
+        const newProfile = await authRepo.switchProfile(profileId);
+        if (newProfile) {
+          setProfile(newProfile);
+        }
+      } catch (error) {
+        console.error("Failed to switch profile:", error);
+      } finally {
+        setSwitchingProfile(false);
+        setUserMenuOpen(false);
+        router.refresh();
+      }
+    },
+    [isSwitchingProfile, setProfile, setSwitchingProfile, router],
+  );
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -97,7 +131,93 @@ export function Navbar() {
                     className="fixed inset-0 z-40"
                     onClick={() => setUserMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-border bg-card py-1 shadow-lg">
+                  <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-border bg-card py-1 shadow-lg">
+                    {/* Profile Switcher (if multiple profiles exist) */}
+                    {profiles.length > 1 && (
+                      <div className="border-b border-border/50 px-2 py-2">
+                        <p className="mb-1.5 flex items-center justify-between px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <SwitchCamera className="h-3 w-3" />
+                            สลับโปรไฟล์
+                          </span>
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-[9px]">
+                            {profiles.length}
+                          </span>
+                        </p>
+                        <div className="space-y-1">
+                          {profiles.map((p) => {
+                            const isCurrent = profile?.id === p.id;
+                            const roleLabel =
+                              p.role === "admin"
+                                ? "แอดมิน"
+                                : p.role === "moderator"
+                                  ? "มอด"
+                                  : "สมาชิก";
+                            const roleColor =
+                              p.role === "admin"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                                : p.role === "moderator"
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
+                                  : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400";
+
+                            return (
+                              <button
+                                key={p.id}
+                                onClick={() =>
+                                  !isCurrent &&
+                                  !isSwitchingProfile &&
+                                  handleSwitchProfile(p.id)
+                                }
+                                disabled={isCurrent || isSwitchingProfile}
+                                className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors ${
+                                  isCurrent
+                                    ? "bg-primary/5 ring-1 ring-primary/20"
+                                    : "hover:bg-muted"
+                                } ${isSwitchingProfile && !isCurrent ? "opacity-50" : ""}`}
+                              >
+                                <div
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${
+                                    isCurrent
+                                      ? "bg-primary text-white"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {isSwitchingProfile && !isCurrent ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <span>
+                                      {(p.fullName || p.username || "U")
+                                        .charAt(0)
+                                        .toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={`truncate text-xs font-medium ${
+                                      isCurrent
+                                        ? "text-foreground"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {p.fullName || p.username || "ผู้ใช้"}
+                                  </p>
+                                  <span
+                                    className={`inline-block rounded px-1 py-0.5 text-[9px] font-medium ${roleColor}`}
+                                  >
+                                    {roleLabel}
+                                  </span>
+                                </div>
+                                {isCurrent && (
+                                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     <Link
                       href="/profile"
                       onClick={() => setUserMenuOpen(false)}

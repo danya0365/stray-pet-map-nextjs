@@ -83,4 +83,88 @@ export class SupabaseAuthRepository implements IAuthRepository {
   async signOut(): Promise<void> {
     await this.supabase.auth.signOut();
   }
+
+  async getProfiles(): Promise<AuthProfile[]> {
+    const user = await this.getUser();
+    if (!user) return [];
+
+    // Fetch ALL profiles for this user (not just active ones)
+    // so the switcher can show all available profiles
+    const { data: profilesData, error } = await this.supabase
+      .from("profiles")
+      .select("id, auth_id, username, full_name, avatar_url, bio")
+      .eq("auth_id", user.id)
+      .order("created_at", { ascending: true });
+
+    if (error || !profilesData) return [];
+
+    // Get roles for all profiles
+    const profilesWithRoles = await Promise.all(
+      profilesData.map(async (profile) => {
+        const { data: roleData } = await this.supabase
+          .from("profile_roles")
+          .select("role")
+          .eq("profile_id", profile.id)
+          .single();
+
+        return {
+          id: profile.id,
+          authId: profile.auth_id,
+          username: profile.username,
+          fullName: profile.full_name,
+          avatarUrl: profile.avatar_url,
+          bio: profile.bio,
+          role: (roleData?.role as AuthProfile["role"]) ?? "user",
+        };
+      }),
+    );
+
+    return profilesWithRoles;
+  }
+
+  async switchProfile(profileId: string): Promise<AuthProfile | null> {
+    const user = await this.getUser();
+    if (!user) return null;
+
+    // 1. Call RPC to set active profile (like live-learning pattern)
+    const { data: success, error: rpcError } = await this.supabase.rpc(
+      "set_profile_active",
+      {
+        profile_id: profileId,
+      },
+    );
+
+    if (rpcError || !success) {
+      console.error("Failed to switch profile via RPC:", rpcError);
+      // Fallback: continue without RPC if it doesn't exist
+    }
+
+    // 2. Get the profile data
+    const { data: profile, error: profileError } = await this.supabase
+      .from("profiles")
+      .select("id, auth_id, username, full_name, avatar_url, bio")
+      .eq("id", profileId)
+      .eq("auth_id", user.id)
+      .eq("is_active", true)
+      .single();
+
+    if (profileError || !profile) return null;
+
+    // 3. Get role for the profile
+    const { data: roleData } = await this.supabase
+      .from("profile_roles")
+      .select("role")
+      .eq("profile_id", profile.id)
+      .single();
+
+    return {
+      id: profile.id,
+      authId: profile.auth_id,
+      username: profile.username,
+      fullName: profile.full_name,
+      avatarUrl: profile.avatar_url,
+      bio: profile.bio,
+      role: (roleData?.role as AuthProfile["role"]) ?? "user",
+    };
+  }
 }

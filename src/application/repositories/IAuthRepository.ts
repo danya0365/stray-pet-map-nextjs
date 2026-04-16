@@ -13,6 +13,8 @@ export interface AuthProfile {
 export interface IAuthRepository {
   getUser(): Promise<User | null>;
   getProfile(): Promise<AuthProfile | null>;
+  getProfiles(): Promise<AuthProfile[]>;
+  switchProfile(profileId: string): Promise<AuthProfile | null>;
   signInWithPassword(
     email: string,
     password: string,
