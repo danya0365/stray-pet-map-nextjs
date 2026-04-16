@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
   // Image Optimization
   // ============================================
   images: {
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
     // Domain ที่อนุญาตให้โหลด images
     remotePatterns: [
       {
