@@ -40,6 +40,7 @@ const TOTAL_STEPS = 4;
 export interface CreatePostPresenterState {
   // Step
   step: number;
+  isLastStep: boolean;
   isReview: boolean;
 
   // Form (exposed to View)
@@ -161,6 +162,7 @@ export function useCreatePostPresenter(
   // ── Step state ───────────────────────────────────────
 
   const [step, setStep] = useState(1);
+  const isLastStep = step === TOTAL_STEPS;
   const isReview = step > TOTAL_STEPS;
 
   // ── Form (react-hook-form) ───────────────────────────
@@ -247,7 +249,7 @@ export function useCreatePostPresenter(
 
   const goToStep = useCallback(
     (targetStep: number) => {
-      if (targetStep >= 1 && targetStep < step) {
+      if (targetStep >= 1 && targetStep <= step) {
         setStep(targetStep);
       }
     },
@@ -295,11 +297,6 @@ export function useCreatePostPresenter(
 
   const onSubmit = useCallback(
     async (data: CreatePostFormValues) => {
-      // ✅ Step-based guard: only submit from the review step
-      if (step <= TOTAL_STEPS) {
-        return;
-      }
-
       setSubmitting(true);
       setError(null);
 
@@ -345,7 +342,7 @@ export function useCreatePostPresenter(
         }
       }
     },
-    [step, imageFile, presenter],
+    [imageFile, presenter],
   );
 
   const handleFormSubmit = useMemo(
@@ -394,6 +391,7 @@ export function useCreatePostPresenter(
   return [
     {
       step,
+      isLastStep,
       isReview,
       errors,
       watchedValues,

@@ -105,14 +105,14 @@ CREATE POLICY "Only system can insert badges"
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.check_and_award_badges(target_profile_id UUID)
-RETURNS TABLE(awarded_badge TEXT, tier TEXT) AS $$
+RETURNS TABLE(badge_name TEXT, badge_tier TEXT) AS $$
 DECLARE
   post_count INTEGER;
   adoption_count INTEGER;
   finder_count INTEGER;
   rescue_count INTEGER;
-  new_badge TEXT;
-  new_tier TEXT;
+  v_badge TEXT;
+  v_tier TEXT;
 BEGIN
   -- ดึงสถิติ
   SELECT 
@@ -133,10 +133,12 @@ BEGIN
       '🌟', 'bg-amber-100 text-amber-700', 1
     )
     ON CONFLICT DO NOTHING
-    RETURNING 'first_post', 'bronze' INTO new_badge, new_tier;
+    RETURNING type::text, tier::text INTO v_badge, v_tier;
     
-    IF new_badge IS NOT NULL THEN
+    IF v_badge IS NOT NULL THEN
+      badge_name := v_badge; badge_tier := v_tier;
       RETURN NEXT;
+      v_badge := NULL;
     END IF;
   END IF;
   
@@ -149,10 +151,12 @@ BEGIN
       '⚡', 'bg-orange-100 text-orange-700', post_count
     )
     ON CONFLICT DO NOTHING
-    RETURNING 'active_helper', 'silver' INTO new_badge, new_tier;
+    RETURNING type::text, tier::text INTO v_badge, v_tier;
     
-    IF new_badge IS NOT NULL THEN
+    IF v_badge IS NOT NULL THEN
+      badge_name := v_badge; badge_tier := v_tier;
       RETURN NEXT;
+      v_badge := NULL;
     END IF;
   END IF;
   
@@ -165,77 +169,85 @@ BEGIN
       '🦸‍♂️', 'bg-red-100 text-red-700', post_count
     )
     ON CONFLICT DO NOTHING
-    RETURNING 'super_helper', 'gold' INTO new_badge, new_tier;
+    RETURNING type::text, tier::text INTO v_badge, v_tier;
     
-    IF new_badge IS NOT NULL THEN
+    IF v_badge IS NOT NULL THEN
+      badge_name := v_badge; badge_tier := v_tier;
       RETURN NEXT;
+      v_badge := NULL;
     END IF;
   END IF;
   
   -- Successful Adoption Badges
   IF adoption_count >= 1 THEN
-    new_tier := 'bronze';
-    IF adoption_count >= 3 THEN new_tier := 'silver'; END IF;
-    IF adoption_count >= 10 THEN new_tier := 'gold'; END IF;
-    IF adoption_count >= 30 THEN new_tier := 'platinum'; END IF;
+    v_tier := 'bronze';
+    IF adoption_count >= 3 THEN v_tier := 'silver'; END IF;
+    IF adoption_count >= 10 THEN v_tier := 'gold'; END IF;
+    IF adoption_count >= 30 THEN v_tier := 'platinum'; END IF;
     
     INSERT INTO public.profile_badges (profile_id, type, tier, name, description, icon, color, earned_value)
     VALUES (
-      target_profile_id, 'successful_adoption', new_tier::badge_tier, 
+      target_profile_id, 'successful_adoption', v_tier::badge_tier, 
       'ผู้ให้บ้านที่อบอุ่น', 'ช่วยหาบ้านใหม่ให้สัตว์จรจัดสำเร็จ ' || adoption_count || ' ตัว',
       '🏠', 'bg-emerald-100 text-emerald-700', adoption_count
     )
     ON CONFLICT (profile_id, type, tier) DO UPDATE SET
       earned_value = EXCLUDED.earned_value,
       name = EXCLUDED.name
-    RETURNING 'successful_adoption', new_tier INTO new_badge, new_tier;
+    RETURNING type::text, tier::text INTO v_badge, v_tier;
     
-    IF new_badge IS NOT NULL THEN
+    IF v_badge IS NOT NULL THEN
+      badge_name := v_badge; badge_tier := v_tier;
       RETURN NEXT;
+      v_badge := NULL;
     END IF;
   END IF;
   
   -- Pet Finder Badges
   IF finder_count >= 1 THEN
-    new_tier := 'bronze';
-    IF finder_count >= 5 THEN new_tier := 'silver'; END IF;
-    IF finder_count >= 15 THEN new_tier := 'gold'; END IF;
+    v_tier := 'bronze';
+    IF finder_count >= 5 THEN v_tier := 'silver'; END IF;
+    IF finder_count >= 15 THEN v_tier := 'gold'; END IF;
     
     INSERT INTO public.profile_badges (profile_id, type, tier, name, description, icon, color, earned_value)
     VALUES (
-      target_profile_id, 'pet_finder', new_tier::badge_tier, 
+      target_profile_id, 'pet_finder', v_tier::badge_tier, 
       'นักสืบสัตว์เลี้ยง', 'ช่วยตามหาสัตว์หายและเจอเจ้าของ ' || finder_count || ' ตัว',
       '🔍', 'bg-blue-100 text-blue-700', finder_count
     )
     ON CONFLICT (profile_id, type, tier) DO UPDATE SET
       earned_value = EXCLUDED.earned_value,
       name = EXCLUDED.name
-    RETURNING 'pet_finder', new_tier INTO new_badge, new_tier;
+    RETURNING type::text, tier::text INTO v_badge, v_tier;
     
-    IF new_badge IS NOT NULL THEN
+    IF v_badge IS NOT NULL THEN
+      badge_name := v_badge; badge_tier := v_tier;
       RETURN NEXT;
+      v_badge := NULL;
     END IF;
   END IF;
   
   -- Rescue Hero Badges (Community Cats)
   IF rescue_count >= 3 THEN
-    new_tier := 'bronze';
-    IF rescue_count >= 10 THEN new_tier := 'silver'; END IF;
-    IF rescue_count >= 25 THEN new_tier := 'gold'; END IF;
+    v_tier := 'bronze';
+    IF rescue_count >= 10 THEN v_tier := 'silver'; END IF;
+    IF rescue_count >= 25 THEN v_tier := 'gold'; END IF;
     
     INSERT INTO public.profile_badges (profile_id, type, tier, name, description, icon, color, earned_value)
     VALUES (
-      target_profile_id, 'rescue_hero', new_tier::badge_tier, 
+      target_profile_id, 'rescue_hero', v_tier::badge_tier, 
       'ฮีโร่แมวจร', 'ช่วยเหลือแมวจรจัดในชุมชน ' || rescue_count || ' ตัว',
       '🦸', 'bg-purple-100 text-purple-700', rescue_count
     )
     ON CONFLICT (profile_id, type, tier) DO UPDATE SET
       earned_value = EXCLUDED.earned_value,
       name = EXCLUDED.name
-    RETURNING 'rescue_hero', new_tier INTO new_badge, new_tier;
+    RETURNING type::text, tier::text INTO v_badge, v_tier;
     
-    IF new_badge IS NOT NULL THEN
+    IF v_badge IS NOT NULL THEN
+      badge_name := v_badge; badge_tier := v_tier;
       RETURN NEXT;
+      v_badge := NULL;
     END IF;
   END IF;
   

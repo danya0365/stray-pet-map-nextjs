@@ -89,7 +89,11 @@ export class ApiPetPostRepository implements IPetPostRepository {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || "ไม่สามารถสร้างโพสต์ได้");
+      const parts = [error.error || "ไม่สามารถสร้างโพสต์ได้"];
+      if (error.details) parts.push(`Details: ${error.details}`);
+      if (error.hint) parts.push(`Hint: ${error.hint}`);
+      if (error.code) parts.push(`Code: ${error.code}`);
+      throw new Error(parts.join(" | "));
     }
 
     return res.json();

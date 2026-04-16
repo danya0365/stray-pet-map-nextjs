@@ -585,8 +585,8 @@ export type Database = {
       check_and_award_badges: {
         Args: { target_profile_id: string }
         Returns: {
-          awarded_badge: string
-          tier: string
+          badge_name: string
+          badge_tier: string
         }[]
       }
       create_profile: {

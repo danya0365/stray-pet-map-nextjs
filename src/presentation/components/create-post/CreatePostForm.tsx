@@ -127,6 +127,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
   const [state, actions] = useCreatePostPresenter(initialViewModel);
   const {
     step,
+    isLastStep,
     isReview,
     errors,
     watchedValues,
@@ -239,7 +240,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
         </p>
       </div>
 
-      <form onSubmit={actions.handleFormSubmit}>
+      <form onSubmit={(e) => e.preventDefault()}>
         {presenterError && (
           <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {presenterError}
@@ -727,7 +728,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
             </button>
           )}
 
-          {!isReview ? (
+          {!isLastStep && !isReview ? (
             <button
               type="button"
               onClick={actions.goNext}
@@ -736,9 +737,19 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               ถัดไป
               <ArrowRight className="h-4 w-4" />
             </button>
+          ) : isLastStep && !isReview ? (
+            <button
+              type="button"
+              onClick={actions.goNext}
+              className="flex items-center gap-1 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+            >
+              ตรวจสอบ
+              <ArrowRight className="h-4 w-4" />
+            </button>
           ) : (
             <button
-              type="submit"
+              type="button"
+              onClick={actions.handleFormSubmit}
               disabled={submitting}
               className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
             >

@@ -133,6 +133,20 @@ export function LoginForm() {
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </button>
 
+      {/* Dev: 1-click login */}
+      {process.env.NODE_ENV !== "production" && (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() =>
+            onSubmit({ email: "admin@straypetmap.com", password: "12345678" })
+          }
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-amber-400 bg-amber-50 py-3 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-60 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-950/50"
+        >
+          ⚡ Dev Login (admin)
+        </button>
+      )}
+
       {/* Register link */}
       <p className="text-center text-sm text-foreground/50">
         ยังไม่มีบัญชี?{" "}

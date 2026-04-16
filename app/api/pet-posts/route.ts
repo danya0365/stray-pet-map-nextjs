@@ -77,13 +77,33 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    console.log(
+      "[POST /api/pet-posts] Payload:",
+      JSON.stringify(body, null, 2),
+    );
     const repo = new SupabasePetPostRepository(supabase);
     const post = await repo.create(body);
 
     return NextResponse.json(post, { status: 201 });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "ไม่สามารถสร้างโพสต์ได้";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[POST /api/pet-posts] Error:", error);
+
+    // Supabase errors have .code, .details, .hint, .message
+    const supaErr = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
+
+    const message = supaErr?.message || "ไม่สามารถสร้างโพสต์ได้";
+    const details = supaErr?.details || undefined;
+    const hint = supaErr?.hint || undefined;
+    const code = supaErr?.code || undefined;
+
+    return NextResponse.json(
+      { error: message, details, hint, code },
+      { status: 500 },
+    );
   }
 }
