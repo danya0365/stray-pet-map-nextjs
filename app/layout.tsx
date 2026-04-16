@@ -1,5 +1,3 @@
-import { Footer } from "@/presentation/components/layout/Footer";
-import { Navbar } from "@/presentation/components/layout/Navbar";
 import { AuthProvider } from "@/presentation/components/providers/AuthProvider";
 import { ThemeProvider } from "@/presentation/components/providers/ThemeProvider";
 import type { Metadata } from "next";
@@ -46,11 +44,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
       </body>
     </html>
