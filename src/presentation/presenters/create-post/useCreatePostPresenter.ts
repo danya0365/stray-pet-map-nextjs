@@ -23,6 +23,7 @@ export interface CreatePostPresenterState {
   submitting: boolean;
   error: string | null;
   createdPost: PetPost | null;
+  confirmReview: boolean; // Flag to confirm review step before submission
 }
 
 // ── Actions ──────────────────────────────────────────────
@@ -34,6 +35,7 @@ export interface CreatePostPresenterActions {
   ) => Promise<void>;
   resetForm: () => void;
   setError: (error: string | null) => void;
+  setConfirmReview: (confirmed: boolean) => void;
 }
 
 // ── Hook ─────────────────────────────────────────────────
@@ -56,6 +58,7 @@ export function useCreatePostPresenter(
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdPost, setCreatedPost] = useState<PetPost | null>(null);
+  const [confirmReview, setConfirmReview] = useState(false);
 
   const submitPost = useCallback(
     async (data: CreatePetPostPayload, imageFile: File | null) => {
@@ -98,6 +101,7 @@ export function useCreatePostPresenter(
     setCreatedPost(null);
     setError(null);
     setSubmitting(false);
+    setConfirmReview(false);
   }, []);
 
   // ✅ Cleanup on unmount
@@ -109,7 +113,7 @@ export function useCreatePostPresenter(
   }, []);
 
   return [
-    { viewModel, loading, submitting, error, createdPost },
-    { submitPost, resetForm, setError },
+    { viewModel, loading, submitting, error, createdPost, confirmReview },
+    { submitPost, resetForm, setError, setConfirmReview },
   ];
 }

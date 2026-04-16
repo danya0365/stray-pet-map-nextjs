@@ -2,7 +2,9 @@ import { z } from "zod/v4";
 
 export const createPostSchema = z.object({
   title: z
-    .string()
+    .string({
+      error: "กรุณากรอกชื่อเรื่อง",
+    })
     .min(5, "ชื่อเรื่องต้องมีอย่างน้อย 5 ตัวอักษร")
     .max(100, "ชื่อเรื่องต้องไม่เกิน 100 ตัวอักษร"),
 
@@ -11,7 +13,11 @@ export const createPostSchema = z.object({
     .max(2000, "รายละเอียดต้องไม่เกิน 2000 ตัวอักษร")
     .optional(),
 
-  petTypeId: z.string().min(1, "กรุณาเลือกชนิดสัตว์"),
+  petTypeId: z
+    .string({
+      error: "กรุณาเลือกชนิดสัตว์",
+    })
+    .min(1, "กรุณาเลือกชนิดสัตว์"),
 
   breed: z.string().max(100, "พันธุ์ต้องไม่เกิน 100 ตัวอักษร").optional(),
 
@@ -30,8 +36,12 @@ export const createPostSchema = z.object({
     error: "กรุณาเลือกจุดประสงค์โพสต์",
   }),
 
-  latitude: z.number({ error: "กรุณาเลือกตำแหน่งบนแผนที่" }),
-  longitude: z.number({ error: "กรุณาเลือกตำแหน่งบนแผนที่" }),
+  latitude: z.number({
+    error: "กรุณาเลือกตำแหน่งบนแผนที่",
+  }),
+  longitude: z.number({
+    error: "กรุณาเลือกตำแหน่งบนแผนที่",
+  }),
   address: z.string().optional(),
   province: z.string().optional(),
 

@@ -51,6 +51,12 @@ const GENDER_OPTIONS = [
 
 const PURPOSE_OPTIONS = [
   {
+    value: "community_cat" as const,
+    label: "น้องแมวจร",
+    desc: "หาบ้านให้น้องแมวจรที่พบตามสถานที่ต่างๆ",
+    icon: "🐱",
+  },
+  {
     value: "lost_pet" as const,
     label: "ตามหาน้อง",
     desc: "โพสต์เพื่อให้ทุกคนช่วยกันตามหาและให้เบาะแส",
@@ -61,12 +67,6 @@ const PURPOSE_OPTIONS = [
     label: "น้องหาบ้าน",
     desc: "หาบ้านใหม่ให้น้องที่เจ้าของเดิมเลี้ยงไม่ไหว/ไม่สามารถดูแลต่อ",
     icon: "🏠",
-  },
-  {
-    value: "community_cat" as const,
-    label: "น้องแมวจร",
-    desc: "หาบ้านให้น้องแมวจรที่พบตามสถานที่ต่างๆ",
-    icon: "🐱",
   },
 ];
 
@@ -171,7 +171,12 @@ interface CreatePostViewProps {
 export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
   const router = useRouter();
   const [state, actions] = useCreatePostPresenter(initialViewModel);
-  const { submitting, error: presenterError, createdPost } = state;
+  const {
+    submitting,
+    error: presenterError,
+    createdPost,
+    confirmReview,
+  } = state;
   const petTypes = initialViewModel.petTypes;
 
   const [step, setStep] = useState(1);
@@ -191,7 +196,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
     resolver: zodResolver(createPostSchema),
     defaultValues: {
       gender: "unknown",
-      purpose: "rehome_pet",
+      purpose: "community_cat",
     },
   });
 
@@ -221,17 +226,32 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
   const goNext = useCallback(async () => {
     if (await canGoNext()) {
-      setStep((s) => Math.min(s + 1, TOTAL_STEPS + 1));
+      setStep((s) => {
+        const nextStep = Math.min(s + 1, TOTAL_STEPS + 1);
+        // Set confirmReview when entering review step
+        if (nextStep > TOTAL_STEPS) {
+          actions.setConfirmReview(true);
+        }
+        return nextStep;
+      });
     }
-  }, [canGoNext]);
+  }, [canGoNext, actions]);
 
   const goBack = useCallback(() => {
-    setStep((s) => Math.max(s - 1, 1));
-  }, []);
+    setStep((s) => {
+      const newStep = Math.max(s - 1, 1);
+      // Reset confirmReview when leaving review step
+      if (s > TOTAL_STEPS && newStep <= TOTAL_STEPS) {
+        actions.setConfirmReview(false);
+      }
+      return newStep;
+    });
+  }, [actions]);
 
   const skipToReview = useCallback(() => {
     setStep(TOTAL_STEPS + 1);
-  }, []);
+    actions.setConfirmReview(true); // Confirm review before entering review step
+  }, [actions]);
 
   // ── Handlers ───────────────────────────────────────
 
@@ -262,6 +282,10 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
   const onSubmit = useCallback(
     async (data: CreatePostFormValues) => {
+      // Guard: Only submit when user has confirmed review step
+      if (!confirmReview) {
+        return;
+      }
       try {
         await actions.submitPost(
           {
@@ -287,7 +311,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
         // error is handled by presenter
       }
     },
-    [actions, imageFile],
+    [actions, imageFile, confirmReview],
   );
 
   // ── Success screen ─────────────────────────────────
@@ -496,7 +520,13 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               <p className="mb-2 text-xs font-medium text-foreground/60">
                 ชนิดสัตว์ *
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div
+                className={cn(
+                  "grid grid-cols-2 gap-3 rounded-xl p-1 transition-colors",
+                  errors.petTypeId &&
+                    "bg-destructive/5 ring-1 ring-destructive/30",
+                )}
+              >
                 {petTypes.map((pt) => (
                   <button
                     key={pt.id}
@@ -508,7 +538,9 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                       "flex flex-col items-center gap-1 rounded-2xl border-2 py-6 transition-all",
                       watchPetType === pt.id
                         ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/30 hover:bg-muted/50",
+                        : errors.petTypeId
+                          ? "border-destructive/30 hover:border-destructive/50 hover:bg-destructive/5"
+                          : "border-border hover:border-primary/30 hover:bg-muted/50",
                     )}
                   >
                     <span className="text-4xl">{pt.icon}</span>
@@ -517,7 +549,9 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                         "text-sm font-semibold",
                         watchPetType === pt.id
                           ? "text-primary"
-                          : "text-foreground/60",
+                          : errors.petTypeId
+                            ? "text-destructive/70"
+                            : "text-foreground/60",
                       )}
                     >
                       {pt.name}
@@ -922,8 +956,8 @@ function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
 
 function ErrorText({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-1.5 flex items-center gap-1 text-xs text-destructive">
-      <AlertCircle className="h-3 w-3" />
+    <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
       {children}
     </p>
   );
