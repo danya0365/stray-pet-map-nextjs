@@ -21,7 +21,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
     const { data: profiles } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio")
+      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
       .eq("auth_id", user.id)
       .eq("is_active", true)
       .order("created_at", { ascending: true })
@@ -45,6 +45,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
       avatarUrl: profile.avatar_url,
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
+      createdAt: profile.created_at || undefined,
     };
   }
 
@@ -92,9 +93,8 @@ export class SupabaseAuthRepository implements IAuthRepository {
     // so the switcher can show all available profiles
     const { data: profilesData, error } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio")
-      .eq("auth_id", user.id)
-      .order("created_at", { ascending: true });
+      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .eq("auth_id", user.id);
 
     if (error || !profilesData) return [];
 
@@ -115,11 +115,29 @@ export class SupabaseAuthRepository implements IAuthRepository {
           avatarUrl: profile.avatar_url,
           bio: profile.bio,
           role: (roleData?.role as AuthProfile["role"]) ?? "user",
+          createdAt: profile.created_at || undefined,
         };
       }),
     );
 
-    return profilesWithRoles;
+    // ✅ Sort by role priority: admin > moderator > user, then by id
+    const rolePriority: Record<string, number> = {
+      admin: 0,
+      moderator: 1,
+      user: 2,
+    };
+
+    return profilesWithRoles.sort((a, b) => {
+      const priorityA = rolePriority[a.role] ?? 2;
+      const priorityB = rolePriority[b.role] ?? 2;
+
+      // If same role, sort by id
+      if (priorityA === priorityB) {
+        return a.id.localeCompare(b.id);
+      }
+
+      return priorityA - priorityB;
+    });
   }
 
   async switchProfile(profileId: string): Promise<AuthProfile | null> {
@@ -142,7 +160,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
     // 2. Get the profile data
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio")
+      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
       .eq("id", profileId)
       .eq("auth_id", user.id)
       .eq("is_active", true)
@@ -165,6 +183,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
       avatarUrl: profile.avatar_url,
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
+      createdAt: profile.created_at || undefined,
     };
   }
 }

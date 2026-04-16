@@ -8,6 +8,7 @@ export interface AuthProfile {
   avatarUrl: string | null;
   bio: string | null;
   role: "user" | "moderator" | "admin";
+  createdAt?: string; // For consistent sorting
 }
 
 export interface IAuthRepository {

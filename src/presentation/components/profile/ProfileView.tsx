@@ -1,19 +1,25 @@
 "use client";
 
-import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
-import { useAuthStore } from "@/presentation/stores/useAuthStore";
+import type { Badge, BadgeProgress } from "@/domain/entities/badge";
+import type { ProfileViewModel } from "@/presentation/presenters/profile/ProfilePresenter";
+import { useProfilePresenter } from "@/presentation/presenters/profile/useProfilePresenter";
 import {
+  Award,
   Check,
+  ChevronRight,
   Loader2,
   MapPin,
   PawPrint,
   Plus,
+  RefreshCw,
   Shield,
+  Sparkles,
   SwitchCamera,
+  Trophy,
   User,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const ROLE_LABELS: Record<
   string,
@@ -38,45 +44,97 @@ const ROLE_LABELS: Record<
   },
 };
 
-export function ProfileView() {
-  const router = useRouter();
-  const {
-    user,
-    profile,
-    profiles,
-    isLoading,
-    isSwitchingProfile,
-    setProfile,
-    setSwitchingProfile,
-  } = useAuthStore();
+interface ProfileViewProps {
+  initialViewModel?: ProfileViewModel;
+}
+
+export function ProfileView({ initialViewModel }: ProfileViewProps) {
+  // Use the presenter hook with initialViewModel from server
+  const [state, actions] = useProfilePresenter(initialViewModel);
+  const { viewModel, loading, error, isSwitchingProfile } = state;
+  const { switchProfile, refreshProfiles } = actions;
 
   const [showAllProfiles, setShowAllProfiles] = useState(false);
 
-  const handleSwitchProfile = useCallback(
-    async (profileId: string) => {
-      if (isSwitchingProfile || profileId === profile?.id) return;
+  // Badges state
+  const [badgesData, setBadgesData] = useState<{
+    badges: Badge[];
+    totalBadges: number;
+    progress: BadgeProgress[];
+  } | null>(null);
+  const [badgesLoading, setBadgesLoading] = useState(true);
+  const [isCheckingBadges, setIsCheckingBadges] = useState(false);
 
-      setSwitchingProfile(true);
+  // Get data from viewModel or initialViewModel
+  const user = viewModel?.user || initialViewModel?.user;
+  const profile = viewModel?.profile || initialViewModel?.profile;
+  const profiles = viewModel?.profiles || initialViewModel?.profiles || [];
+  const hasMultipleProfiles =
+    viewModel?.hasMultipleProfiles ||
+    initialViewModel?.hasMultipleProfiles ||
+    profiles.length > 1;
+
+  // Fetch badges
+  useEffect(() => {
+    async function fetchBadges() {
+      if (!user) return;
       try {
-        const authRepo = new ApiAuthRepository();
-        const newProfile = await authRepo.switchProfile(profileId);
-        if (newProfile) {
-          setProfile(newProfile);
-          router.refresh();
+        setBadgesLoading(true);
+        const res = await fetch("/api/badges/profile");
+        if (res.ok) {
+          const result = await res.json();
+          setBadgesData({
+            badges: result.badges || [],
+            totalBadges: result.totalBadges || 0,
+            progress: result.progress || [],
+          });
         }
-      } catch (error) {
-        console.error("Failed to switch profile:", error);
+      } catch (err) {
+        console.error("Failed to fetch badges:", err);
       } finally {
-        setSwitchingProfile(false);
+        setBadgesLoading(false);
       }
-    },
-    [isSwitchingProfile, profile?.id, setProfile, setSwitchingProfile, router],
-  );
+    }
 
-  if (isLoading) {
+    fetchBadges();
+  }, [user]);
+
+  const handleCheckBadges = async () => {
+    try {
+      setIsCheckingBadges(true);
+      const res = await fetch("/api/badges/profile", { method: "POST" });
+      if (res.ok) {
+        const result = await res.json();
+        setBadgesData({
+          badges: result.badges || [],
+          totalBadges: result.totalBadges || 0,
+          progress: result.progress || [],
+        });
+      }
+    } catch (err) {
+      console.error("Failed to check badges:", err);
+    } finally {
+      setIsCheckingBadges(false);
+    }
+  };
+
+  const handleSwitchProfile = async (profileId: string) => {
+    await switchProfile(profileId);
+    await refreshProfiles();
+  };
+
+  if (loading && !initialViewModel) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-red-500">{error}</p>
       </div>
     );
   }
@@ -90,7 +148,6 @@ export function ProfileView() {
   }
 
   const roleInfo = ROLE_LABELS[profile.role] ?? ROLE_LABELS.user;
-  const hasMultipleProfiles = profiles.length > 1;
 
   return (
     <div className="space-y-6">
@@ -272,6 +329,129 @@ export function ProfileView() {
           </p>
         </div>
       )}
+
+      {/* Badges Section */}
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">ตราสัญลักษณ์</h3>
+            {badgesData && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                {badgesData.totalBadges}
+              </span>
+            )}
+          </div>
+          <Link
+            href="/profile/badges"
+            className="flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            ดูทั้งหมด
+            <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {badgesLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary/60" />
+          </div>
+        ) : badgesData && badgesData.badges.length > 0 ? (
+          <div className="space-y-4">
+            {/* Badges Preview Grid */}
+            <div className="flex flex-wrap gap-3">
+              {badgesData.badges.slice(0, 5).map((badge) => (
+                <div
+                  key={badge.id}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2"
+                >
+                  <span className="text-2xl">{badge.icon}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium">{badge.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {badge.earnedValue && `ทำได้ ${badge.earnedValue} ครั้ง`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {badgesData.badges.length > 5 && (
+                <Link
+                  href="/profile/badges"
+                  className="flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 px-4 py-2 text-xs text-muted-foreground hover:border-primary/30 hover:text-primary"
+                >
+                  +{badgesData.badges.length - 5} อื่นๆ
+                </Link>
+              )}
+            </div>
+
+            {/* Progress Preview */}
+            {badgesData.progress.length > 0 && (
+              <div className="border-t border-border pt-3">
+                <p className="mb-2 text-xs text-muted-foreground">
+                  ความคืบหน้า
+                </p>
+                <div className="space-y-2">
+                  {badgesData.progress.slice(0, 2).map((p) => (
+                    <div key={p.type} className="flex items-center gap-2">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{
+                            width: `${Math.min(100, (p.current / p.target) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {p.current}/{p.target}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Check Badges Button */}
+            <button
+              onClick={handleCheckBadges}
+              disabled={isCheckingBadges}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-muted/30 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-3 w-3 ${isCheckingBadges ? "animate-spin" : ""}`}
+              />
+              {isCheckingBadges ? "กำลังตรวจสอบ..." : "ตรวจสอบตราสัญลักษณ์ใหม่"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <Sparkles className="h-10 w-10 text-foreground/20" />
+            <p className="mt-2 text-sm font-medium text-foreground/60">
+              ยังไม่มีตราสัญลักษณ์
+            </p>
+            <p className="text-xs text-muted-foreground">
+              เริ่มสร้างโพสต์ช่วยเหลือสัตว์เพื่อรับตราสัญลักษณ์!
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Link
+                href="/posts/create"
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+              >
+                <Award className="h-3 w-3" />
+                สร้างโพสต์
+              </Link>
+              <button
+                onClick={handleCheckBadges}
+                disabled={isCheckingBadges}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`h-3 w-3 ${isCheckingBadges ? "animate-spin" : ""}`}
+                />
+                ตรวจสอบ
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
