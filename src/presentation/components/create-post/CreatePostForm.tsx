@@ -375,7 +375,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
           <div
             className="h-1.5 rounded-full bg-primary transition-all duration-300"
             style={{
-              width: `${isReview ? 100 : ((step - 1) / TOTAL_STEPS) * 100}%`,
+              width: `${isReview ? 100 : (step / TOTAL_STEPS) * 100}%`,
             }}
           />
         </div>
