@@ -331,6 +331,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
     <>
       {/* Progress bar */}
       <div className="mb-8">
+        {/* Step indicators - mobile: icons only, larger; desktop: icon + label */}
         <div className="mb-3 flex items-center justify-between">
           {STEPS.map((s) => (
             <button
@@ -338,7 +339,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               type="button"
               onClick={() => s.id < step && setStep(s.id)}
               className={cn(
-                "flex items-center gap-1.5 text-xs font-medium transition-colors",
+                "flex flex-col items-center gap-1.5 transition-colors",
                 s.id === step
                   ? "text-primary"
                   : s.id < step
@@ -346,11 +347,28 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                     : "cursor-default text-foreground/20",
               )}
             >
-              <s.Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{s.label}</span>
+              {/* Mobile: larger icon; Desktop: normal icon + label */}
+              <div
+                className={cn(
+                  "flex items-center justify-center rounded-full transition-all",
+                  s.id === step
+                    ? "h-10 w-10 bg-primary/10 sm:h-8 sm:w-8"
+                    : s.id < step
+                      ? "h-10 w-10 bg-primary/5 sm:h-8 sm:w-8"
+                      : "h-10 w-10 bg-muted sm:h-8 sm:w-8",
+                )}
+              >
+                <s.Icon className="h-5 w-5 sm:h-4 sm:w-4" />
+              </div>
+              {/* Label - hidden on mobile, show on desktop */}
+              <span className="hidden text-xs font-medium sm:block">
+                {s.label}
+              </span>
             </button>
           ))}
         </div>
+
+        {/* Progress bar */}
         <div className="h-1.5 w-full rounded-full bg-muted">
           <div
             className="h-1.5 rounded-full bg-primary transition-all duration-300"
@@ -359,8 +377,19 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
             }}
           />
         </div>
-        <p className="mt-2 text-center text-xs text-foreground/40">
-          {isReview ? "ตรวจสอบข้อมูล" : `ขั้นตอนที่ ${step} จาก ${TOTAL_STEPS}`}
+
+        {/* Step name indicator - show current step name on mobile */}
+        <p className="mt-2 text-center text-sm font-medium text-primary sm:text-xs sm:text-foreground/40 sm:font-normal">
+          {isReview ? (
+            "ตรวจสอบข้อมูล"
+          ) : (
+            <>
+              <span className="sm:hidden">{STEPS[step - 1]?.label}</span>
+              <span className="hidden sm:inline">
+                ขั้นตอนที่ {step} จาก {TOTAL_STEPS}
+              </span>
+            </>
+          )}
         </p>
       </div>
 
