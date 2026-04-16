@@ -72,22 +72,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    // เรียกฟังก์ชัน RPC เพื่อตรวจสอบและมอบ badges
-    const { data: awardedBadges, error: rpcError } = await supabase.rpc(
-      "check_and_award_badges",
-      { target_profile_id: profile.id },
-    );
+    // ใช้ badge repository แทนการเรียก RPC ตรงๆ
+    const badgeRepo = new SupabaseBadgeRepository(supabase);
 
-    if (rpcError) {
-      console.error("Error checking badges:", rpcError);
-      return NextResponse.json(
-        { error: "Failed to check badges" },
-        { status: 500 },
-      );
-    }
+    // ตรวจสอบและมอบ badges อัตโนมัติ
+    const newlyAwarded = await badgeRepo.checkAndAwardBadges(profile.id);
 
     // ดึง badges และ progress ล่าสุด
-    const badgeRepo = new SupabaseBadgeRepository(supabase);
     const [badges, progress] = await Promise.all([
       badgeRepo.getByProfileId(profile.id),
       badgeRepo.getProgress(profile.id),
@@ -95,7 +86,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      newlyAwarded: awardedBadges || [],
+      newlyAwarded: newlyAwarded || [],
       totalBadges: badges.length,
       badges,
       progress,

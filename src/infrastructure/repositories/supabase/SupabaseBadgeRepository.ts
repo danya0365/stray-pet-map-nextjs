@@ -163,6 +163,22 @@ export class SupabaseBadgeRepository implements IBadgeRepository {
     return this.calculateProgress(profileId);
   }
 
+  async checkAndAwardBadges(
+    profileId: string,
+  ): Promise<{ badge_name: string; badge_tier: string }[]> {
+    // เรียกฟังก์ชัน RPC เพื่อตรวจสอบและมอบ badges อัตโนมัติ
+    const { data, error } = await this.supabase.rpc("check_and_award_badges", {
+      target_profile_id: profileId,
+    });
+
+    if (error) {
+      console.error("Error checking and awarding badges:", error);
+      throw error;
+    }
+
+    return data || [];
+  }
+
   async calculateProgress(profileId: string): Promise<BadgeProgress[]> {
     const progress: BadgeProgress[] = [];
 
