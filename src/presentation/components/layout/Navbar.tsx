@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/infrastructure/supabase/client";
+import { useAuthPresenter } from "@/presentation/presenters/auth/useAuthPresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import {
   Heart,
@@ -39,15 +39,15 @@ export function Navbar() {
 
   const router = useRouter();
   const { user, profile, isInitialized } = useAuthStore();
+  const [{}, { signOut }] = useAuthPresenter();
 
   const handleSignOut = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     setUserMenuOpen(false);
     setMobileOpen(false);
     router.push("/");
     router.refresh();
-  }, [router]);
+  }, [signOut, router]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
@@ -81,7 +81,10 @@ export function Navbar() {
           <ThemeToggle />
 
           {/* Auth */}
-          {isInitialized && user ? (
+          {!isInitialized ? (
+            // Loading state - show skeleton to prevent UI flash
+            <div className="hidden h-9 w-24 animate-pulse rounded-lg bg-foreground/10 md:block" />
+          ) : user ? (
             <div className="relative hidden md:block">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -166,7 +169,8 @@ export function Navbar() {
                 </Link>
               </li>
             ))}
-            {isInitialized && user ? (
+            {!isInitialized ? // Loading state - don't show auth items until initialized
+            null : user ? (
               <>
                 <li>
                   <Link

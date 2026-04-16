@@ -1,7 +1,12 @@
 "use client";
 
-import { createClient } from "@/infrastructure/supabase/client";
-import { SupabaseAuthRepository } from "@/infrastructure/repositories/supabase/SupabaseAuthRepository";
+/**
+ * AuthProvider
+ * ✅ Uses ApiAuthRepository — no direct Supabase access from client
+ * ✅ Fetches user + profile on mount via presenter pattern
+ */
+
+import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useEffect, useRef } from "react";
 
@@ -13,40 +18,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    const supabase = createClient();
-    const authRepo = new SupabaseAuthRepository(supabase);
-
-    // Initial load
     const init = async () => {
-      const user = await authRepo.getUser();
+      const authRepo = new ApiAuthRepository();
+      const [user, profile] = await Promise.all([
+        authRepo.getUser(),
+        authRepo.getProfile(),
+      ]);
+
       if (user) {
         setUser(user);
-        const profile = await authRepo.getProfile();
         setProfile(profile);
+      } else {
+        reset();
       }
       setInitialized();
     };
 
     init();
-
-    // Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        setUser(session.user);
-        const profile = await authRepo.getProfile();
-        setProfile(profile);
-      } else if (event === "SIGNED_OUT") {
-        reset();
-      } else if (event === "TOKEN_REFRESHED" && session?.user) {
-        setUser(session.user);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [setUser, setProfile, setInitialized, reset]);
 
   return <>{children}</>;

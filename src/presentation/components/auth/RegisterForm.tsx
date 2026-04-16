@@ -1,14 +1,14 @@
 "use client";
 
 import { cn } from "@/presentation/lib/cn";
+import { useAuthPresenter } from "@/presentation/presenters/auth/useAuthPresenter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, Mail, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { createClient } from "@/infrastructure/supabase/client";
 
 const registerSchema = z
   .object({
@@ -27,48 +27,32 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [{ loading, error, isSuccess }, { signUp, clearError }] =
+    useAuthPresenter();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
-    setServerError(null);
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          full_name: data.fullName,
-          username: data.email.split("@")[0],
-        },
-      },
-    });
-
-    if (error) {
-      setServerError(
-        error.message === "User already registered"
-          ? "อีเมลนี้ถูกใช้งานแล้ว"
-          : error.message,
-      );
-      return;
-    }
-
-    setSuccess(true);
-    setTimeout(() => {
-      router.push("/auth/login");
-    }, 2000);
+    clearError();
+    await signUp(data.email, data.password, data.fullName);
   };
 
-  if (success) {
+  // Auto redirect on success
+  useEffect(() => {
+    if (isSuccess) {
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 2000);
+    }
+  }, [isSuccess, router]);
+
+  if (isSuccess) {
     return (
       <div className="space-y-4 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
@@ -84,9 +68,9 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {serverError && (
+      {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
-          {serverError}
+          {error}
         </div>
       )}
 
@@ -200,15 +184,15 @@ export function RegisterForm() {
       {/* Submit */}
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={loading}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
       >
-        {isSubmitting ? (
+        {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <UserPlus className="h-4 w-4" />
         )}
-        {isSubmitting ? "กำลังสมัคร..." : "สมัครสมาชิก"}
+        {loading ? "กำลังสมัคร..." : "สมัครสมาชิก"}
       </button>
 
       {/* Login link */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/infrastructure/supabase/client";
+import { useAuthPresenter } from "@/presentation/presenters/auth/useAuthPresenter";
 import { Home, LogOut, PawPrint, ShieldX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,12 +22,12 @@ export function BackendLockScreen({
   userRole,
 }: BackendLockScreenProps) {
   const router = useRouter();
+  const [{}, { signOut }] = useAuthPresenter();
 
   const handleSignOut = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     router.refresh();
-  }, [router]);
+  }, [signOut, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
