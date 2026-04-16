@@ -86,15 +86,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // ดึง badges ล่าสุด
+    // ดึง badges และ progress ล่าสุด
     const badgeRepo = new SupabaseBadgeRepository(supabase);
-    const badges = await badgeRepo.getByProfileId(profile.id);
+    const [badges, progress] = await Promise.all([
+      badgeRepo.getByProfileId(profile.id),
+      badgeRepo.getProgress(profile.id),
+    ]);
 
     return NextResponse.json({
       success: true,
       newlyAwarded: awardedBadges || [],
       totalBadges: badges.length,
       badges,
+      progress,
     });
   } catch (error) {
     console.error("Error updating badges:", error);
