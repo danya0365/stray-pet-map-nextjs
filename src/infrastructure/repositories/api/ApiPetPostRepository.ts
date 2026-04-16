@@ -46,6 +46,18 @@ export class ApiPetPostRepository implements IPetPostRepository {
     if (params.pagination.type === "offset") {
       searchParams.set("page", String(params.pagination.page));
       searchParams.set("perPage", String(params.pagination.perPage));
+    } else if (params.pagination.type === "cursor") {
+      searchParams.set("paginationType", "cursor");
+      searchParams.set("limit", String(params.pagination.limit));
+      if (params.pagination.cursor) {
+        searchParams.set("cursor", params.pagination.cursor);
+      }
+    }
+
+    if (params.nearBy) {
+      searchParams.set("nearLat", String(params.nearBy.latitude));
+      searchParams.set("nearLng", String(params.nearBy.longitude));
+      searchParams.set("nearRadius", String(params.nearBy.radiusKm));
     }
 
     const qs = searchParams.toString();
