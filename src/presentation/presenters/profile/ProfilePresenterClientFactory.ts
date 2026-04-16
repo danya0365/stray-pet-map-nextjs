@@ -1,20 +1,25 @@
 /**
  * ProfilePresenterClientFactory
  * Factory for creating ProfilePresenter instances on the client side
- * ✅ Injects the appropriate repository (API Repository for client)
+ * Injects the appropriate repositories (API for client-side)
+ * Following Clean Architecture - Dependency Injection pattern
  */
 
 "use client";
 
-import { ProfilePresenter } from "./ProfilePresenter";
+import type { IProfileBadgeRepository } from "@/application/repositories/IProfileBadgeRepository";
 import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
+import { ApiBadgeRepository } from "@/infrastructure/repositories/api/ApiBadgeRepository";
+import { ProfilePresenter } from "./ProfilePresenter";
 
 export class ProfilePresenterClientFactory {
   static create(): ProfilePresenter {
-    // ✅ Use API Repository for client-side
-    const repository = new ApiAuthRepository();
+    // Use API Repositories for client-side (no direct Supabase connection)
+    // This avoids connection pool issues
+    const authRepository = new ApiAuthRepository();
+    const badgeRepository: IProfileBadgeRepository = new ApiBadgeRepository();
 
-    return new ProfilePresenter(repository);
+    return new ProfilePresenter(authRepository, badgeRepository);
   }
 }
 

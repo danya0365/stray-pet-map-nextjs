@@ -1,5 +1,6 @@
 "use client";
 
+import type { Badge, BadgeProgress } from "@/domain/entities/badge";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProfilePresenter, ProfileViewModel } from "./ProfilePresenter";
@@ -16,6 +17,7 @@ export interface ProfilePresenterActions {
   loadData: () => Promise<void>;
   switchProfile: (profileId: string) => Promise<void>;
   refreshProfiles: () => Promise<void>;
+  fetchBadges: (profileId: string) => Promise<void>;
   setError: (error: string | null) => void;
 }
 
@@ -55,6 +57,10 @@ export function useProfilePresenter(
 
   const [error, setError] = useState<string | null>(null);
 
+  // Badges state (local state, not in Zustand)
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([]);
+
   // Build viewModel from Zustand store
   // ✅ Profiles are already sorted by createdAt at repository level
   const viewModel: ProfileViewModel | null = useMemo(() => {
@@ -64,8 +70,11 @@ export function useProfilePresenter(
       profile,
       profiles: profiles || [],
       hasMultipleProfiles: (profiles || []).length > 1,
+      badges: badges || [],
+      totalBadges: badges?.length || 0,
+      badgeProgress: badgeProgress || [],
     };
-  }, [user, profile, profiles]);
+  }, [user, profile, profiles, badges, badgeProgress]);
 
   const loading = isLoading;
 
@@ -97,6 +106,9 @@ export function useProfilePresenter(
         if (newViewModel.user) setUser(newViewModel.user);
         if (newViewModel.profile) setProfile(newViewModel.profile);
         if (newViewModel.profiles) setProfiles(newViewModel.profiles);
+        // Update local badges state
+        setBadges(newViewModel.badges || []);
+        setBadgeProgress(newViewModel.badgeProgress || []);
       }
     } catch (err) {
       // ✅ Ignore abort errors
@@ -161,6 +173,29 @@ export function useProfilePresenter(
     }
   }, [presenter, setProfiles]);
 
+  /**
+   * Fetch badges for a specific profile
+   */
+  const fetchBadges = useCallback(
+    async (profileId: string) => {
+      try {
+        const [newBadges, newProgress] = await Promise.all([
+          presenter.getBadges(profileId),
+          presenter.getBadgeProgress(profileId),
+        ]);
+        if (isMountedRef.current) {
+          setBadges(newBadges || []);
+          setBadgeProgress(newProgress || []);
+        }
+      } catch (err) {
+        if (isMountedRef.current) {
+          console.error("Error fetching badges:", err);
+        }
+      }
+    },
+    [presenter],
+  );
+
   // Load data on mount if no user data in store
   useEffect(() => {
     if (!user && !initialViewModel) {
@@ -188,6 +223,7 @@ export function useProfilePresenter(
       loadData,
       switchProfile,
       refreshProfiles,
+      fetchBadges,
       setError,
     },
   ];
