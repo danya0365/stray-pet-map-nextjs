@@ -1,9 +1,9 @@
-import { PawPrint, Heart } from "lucide-react";
+import { Heart, PawPrint } from "lucide-react";
 import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-border/40 bg-background">
+    <footer className="mt-auto hidden border-t border-border/40 bg-background md:block">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 sm:flex-row sm:justify-between">
         <Link
           href="/"

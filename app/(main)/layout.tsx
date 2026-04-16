@@ -1,16 +1,9 @@
-import { Footer } from "@/presentation/components/layout/Footer";
-import { Navbar } from "@/presentation/components/layout/Navbar";
+import { MainLayout } from "@/presentation/components/layout/MainLayout";
 
-export default function MainLayout({
+export default function MainRouteLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <>
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </>
-  );
+  return <MainLayout>{children}</MainLayout>;
 }

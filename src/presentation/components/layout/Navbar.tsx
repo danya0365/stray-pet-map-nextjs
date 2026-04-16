@@ -7,19 +7,15 @@ import {
   LogIn,
   LogOut,
   MapPin,
-  Menu,
   PawPrint,
   PlusCircle,
   Search,
   User,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
-
-const emptySubscribe = () => () => {};
 
 const navLinks = [
   { href: "/map", label: "แผนที่", icon: MapPin },
@@ -29,14 +25,7 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const mounted = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
-
   const router = useRouter();
   const { user, profile, isInitialized } = useAuthStore();
   const [{}, { signOut }] = useAuthPresenter();
@@ -44,7 +33,6 @@ export function Navbar() {
   const handleSignOut = useCallback(async () => {
     await signOut();
     setUserMenuOpen(false);
-    setMobileOpen(false);
     router.push("/");
     router.refresh();
   }, [signOut, router]);
@@ -137,76 +125,8 @@ export function Navbar() {
               เข้าสู่ระบบ
             </Link>
           )}
-
-          {/* Mobile menu toggle */}
-          <button
-            className="rounded-lg p-2 transition-colors hover:bg-foreground/5 md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
         </div>
       </nav>
-
-      {/* Mobile Nav */}
-      {mounted && mobileOpen && (
-        <div className="border-t border-border/40 bg-background px-4 pb-4 md:hidden">
-          <ul className="flex flex-col gap-1 pt-2">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary"
-                >
-                  <link.icon className="h-4 w-4" />
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-            {!isInitialized ? // Loading state - don't show auth items until initialized
-            null : user ? (
-              <>
-                <li>
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary"
-                  >
-                    <User className="h-4 w-4" />
-                    โปรไฟล์ ({profile?.fullName || user.email?.split("@")[0]})
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    ออกจากระบบ
-                  </button>
-                </li>
-              </>
-            ) : (
-              <li>
-                <Link
-                  href="/auth/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-                >
-                  <LogIn className="h-4 w-4" />
-                  เข้าสู่ระบบ
-                </Link>
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
     </header>
   );
 }
