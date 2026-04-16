@@ -10,6 +10,7 @@ import {
   PawPrint,
   PlusCircle,
   Search,
+  Settings,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -105,6 +106,16 @@ export function Navbar() {
                       <User className="h-4 w-4" />
                       โปรไฟล์
                     </Link>
+                    {profile?.role === "admin" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/5"
+                      >
+                        <Settings className="h-4 w-4" />
+                        แดชบอร์ดผู้ดูแล
+                      </Link>
+                    )}
                     <button
                       onClick={handleSignOut}
                       className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
