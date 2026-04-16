@@ -8,7 +8,21 @@
 -- ENUMS
 -- ============================================================================
 CREATE TYPE public.pet_gender AS ENUM ('male', 'female', 'unknown');
+
+-- Purpose: จุดประสงค์โพสต์ที่ผู้ใช้เลือก (แยกจาก status ซึ่งเป็น internal state)
+CREATE TYPE public.pet_post_purpose AS ENUM ('lost_pet', 'rehome_pet', 'community_cat');
+
+-- Status: สถานะภายในระบบ (เปลี่ยนตาม flow อัตโนมัติ ไม่ให้ user เลือก)
 CREATE TYPE public.pet_post_status AS ENUM ('available', 'pending', 'adopted', 'missing');
+
+-- Outcome: ผลลัพธ์สุดท้ายเมื่อโพสต์จบ (เก็บเพื่อประวัติและ analytics)
+CREATE TYPE public.pet_post_outcome AS ENUM (
+  'owner_found',      -- lost_pet: เจอเจ้าของเดิม
+  'rehomed',          -- มีบ้านใหม่ (ไม่ว่าจะ purpose อะไร)
+  'cancelled',        -- เจ้าของยกเลิกโพสต์เอง
+  'expired',          -- หมดอายุ (auto)
+  'admin_closed'      -- แอดมินปิด
+);
 CREATE TYPE public.adoption_request_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
 CREATE TYPE public.report_reason AS ENUM ('spam', 'fake_info', 'inappropriate', 'animal_abuse', 'other');
 CREATE TYPE public.report_status AS ENUM ('pending', 'reviewed', 'resolved', 'dismissed');
@@ -54,11 +68,21 @@ CREATE TABLE IF NOT EXISTS public.pet_posts (
   address TEXT DEFAULT '',
   province TEXT DEFAULT '',
 
-  -- สถานะ
+  -- จุดประสงค์โพสต์ (ผู้ใช้เลือก): lost_pet=ตามหาน้อง, rehome_pet=น้องหาบ้าน, community_cat=น้องแมวจร
+  purpose public.pet_post_purpose NOT NULL DEFAULT 'rehome_pet',
+
+  -- สถานะระบบ (เปลี่ยนอัตโนมัติตาม flow)
   status public.pet_post_status NOT NULL DEFAULT 'available',
+
+  -- ผลลัพธ์สุดท้าย (มีค่าเมื่อโพสต์จบแล้ว)
+  outcome public.pet_post_outcome,
+  resolved_at TIMESTAMP WITH TIME ZONE,
 
   -- Media
   thumbnail_url TEXT DEFAULT '',
+
+  -- Archive (ซ่อนจาก list หลักแต่ยังเข้าถึงได้)
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
 
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -67,7 +91,10 @@ CREATE TABLE IF NOT EXISTS public.pet_posts (
 
 CREATE INDEX IF NOT EXISTS idx_pet_posts_profile_id ON public.pet_posts(profile_id);
 CREATE INDEX IF NOT EXISTS idx_pet_posts_pet_type_id ON public.pet_posts(pet_type_id);
+CREATE INDEX IF NOT EXISTS idx_pet_posts_purpose ON public.pet_posts(purpose);
 CREATE INDEX IF NOT EXISTS idx_pet_posts_status ON public.pet_posts(status);
+CREATE INDEX IF NOT EXISTS idx_pet_posts_outcome ON public.pet_posts(outcome) WHERE outcome IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_pet_posts_is_archived ON public.pet_posts(is_archived) WHERE is_archived = TRUE;
 CREATE INDEX IF NOT EXISTS idx_pet_posts_province ON public.pet_posts(province);
 CREATE INDEX IF NOT EXISTS idx_pet_posts_is_active ON public.pet_posts(is_active);
 CREATE INDEX IF NOT EXISTS idx_pet_posts_location ON public.pet_posts(latitude, longitude);

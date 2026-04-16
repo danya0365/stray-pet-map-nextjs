@@ -121,14 +121,37 @@ export class ApiPetPostRepository implements IPetPostRepository {
     }
 
     const qs = searchParams.toString();
-    const res = await fetch(
-      `${this.baseUrl}/stats${qs ? `?${qs}` : ""}`,
-    );
+    const res = await fetch(`${this.baseUrl}/stats${qs ? `?${qs}` : ""}`);
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || "ไม่สามารถโหลดสถิติได้");
     }
 
     return res.json();
+  }
+
+  async getSuccessStories(limit?: number): Promise<PetPost[]> {
+    const qs = limit ? `?limit=${limit}` : "";
+    const res = await fetch(`${this.baseUrl}/success-stories${qs}`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถโหลดเรื่องราวความสำเร็จได้");
+    }
+    const data = await res.json();
+    return data.stories || [];
+  }
+
+  // ไม่รองรับใน client-side API (server-only)
+  async findExpiredPosts(): Promise<{ id: string; createdAt: string }[]> {
+    throw new Error("findExpiredPosts is not supported in client-side API");
+  }
+
+  // ไม่รองรับใน client-side API (server-only)
+  async findExpiringSoonPosts(): Promise<
+    { id: string; title: string; createdAt: string; purpose: string }[]
+  > {
+    throw new Error(
+      "findExpiringSoonPosts is not supported in client-side API",
+    );
   }
 }

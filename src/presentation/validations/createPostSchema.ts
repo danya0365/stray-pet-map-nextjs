@@ -26,8 +26,8 @@ export const createPostSchema = z.object({
   isVaccinated: z.boolean().nullable().optional(),
   isNeutered: z.boolean().nullable().optional(),
 
-  status: z.enum(["available", "missing"], {
-    error: "กรุณาเลือกสถานะ",
+  purpose: z.enum(["lost_pet", "rehome_pet", "community_cat"], {
+    error: "กรุณาเลือกจุดประสงค์โพสต์",
   }),
 
   latitude: z.number({ error: "กรุณาเลือกตำแหน่งบนแผนที่" }),

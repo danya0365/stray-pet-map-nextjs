@@ -99,6 +99,77 @@ export type Database = {
           },
         ]
       }
+      fb_scraped_posts: {
+        Row: {
+          animal_status: string | null
+          animal_type: string | null
+          author_name: string | null
+          content: string | null
+          created_at: string | null
+          fb_post_id: string
+          id: string
+          image_urls: string[] | null
+          is_processed: boolean | null
+          latitude: number | null
+          linked_pet_post_id: string | null
+          location_text: string | null
+          longitude: number | null
+          posted_at: string | null
+          scraped_at: string | null
+          source_url: string | null
+          storage_urls: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          animal_status?: string | null
+          animal_type?: string | null
+          author_name?: string | null
+          content?: string | null
+          created_at?: string | null
+          fb_post_id: string
+          id?: string
+          image_urls?: string[] | null
+          is_processed?: boolean | null
+          latitude?: number | null
+          linked_pet_post_id?: string | null
+          location_text?: string | null
+          longitude?: number | null
+          posted_at?: string | null
+          scraped_at?: string | null
+          source_url?: string | null
+          storage_urls?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          animal_status?: string | null
+          animal_type?: string | null
+          author_name?: string | null
+          content?: string | null
+          created_at?: string | null
+          fb_post_id?: string
+          id?: string
+          image_urls?: string[] | null
+          is_processed?: boolean | null
+          latitude?: number | null
+          linked_pet_post_id?: string | null
+          location_text?: string | null
+          longitude?: number | null
+          posted_at?: string | null
+          scraped_at?: string | null
+          source_url?: string | null
+          storage_urls?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_scraped_posts_linked_pet_post_id_fkey"
+            columns: ["linked_pet_post_id"]
+            isOneToOne: false
+            referencedRelation: "pet_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_images: {
         Row: {
           created_at: string | null
@@ -142,13 +213,17 @@ export type Database = {
           gender: Database["public"]["Enums"]["pet_gender"]
           id: string
           is_active: boolean
+          is_archived: boolean
           is_neutered: boolean | null
           is_vaccinated: boolean | null
           latitude: number
           longitude: number
+          outcome: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id: string | null
           profile_id: string
           province: string | null
+          purpose: Database["public"]["Enums"]["pet_post_purpose"]
+          resolved_at: string | null
           status: Database["public"]["Enums"]["pet_post_status"]
           thumbnail_url: string | null
           title: string
@@ -164,13 +239,17 @@ export type Database = {
           gender?: Database["public"]["Enums"]["pet_gender"]
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_neutered?: boolean | null
           is_vaccinated?: boolean | null
           latitude: number
           longitude: number
+          outcome?: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id?: string | null
           profile_id: string
           province?: string | null
+          purpose?: Database["public"]["Enums"]["pet_post_purpose"]
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["pet_post_status"]
           thumbnail_url?: string | null
           title: string
@@ -186,13 +265,17 @@ export type Database = {
           gender?: Database["public"]["Enums"]["pet_gender"]
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_neutered?: boolean | null
           is_vaccinated?: boolean | null
           latitude?: number
           longitude?: number
+          outcome?: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id?: string | null
           profile_id?: string
           province?: string | null
+          purpose?: Database["public"]["Enums"]["pet_post_purpose"]
+          resolved_at?: string | null
           status?: Database["public"]["Enums"]["pet_post_status"]
           thumbnail_url?: string | null
           title?: string
@@ -247,6 +330,56 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      profile_badges: {
+        Row: {
+          awarded_at: string
+          color: string
+          created_at: string
+          description: string
+          earned_value: number | null
+          icon: string
+          id: string
+          name: string
+          profile_id: string
+          tier: Database["public"]["Enums"]["badge_tier"]
+          type: Database["public"]["Enums"]["badge_type"]
+        }
+        Insert: {
+          awarded_at?: string
+          color: string
+          created_at?: string
+          description: string
+          earned_value?: number | null
+          icon: string
+          id?: string
+          name: string
+          profile_id: string
+          tier: Database["public"]["Enums"]["badge_tier"]
+          type: Database["public"]["Enums"]["badge_type"]
+        }
+        Update: {
+          awarded_at?: string
+          color?: string
+          created_at?: string
+          description?: string
+          earned_value?: number | null
+          icon?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          tier?: Database["public"]["Enums"]["badge_tier"]
+          type?: Database["public"]["Enums"]["badge_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_badges_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_roles: {
         Row: {
@@ -409,9 +542,53 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profile_badge_counts: {
+        Row: {
+          avatar_url: string | null
+          badge_count: number | null
+          display_name: string | null
+          last_awarded_at: string | null
+          profile_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_badges_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_post_stats: {
+        Row: {
+          community_cats: number | null
+          found_owners: number | null
+          lost_pet_posts: number | null
+          profile_id: string | null
+          rehome_posts: number | null
+          successful_adoptions: number | null
+          total_posts: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_posts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      check_and_award_badges: {
+        Args: { target_profile_id: string }
+        Returns: {
+          awarded_badge: string
+          tier: string
+        }[]
+      }
       create_profile: {
         Args: { avatar_url?: string; full_name?: string; username: string }
         Returns: string
@@ -509,7 +686,24 @@ export type Database = {
     }
     Enums: {
       adoption_request_status: "pending" | "approved" | "rejected" | "cancelled"
+      badge_tier: "bronze" | "silver" | "gold" | "platinum"
+      badge_type:
+        | "first_post"
+        | "successful_adoption"
+        | "pet_finder"
+        | "rescue_hero"
+        | "active_helper"
+        | "super_helper"
+        | "quick_responder"
+        | "verified_rescuer"
       pet_gender: "male" | "female" | "unknown"
+      pet_post_outcome:
+        | "owner_found"
+        | "rehomed"
+        | "cancelled"
+        | "expired"
+        | "admin_closed"
+      pet_post_purpose: "lost_pet" | "rehome_pet" | "community_cat"
       pet_post_status: "available" | "pending" | "adopted" | "missing"
       profile_role: "user" | "moderator" | "admin"
       report_reason:
@@ -647,7 +841,26 @@ export const Constants = {
   public: {
     Enums: {
       adoption_request_status: ["pending", "approved", "rejected", "cancelled"],
+      badge_tier: ["bronze", "silver", "gold", "platinum"],
+      badge_type: [
+        "first_post",
+        "successful_adoption",
+        "pet_finder",
+        "rescue_hero",
+        "active_helper",
+        "super_helper",
+        "quick_responder",
+        "verified_rescuer",
+      ],
       pet_gender: ["male", "female", "unknown"],
+      pet_post_outcome: [
+        "owner_found",
+        "rehomed",
+        "cancelled",
+        "expired",
+        "admin_closed",
+      ],
+      pet_post_purpose: ["lost_pet", "rehome_pet", "community_cat"],
       pet_post_status: ["available", "pending", "adopted", "missing"],
       profile_role: ["user", "moderator", "admin"],
       report_reason: [

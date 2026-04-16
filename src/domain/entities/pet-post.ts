@@ -1,5 +1,17 @@
 export type PetGender = "male" | "female" | "unknown";
+
+// Purpose: จุดประสงค์โพสต์ที่ผู้ใช้เลือก (แยกจาก status ซึ่งเป็น internal state)
+export type PetPostPurpose = "lost_pet" | "rehome_pet" | "community_cat";
+
 export type PetPostStatus = "available" | "pending" | "adopted" | "missing";
+
+// Outcome: ผลลัพธ์สุดท้ายเมื่อโพสต์จบ (เก็บเพื่อประวัติและ analytics)
+export type PetPostOutcome =
+  | "owner_found" // lost_pet: เจอเจ้าของเดิม
+  | "rehomed" // มีบ้านใหม่ (ไม่ว่าจะ purpose อะไร)
+  | "cancelled" // เจ้าของยกเลิกโพสต์เอง
+  | "expired" // หมดอายุ (auto)
+  | "admin_closed"; // แอดมินปิด
 
 export interface PetType {
   id: string;
@@ -30,10 +42,14 @@ export interface PetPost {
   address: string;
   province: string;
 
-  status: PetPostStatus;
+  purpose: PetPostPurpose; // จุดประสงค์โพสต์ที่ผู้ใช้เลือก
+  status: PetPostStatus; // สถานะระบบ (เปลี่ยนอัตโนมัติ)
+  outcome: PetPostOutcome | null; // ผลลัพธ์สุดท้าย (เมื่อโพสต์จบแล้ว)
+  resolvedAt: string | null; // เวลาที่โพสต์จบ
   thumbnailUrl: string;
 
   isActive: boolean;
+  isArchived: boolean; // ซ่อนจาก list หลักแต่ยังเข้าถึงได้
   createdAt: string;
   updatedAt: string;
 }
@@ -60,7 +76,8 @@ export interface CreatePetPostData {
   longitude: number;
   address?: string;
   province?: string;
-  status?: PetPostStatus;
+  purpose?: PetPostPurpose; // จุดประสงค์โพสต์ (user เลือก)
+  status?: PetPostStatus; // สถานะระบบ (optional, ถ้าไม่ระบุจะ set ตาม purpose)
   thumbnailUrl?: string;
 }
 
@@ -79,7 +96,11 @@ export interface UpdatePetPostData {
   longitude?: number;
   address?: string;
   province?: string;
+  purpose?: PetPostPurpose;
   status?: PetPostStatus;
+  outcome?: PetPostOutcome;
+  resolvedAt?: string;
   thumbnailUrl?: string;
   isActive?: boolean;
+  isArchived?: boolean;
 }

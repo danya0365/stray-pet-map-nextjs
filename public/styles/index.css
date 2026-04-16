@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
 /* ============================================
+   Tailwind v4: Class-based Dark Mode
+   ============================================ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================
    StrayPetMap — Main Entry Point
    All styles are organized into separate modules:
 

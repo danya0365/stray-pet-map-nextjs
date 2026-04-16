@@ -1,15 +1,18 @@
 "use client";
 
+import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
+import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
-import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
+  AlertTriangle,
   ArrowLeft,
+  CheckCircle,
   Clock,
   Flag,
   Heart,
@@ -20,11 +23,36 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { PetDetailMiniMap } from "./PetDetailMiniMap";
 
 dayjs.extend(relativeTime);
+
+// Helper: คำนวณวันที่เหลือก่อนหมดอายุ
+function getDaysUntilExpiry(createdAt: string, expiryDays = 90): number {
+  const created = dayjs(createdAt);
+  const expiry = created.add(expiryDays, "day");
+  return expiry.diff(dayjs(), "day");
+}
+
+// Helper: แสดง warning banner สำหรับโพสต์ใกล้หมดอายุ
+function ExpiryWarning({ createdAt }: { createdAt: string }) {
+  const daysLeft = getDaysUntilExpiry(createdAt);
+  const EXPIRY_WARNING_DAYS = 14; // แจ้งเตือนก่อน 2 สัปดาห์
+
+  if (daysLeft > EXPIRY_WARNING_DAYS || daysLeft <= 0) return null;
+
+  return (
+    <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+      <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+      <div className="flex-1">
+        <p className="text-sm font-medium">โพสต์ใกล้หมดอายุ</p>
+        <p className="text-xs text-amber-700">
+          โพสต์นี้จะถูกปิดอัตโนมัติในอีก {daysLeft} วัน หากยังไม่ได้ปิดโพสต์
+        </p>
+      </div>
+    </div>
+  );
+}
 dayjs.locale("th");
 
 const statusConfig: Record<
@@ -43,27 +71,46 @@ const genderLabel: Record<string, string> = {
   unknown: "ไม่ทราบ",
 };
 
+// View Props - รับ state และ callbacks จาก Presenter
 interface PetDetailViewProps {
   viewModel: PetDetailViewModel;
+  isOwner: boolean;
+  canClose: boolean;
+  isAdoptionModalOpen: boolean;
+  isCloseModalOpen: boolean;
+  isClosingPost: boolean;
+  onOpenAdoptionModal: () => void;
+  onCloseAdoptionModal: () => void;
+  onOpenCloseModal: () => void;
+  onCloseCloseModal: () => void;
+  onAdoptClick: () => void;
+  onClosePost: (outcome: PetPostOutcome) => Promise<void>;
 }
 
-export function PetDetailView({ viewModel }: PetDetailViewProps) {
+// View Component - 100% Logic-Free รับ state และ callbacks จาก props
+export function PetDetailView({
+  viewModel,
+  isOwner,
+  canClose,
+  isAdoptionModalOpen,
+  isCloseModalOpen,
+  isClosingPost,
+  onCloseAdoptionModal,
+  onCloseCloseModal,
+  onAdoptClick,
+  onOpenCloseModal,
+  onClosePost,
+}: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
-  const { user } = useAuthStore();
-  const router = useRouter();
-  const [showAdoptionModal, setShowAdoptionModal] = useState(false);
-
-  const handleAdoptClick = () => {
-    if (!user) {
-      router.push("/auth/login");
-      return;
-    }
-    setShowAdoptionModal(true);
-  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      {/* Expiry Warning (แสดงเฉพาะเจ้าของ) */}
+      {isOwner && !post.outcome && !post.isArchived && (
+        <ExpiryWarning createdAt={post.createdAt} />
+      )}
+
       {/* Back */}
       <Link
         href="/"
@@ -198,34 +245,88 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
           </div>
 
           {/* Actions */}
-          {(post.status === "available" || post.status === "pending") && (
-            <button
-              type="button"
-              onClick={handleAdoptClick}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-            >
-              <Heart className="h-4 w-4" />
-              {post.status === "pending"
-                ? "สนใจรับเลี้ยงเช่นกัน"
-                : "ขอรับเลี้ยง"}
-            </button>
-          )}
+          {canClose ? (
+            <>
+              {(post.status === "available" || post.status === "pending") && (
+                <button
+                  type="button"
+                  onClick={onAdoptClick}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+                >
+                  <Heart className="h-4 w-4" />
+                  {post.status === "pending"
+                    ? "สนใจรับเลี้ยงเช่นกัน"
+                    : "ขอรับเลี้ยง"}
+                </button>
+              )}
 
-          {post.status === "missing" && (
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
-            >
-              <MapPin className="h-4 w-4" />
-              แจ้งพบเจอน้อง
-            </button>
-          )}
+              {post.status === "missing" && (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+                >
+                  <MapPin className="h-4 w-4" />
+                  แจ้งพบเจอน้อง
+                </button>
+              )}
 
-          {post.status === "adopted" && (
-            <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-muted px-6 py-3 text-sm font-medium text-foreground/50">
-              <Heart className="h-4 w-4" />
-              น้องมีบ้านแล้ว
+              {/* Close Post Button (Owner only) */}
+              <button
+                type="button"
+                onClick={onOpenCloseModal}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-500 bg-white px-6 py-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
+              >
+                <CheckCircle className="h-4 w-4" />
+                จบโพสต์
+              </button>
+            </>
+          ) : post.outcome ? (
+            <div
+              className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium ${
+                post.outcome === "owner_found" || post.outcome === "rehomed"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              <CheckCircle className="h-4 w-4" />
+              {post.outcome === "owner_found" && "เจอเจ้าของแล้ว!"}
+              {post.outcome === "rehomed" && "มีบ้านใหม่แล้ว!"}
+              {post.outcome === "cancelled" && "ปิดโพสต์แล้ว"}
+              {post.outcome === "expired" && "หมดอายุ"}
+              {post.outcome === "admin_closed" && "ถูกปิดโดยแอดมิน"}
             </div>
+          ) : (
+            <>
+              {(post.status === "available" || post.status === "pending") && (
+                <button
+                  type="button"
+                  onClick={onAdoptClick}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+                >
+                  <Heart className="h-4 w-4" />
+                  {post.status === "pending"
+                    ? "สนใจรับเลี้ยงเช่นกัน"
+                    : "ขอรับเลี้ยง"}
+                </button>
+              )}
+
+              {post.status === "missing" && (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+                >
+                  <MapPin className="h-4 w-4" />
+                  แจ้งพบเจอน้อง
+                </button>
+              )}
+
+              {post.status === "adopted" && (
+                <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-muted px-6 py-3 text-sm font-medium text-foreground/50">
+                  <Heart className="h-4 w-4" />
+                  น้องมีบ้านแล้ว
+                </div>
+              )}
+            </>
           )}
 
           {/* Secondary Actions */}
@@ -254,11 +355,20 @@ export function PetDetailView({ viewModel }: PetDetailViewProps) {
         </div>
       </div>
 
+      {/* Modals */}
       <AdoptionRequestModal
-        isOpen={showAdoptionModal}
-        onClose={() => setShowAdoptionModal(false)}
+        isOpen={isAdoptionModalOpen}
+        onClose={onCloseAdoptionModal}
         petPostId={post.id}
         petTitle={post.title}
+      />
+
+      <ClosePostModal
+        isOpen={isCloseModalOpen}
+        onClose={onCloseCloseModal}
+        purpose={post.purpose}
+        onConfirm={onClosePost}
+        isLoading={isClosingPost}
       />
     </div>
   );
