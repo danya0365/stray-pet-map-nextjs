@@ -16,6 +16,9 @@ import {
   ArrowRight,
   Camera,
   CheckCircle2,
+  ClipboardList,
+  Crosshair,
+  Info,
   Loader2,
   MapPin,
   PawPrint,
@@ -30,10 +33,10 @@ import { useForm } from "react-hook-form";
 // ── Constants ──────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: "จุดประสงค์", icon: "🎯" },
-  { id: 2, label: "ตำแหน่ง", icon: "📍" },
-  { id: 3, label: "ข้อมูลหลัก", icon: "" },
-  { id: 4, label: "เพิ่มเติม", icon: "" },
+  { id: 1, label: "จุดประสงค์", Icon: Crosshair },
+  { id: 2, label: "ตำแหน่ง", Icon: MapPin },
+  { id: 3, label: "ข้อมูลหลัก", Icon: ClipboardList },
+  { id: 4, label: "เพิ่มเติม", Icon: Info },
 ] as const;
 
 const TOTAL_STEPS = STEPS.length;
@@ -52,24 +55,18 @@ const PURPOSE_OPTIONS = [
     label: "ตามหาน้อง",
     desc: "โพสต์เพื่อให้ทุกคนช่วยกันตามหาและให้เบาะแส",
     icon: "🔍",
-    color: "bg-red-50 border-red-200 hover:border-red-300",
-    iconBg: "bg-red-100",
   },
   {
     value: "rehome_pet" as const,
     label: "น้องหาบ้าน",
     desc: "หาบ้านใหม่ให้น้องที่เจ้าของเดิมเลี้ยงไม่ไหว/ไม่สามารถดูแลต่อ",
     icon: "🏠",
-    color: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
-    iconBg: "bg-emerald-100",
   },
   {
     value: "community_cat" as const,
     label: "น้องแมวจร",
     desc: "หาบ้านให้น้องแมวจรที่พบตามสถานที่ต่างๆ",
-    icon: "�",
-    color: "bg-amber-50 border-amber-200 hover:border-amber-300",
-    iconBg: "bg-amber-100",
+    icon: "🐱",
   },
 ];
 
@@ -349,7 +346,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                     : "cursor-default text-foreground/20",
               )}
             >
-              <span>{s.icon}</span>
+              <s.Icon className="h-4 w-4" />
               <span className="hidden sm:inline">{s.label}</span>
             </button>
           ))}
@@ -369,7 +366,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         {presenterError && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+          <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {presenterError}
           </div>
         )}
@@ -396,18 +393,13 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                       setValue("purpose", opt.value, { shouldValidate: true })
                     }
                     className={cn(
-                      "flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all",
+                      "flex items-center gap-3 rounded-xl border-2 bg-card px-4 py-3.5 text-left transition-all",
                       watchPurpose === opt.value
-                        ? cn("border-primary shadow-sm", opt.color)
+                        ? "border-primary shadow-sm"
                         : "border-border hover:bg-muted/50",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-full text-xl",
-                        opt.iconBg,
-                      )}
-                    >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xl">
                       {opt.icon}
                     </span>
                     <div>
@@ -550,7 +542,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                 className={cn(
                   "flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-4 py-10 transition-colors",
                   errors.latitude
-                    ? "border-red-400"
+                    ? "border-destructive"
                     : "border-border hover:border-primary/40 hover:bg-muted/50",
                 )}
               >
@@ -886,7 +878,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
 const inputClass =
   "w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary";
-const inputErrorClass = "border-red-400 focus:border-red-500";
+const inputErrorClass = "border-destructive focus:border-destructive";
 
 function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -899,7 +891,7 @@ function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
 
 function ErrorText({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
+    <p className="mt-1.5 flex items-center gap-1 text-xs text-destructive">
       <AlertCircle className="h-3 w-3" />
       {children}
     </p>
@@ -996,7 +988,7 @@ function ToggleRow({
                 ? v === true
                   ? "bg-primary/10 text-primary"
                   : v === false
-                    ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    ? "bg-destructive/10 text-destructive"
                     : "bg-muted text-foreground"
                 : "text-foreground/40 hover:bg-muted",
             )}
