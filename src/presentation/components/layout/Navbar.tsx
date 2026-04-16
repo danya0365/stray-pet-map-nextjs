@@ -113,12 +113,15 @@ export function Navbar() {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-foreground/5"
               >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  {profile?.avatarUrl ? (
-                    <span className="text-base">{profile.avatarUrl}</span>
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  {(
+                    profile?.fullName ||
+                    profile?.username ||
+                    user.email?.charAt(0) ||
+                    "U"
+                  )
+                    .charAt(0)
+                    .toUpperCase()}
                 </div>
                 <span className="max-w-[120px] truncate">
                   {profile?.fullName || user.email?.split("@")[0]}
