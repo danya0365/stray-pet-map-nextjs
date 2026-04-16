@@ -99,6 +99,77 @@ export type Database = {
           },
         ]
       }
+      fb_scraped_posts: {
+        Row: {
+          animal_status: string | null
+          animal_type: string | null
+          author_name: string | null
+          content: string | null
+          created_at: string | null
+          fb_post_id: string
+          id: string
+          image_urls: string[] | null
+          is_processed: boolean | null
+          latitude: number | null
+          linked_pet_post_id: string | null
+          location_text: string | null
+          longitude: number | null
+          posted_at: string | null
+          scraped_at: string | null
+          source_url: string | null
+          storage_urls: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          animal_status?: string | null
+          animal_type?: string | null
+          author_name?: string | null
+          content?: string | null
+          created_at?: string | null
+          fb_post_id: string
+          id?: string
+          image_urls?: string[] | null
+          is_processed?: boolean | null
+          latitude?: number | null
+          linked_pet_post_id?: string | null
+          location_text?: string | null
+          longitude?: number | null
+          posted_at?: string | null
+          scraped_at?: string | null
+          source_url?: string | null
+          storage_urls?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          animal_status?: string | null
+          animal_type?: string | null
+          author_name?: string | null
+          content?: string | null
+          created_at?: string | null
+          fb_post_id?: string
+          id?: string
+          image_urls?: string[] | null
+          is_processed?: boolean | null
+          latitude?: number | null
+          linked_pet_post_id?: string | null
+          location_text?: string | null
+          longitude?: number | null
+          posted_at?: string | null
+          scraped_at?: string | null
+          source_url?: string | null
+          storage_urls?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fb_scraped_posts_linked_pet_post_id_fkey"
+            columns: ["linked_pet_post_id"]
+            isOneToOne: false
+            referencedRelation: "pet_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_images: {
         Row: {
           created_at: string | null
