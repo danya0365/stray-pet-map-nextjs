@@ -1,4 +1,4 @@
-import { CreatePostView } from "@/presentation/components/create-post/CreatePostForm";
+import { CreatePostV2View } from "@/presentation/components/create-post/CreatePostV2View";
 import { createServerCreatePostPresenter } from "@/presentation/presenters/create-post/CreatePostPresenterServerFactory";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -48,7 +48,7 @@ export default async function CreatePostPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold sm:text-3xl">โพสต์น้อง</h1>
-      <CreatePostView initialViewModel={viewModel} />
+      <CreatePostV2View initialViewModel={viewModel} />
     </div>
   );
 }
