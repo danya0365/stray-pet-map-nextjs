@@ -17,12 +17,14 @@ import {
   ArrowLeft,
   CheckCircle,
   Clock,
+  Construction,
   Flag,
   Heart,
   MapPin,
   Scissors,
   Share2,
   Syringe,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -84,13 +86,18 @@ interface PetDetailViewProps {
   isCloseModalOpen: boolean;
   isClosingPost: boolean;
   isReportModalOpen: boolean;
+  isComingSoonModalOpen: boolean;
+  comingSoonFeature: string;
   onOpenAdoptionModal: () => void;
   onCloseAdoptionModal: () => void;
   onOpenCloseModal: () => void;
   onCloseCloseModal: () => void;
   onOpenReportModal: () => void;
   onCloseReportModal: () => void;
+  onCloseComingSoon: () => void;
   onAdoptClick: () => void;
+  onFoundPetClick: () => void;
+  onShareClick: () => void;
   onClosePost: (outcome: PetPostOutcome) => Promise<void>;
   onDonateClick: () => void;
 }
@@ -104,15 +111,20 @@ export function PetDetailView({
   isAdoptionModalOpen,
   isCloseModalOpen,
   isClosingPost,
+  isReportModalOpen,
+  isComingSoonModalOpen,
+  comingSoonFeature,
   onCloseAdoptionModal,
   onCloseCloseModal,
   onAdoptClick,
   onOpenCloseModal,
   onOpenReportModal,
   onCloseReportModal,
+  onCloseComingSoon,
+  onFoundPetClick,
+  onShareClick,
   onClosePost,
   onDonateClick,
-  isReportModalOpen,
 }: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
@@ -283,6 +295,7 @@ export function PetDetailView({
               {post.status === "missing" && (
                 <button
                   type="button"
+                  onClick={onFoundPetClick}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
                 >
                   <MapPin className="h-4 w-4" />
@@ -333,6 +346,7 @@ export function PetDetailView({
               {post.status === "missing" && (
                 <button
                   type="button"
+                  onClick={onFoundPetClick}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
                 >
                   <MapPin className="h-4 w-4" />
@@ -359,6 +373,7 @@ export function PetDetailView({
             </div>
             <button
               type="button"
+              onClick={onShareClick}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted"
             >
               <Share2 className="h-3.5 w-3.5" />
@@ -398,6 +413,43 @@ export function PetDetailView({
         petPostId={post.id}
         petTitle={post.title}
       />
+
+      {/* Coming Soon Modal */}
+      {isComingSoonModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onCloseComingSoon}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <button
+              onClick={onCloseComingSoon}
+              className="absolute right-4 top-4 rounded-full p-1 text-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
+              type="button"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <Construction className="h-8 w-8" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">
+                ฟีเจอร์นี้กำลังพัฒนา
+              </h3>
+              <p className="mb-4 text-sm text-foreground/60">
+                {comingSoonFeature} จะพร้อมใช้งานในเร็วๆ นี้
+              </p>
+              <button
+                onClick={onCloseComingSoon}
+                className="rounded-xl bg-primary px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+                type="button"
+              >
+                เข้าใจแล้ว
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

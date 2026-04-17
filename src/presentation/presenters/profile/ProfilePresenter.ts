@@ -8,9 +8,10 @@ import type {
   AuthProfile,
   IAuthRepository,
 } from "@/application/repositories/IAuthRepository";
-import type { IBadgeRepository } from "@/application/repositories/IBadgeRepository";
+import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
 import type { IProfileBadgeRepository } from "@/application/repositories/IProfileBadgeRepository";
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
+import type { PetPost } from "@/domain/entities/pet-post";
 import type { User } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 
@@ -22,6 +23,13 @@ export interface ProfileViewModel {
   badges: Badge[];
   totalBadges: number;
   badgeProgress: BadgeProgress[];
+  posts: PetPost[];
+  totalPosts: number;
+  stats: {
+    posts: number;
+    helped: number; // pets that found home through user's posts
+    points: number;
+  };
 }
 
 /**
@@ -32,9 +40,8 @@ export interface ProfileViewModel {
 export class ProfilePresenter {
   constructor(
     private readonly authRepository: IAuthRepository,
-    private readonly badgeRepository:
-      | IBadgeRepository
-      | IProfileBadgeRepository,
+    private readonly badgeRepository: IProfileBadgeRepository,
+    private readonly petPostRepository: IPetPostRepository,
   ) {}
 
   // ============================================================
@@ -57,23 +64,32 @@ export class ProfilePresenter {
       let badges: Badge[] = [];
       let badgeProgress: BadgeProgress[] = [];
       if (profile?.id) {
-        // Check which interface is being used
-        if ("getByProfileId" in this.badgeRepository) {
-          // Server-side: IBadgeRepository with profileId parameter
-          const repo = this.badgeRepository as IBadgeRepository;
-          [badges, badgeProgress] = await Promise.all([
-            repo.getByProfileId(profile.id),
-            repo.getProgress(profile.id),
-          ]);
-        } else {
-          // Client-side: IProfileBadgeRepository - auto-detects active profile
-          const repo = this.badgeRepository as IProfileBadgeRepository;
-          [badges, badgeProgress] = await Promise.all([
-            repo.getBadges(),
-            repo.getProgress(),
-          ]);
+        [badges, badgeProgress] = await Promise.all([
+          this.badgeRepository.getBadges(),
+          this.badgeRepository.getProgress(),
+        ]);
+      }
+
+      // Fetch user's posts
+      let posts: PetPost[] = [];
+      if (profile?.id) {
+        try {
+          const result = await this.petPostRepository.query({
+            filters: { profileId: profile.id },
+            pagination: { type: "offset", page: 1, perPage: 100 },
+            sortBy: "createdAt",
+            sortOrder: "desc",
+          });
+          posts = result.data;
+        } catch (err) {
+          console.error("Error fetching user posts:", err);
         }
       }
+
+      // Calculate stats
+      const helpedCount = posts.filter(
+        (p) => p.outcome === "rehomed" || p.outcome === "owner_found",
+      ).length;
 
       return {
         user,
@@ -83,6 +99,13 @@ export class ProfilePresenter {
         badges: badges || [],
         totalBadges: badges?.length || 0,
         badgeProgress: badgeProgress || [],
+        posts: posts || [],
+        totalPosts: posts?.length || 0,
+        stats: {
+          posts: posts?.length || 0,
+          helped: helpedCount,
+          points: 0, // TODO: Get from gamification system when implemented
+        },
       };
     } catch (error) {
       console.error("Error getting profile view model:", error);
@@ -155,16 +178,9 @@ export class ProfilePresenter {
   /**
    * Get badges for current profile
    */
-  async getBadges(profileId: string): Promise<Badge[]> {
+  async getBadges(_profileId: string): Promise<Badge[]> {
     try {
-      if ("getByProfileId" in this.badgeRepository) {
-        return await (this.badgeRepository as IBadgeRepository).getByProfileId(
-          profileId,
-        );
-      }
-      return await (
-        this.badgeRepository as IProfileBadgeRepository
-      ).getBadges();
+      return await this.badgeRepository.getBadges();
     } catch (error) {
       console.error("Error getting badges:", error);
       throw error;
@@ -174,19 +190,23 @@ export class ProfilePresenter {
   /**
    * Get badge progress for current profile
    */
-  async getBadgeProgress(profileId: string): Promise<BadgeProgress[]> {
+  async getBadgeProgress(_profileId: string): Promise<BadgeProgress[]> {
     try {
-      if ("getProgress" in this.badgeRepository) {
-        const repo = this.badgeRepository as IBadgeRepository;
-        if ("getProgress" in repo) {
-          return await repo.getProgress(profileId);
-        }
-      }
-      return await (
-        this.badgeRepository as IProfileBadgeRepository
-      ).getProgress();
+      return await this.badgeRepository.getProgress();
     } catch (error) {
       console.error("Error getting badge progress:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a pet post
+   */
+  async deletePost(postId: string): Promise<boolean> {
+    try {
+      return await this.petPostRepository.delete(postId);
+    } catch (error) {
+      console.error("Error deleting post:", error);
       throw error;
     }
   }

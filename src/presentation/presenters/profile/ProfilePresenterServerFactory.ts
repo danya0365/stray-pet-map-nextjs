@@ -6,7 +6,8 @@
  */
 
 import { SupabaseAuthRepository } from "@/infrastructure/repositories/supabase/SupabaseAuthRepository";
-import { SupabaseBadgeRepository } from "@/infrastructure/repositories/supabase/SupabaseBadgeRepository";
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { SupabaseProfileBadgeRepository } from "@/infrastructure/repositories/supabase/SupabaseProfileBadgeRepository";
 import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { ProfilePresenter } from "./ProfilePresenter";
 
@@ -15,9 +16,14 @@ export class ProfilePresenterServerFactory {
     // ✅ Use Supabase Repositories for server-side
     const supabase = await createServerSupabaseClient();
     const authRepository = new SupabaseAuthRepository(supabase);
-    const badgeRepository = new SupabaseBadgeRepository(supabase);
+    const badgeRepository = new SupabaseProfileBadgeRepository(supabase);
+    const petPostRepository = new SupabasePetPostRepository(supabase);
 
-    return new ProfilePresenter(authRepository, badgeRepository);
+    return new ProfilePresenter(
+      authRepository,
+      badgeRepository,
+      petPostRepository,
+    );
   }
 }
 

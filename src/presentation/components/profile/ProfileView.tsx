@@ -1,12 +1,14 @@
 "use client";
 
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
+import type { PetPost } from "@/domain/entities/pet-post";
 import type { ProfileViewModel } from "@/presentation/presenters/profile/ProfilePresenter";
 import { useProfilePresenter } from "@/presentation/presenters/profile/useProfilePresenter";
 import {
   Award,
   Check,
   ChevronRight,
+  Edit3,
   Loader2,
   MapPin,
   PawPrint,
@@ -15,9 +17,11 @@ import {
   Shield,
   Sparkles,
   SwitchCamera,
+  Trash2,
   Trophy,
   User,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -51,8 +55,9 @@ interface ProfileViewProps {
 export function ProfileView({ initialViewModel }: ProfileViewProps) {
   // Use the presenter hook with initialViewModel from server
   const [state, actions] = useProfilePresenter(initialViewModel);
-  const { viewModel, loading, error, isSwitchingProfile } = state;
-  const { switchProfile, refreshProfiles } = actions;
+  const { viewModel, loading, error, isSwitchingProfile, isDeletingPost } =
+    state;
+  const { switchProfile, refreshProfiles, deletePost } = actions;
 
   const [showAllProfiles, setShowAllProfiles] = useState(false);
 
@@ -457,20 +462,259 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-border bg-card p-4 text-center transition-colors hover:border-primary/20">
           <PawPrint className="mx-auto h-5 w-5 text-primary/60" />
-          <p className="mt-1 text-lg font-bold">0</p>
+          <p className="mt-1 text-lg font-bold">
+            {viewModel?.stats?.posts ?? initialViewModel?.stats?.posts ?? 0}
+          </p>
           <p className="text-xs text-foreground/50">โพสต์</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 text-center transition-colors hover:border-primary/20">
           <MapPin className="mx-auto h-5 w-5 text-primary/60" />
-          <p className="mt-1 text-lg font-bold">0</p>
+          <p className="mt-1 text-lg font-bold">
+            {viewModel?.stats?.helped ?? initialViewModel?.stats?.helped ?? 0}
+          </p>
           <p className="text-xs text-foreground/50">ช่วยเหลือ</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 text-center transition-colors hover:border-primary/20">
           <span className="text-xl">⭐</span>
-          <p className="mt-1 text-lg font-bold">0</p>
+          <p className="mt-1 text-lg font-bold">
+            {viewModel?.stats?.points ?? initialViewModel?.stats?.points ?? 0}
+          </p>
           <p className="text-xs text-foreground/50">คะแนน</p>
         </div>
       </div>
+
+      {/* My Posts Section */}
+      <UserPostsSection
+        posts={viewModel?.posts ?? initialViewModel?.posts ?? []}
+        totalPosts={viewModel?.totalPosts ?? initialViewModel?.totalPosts ?? 0}
+        onDeletePost={deletePost}
+        isDeletingPost={isDeletingPost}
+      />
+    </div>
+  );
+}
+
+// User Posts Section Component
+function UserPostsSection({
+  posts,
+  totalPosts,
+  onDeletePost,
+  isDeletingPost,
+}: {
+  posts: PetPost[];
+  totalPosts: number;
+  onDeletePost: (postId: string) => Promise<boolean>;
+  isDeletingPost: string | null;
+}) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null,
+  );
+
+  const handleDelete = async (postId: string) => {
+    const success = await onDeletePost(postId);
+    if (success) {
+      setShowDeleteConfirm(null);
+    } else {
+      alert("ไม่สามารถลบโพสต์ได้ กรุณาลองอีกครั้ง");
+    }
+  };
+
+  const statusLabels: Record<string, { label: string; color: string }> = {
+    available: {
+      label: "รอรับเลี้ยง",
+      color: "bg-emerald-100 text-emerald-700",
+    },
+    pending: { label: "มีคนสนใจ", color: "bg-amber-100 text-amber-700" },
+    adopted: { label: "มีบ้านแล้ว", color: "bg-blue-100 text-blue-700" },
+    missing: { label: "ตามหาน้อง", color: "bg-red-100 text-red-700" },
+  };
+
+  const outcomeLabels: Record<string, string> = {
+    rehomed: "มีบ้านใหม่",
+    owner_found: "เจอเจ้าของ",
+    cancelled: "ยกเลิก",
+    expired: "หมดอายุ",
+    admin_closed: "ถูกปิดโดยแอดมิน",
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6">
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <PawPrint className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">โพสต์ของฉัน</h3>
+          {totalPosts > 0 && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              {totalPosts}
+            </span>
+          )}
+        </div>
+        <Link
+          href="/posts/create"
+          className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          สร้างโพสต์
+        </Link>
+      </div>
+
+      {/* Posts List */}
+      {posts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 py-8 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <PawPrint className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            ยังไม่มีโพสต์
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            เริ่มต้นช่วยเหลือน้องด้วยการสร้างโพสต์แรก
+          </p>
+          <Link
+            href="/posts/create"
+            className="mt-3 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            สร้างโพสต์
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {posts.map((post) => {
+            const status = statusLabels[post.status] ?? statusLabels.available;
+            const hasOutcome = post.outcome && outcomeLabels[post.outcome];
+
+            return (
+              <div
+                key={post.id}
+                className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/20"
+              >
+                {/* Thumbnail */}
+                <Link
+                  href={`/pets/${post.id}`}
+                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted"
+                >
+                  {post.thumbnailUrl ? (
+                    <Image
+                      src={post.thumbnailUrl}
+                      alt={post.title}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl">
+                      {post.petType?.icon || "🐾"}
+                    </div>
+                  )}
+                </Link>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <Link href={`/pets/${post.id}`} className="block">
+                    <p className="truncate font-medium hover:text-primary">
+                      {post.title}
+                    </p>
+                  </Link>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                    {hasOutcome && (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                        {outcomeLabels[post.outcome!]}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground">
+                      {post.petType?.icon} {post.petType?.name}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                  {/* Edit - Coming Soon if post has outcome */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (post.outcome) {
+                        alert("โพสต์ที่จบแล้วไม่สามารถแก้ไขได้");
+                        return;
+                      }
+                      // Navigate to edit page (coming soon)
+                      alert("ฟีเจอร์แก้ไขโพสต์กำลังพัฒนา");
+                    }}
+                    disabled={!!post.outcome}
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                    title={
+                      post.outcome ? "โพสต์ที่จบแล้วไม่สามารถแก้ไขได้" : "แก้ไข"
+                    }
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(post.id)}
+                    disabled={isDeletingPost === post.id}
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    title="ลบ"
+                  >
+                    {isDeletingPost === post.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowDeleteConfirm(null)}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">ยืนยันการลบ</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้?
+                <br />
+                การกระทำนี้ไม่สามารถย้อนกลับได้
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(showDeleteConfirm)}
+                  disabled={isDeletingPost !== null}
+                  className="flex-1 rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                >
+                  {isDeletingPost ? "กำลังลบ..." : "ลบ"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

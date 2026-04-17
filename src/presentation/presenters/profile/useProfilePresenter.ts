@@ -1,6 +1,7 @@
 "use client";
 
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
+import type { PetPost } from "@/domain/entities/pet-post";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProfilePresenter, ProfileViewModel } from "./ProfilePresenter";
@@ -11,6 +12,7 @@ export interface ProfilePresenterState {
   loading: boolean;
   error: string | null;
   isSwitchingProfile: boolean;
+  isDeletingPost: string | null;
 }
 
 export interface ProfilePresenterActions {
@@ -18,6 +20,7 @@ export interface ProfilePresenterActions {
   switchProfile: (profileId: string) => Promise<void>;
   refreshProfiles: () => Promise<void>;
   fetchBadges: (profileId: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<boolean>;
   setError: (error: string | null) => void;
 }
 
@@ -61,6 +64,17 @@ export function useProfilePresenter(
   const [badges, setBadges] = useState<Badge[]>([]);
   const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([]);
 
+  // Posts state (local state for client-side updates)
+  const [posts, setPosts] = useState<PetPost[]>(initialViewModel?.posts || []);
+  const [isDeletingPost, setIsDeletingPost] = useState<string | null>(null);
+
+  // Update posts when initialViewModel changes
+  useEffect(() => {
+    if (initialViewModel?.posts) {
+      setPosts(initialViewModel.posts);
+    }
+  }, [initialViewModel?.posts]);
+
   // Build viewModel from Zustand store
   // ✅ Profiles are already sorted by createdAt at repository level
   const viewModel: ProfileViewModel | null = useMemo(() => {
@@ -73,8 +87,18 @@ export function useProfilePresenter(
       badges: badges || [],
       totalBadges: badges?.length || 0,
       badgeProgress: badgeProgress || [],
+      posts: posts || [],
+      totalPosts: posts?.length || 0,
+      stats: {
+        posts: posts?.length || 0,
+        helped:
+          posts?.filter(
+            (p) => p.outcome === "rehomed" || p.outcome === "owner_found",
+          ).length || 0,
+        points: 0, // TODO: Get from gamification system when implemented
+      },
     };
-  }, [user, profile, profiles, badges, badgeProgress]);
+  }, [user, profile, profiles, badges, badgeProgress, posts]);
 
   const loading = isLoading;
 
@@ -196,6 +220,38 @@ export function useProfilePresenter(
     [presenter],
   );
 
+  /**
+   * Delete a pet post
+   */
+  const deletePost = useCallback(
+    async (postId: string) => {
+      setIsDeletingPost(postId);
+      setError(null);
+
+      try {
+        const success = await presenter.deletePost(postId);
+        if (isMountedRef.current && success) {
+          // Remove post from local state
+          setPosts((prev) => prev.filter((p) => p.id !== postId));
+        }
+        return success;
+      } catch (err) {
+        if (isMountedRef.current) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Failed to delete post";
+          setError(errorMessage);
+          console.error("Error deleting post:", err);
+        }
+        return false;
+      } finally {
+        if (isMountedRef.current) {
+          setIsDeletingPost(null);
+        }
+      }
+    },
+    [presenter],
+  );
+
   // Load data on mount if no user data in store
   useEffect(() => {
     if (!user && !initialViewModel) {
@@ -218,12 +274,14 @@ export function useProfilePresenter(
       loading,
       error,
       isSwitchingProfile,
+      isDeletingPost,
     },
     {
       loadData,
       switchProfile,
       refreshProfiles,
       fetchBadges,
+      deletePost,
       setError,
     },
   ];

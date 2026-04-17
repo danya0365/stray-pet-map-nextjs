@@ -8,13 +8,13 @@ import type {
 } from "@/domain/entities/badge";
 
 /**
- * ApiBadgeRepository
+ * ApiProfileBadgeRepository
  * Client-side implementation for fetching current user's badges
  * ✅ No profileId parameter - API auto-detects from auth session
  * ✅ No direct Supabase connection - avoids connection pool issues
  * ✅ Following Clean Architecture pattern
  */
-export class ApiBadgeRepository implements IProfileBadgeRepository {
+export class ApiProfileBadgeRepository implements IProfileBadgeRepository {
   async getBadges(): Promise<Badge[]> {
     const res = await fetch("/api/badges/profile");
     if (!res.ok) {

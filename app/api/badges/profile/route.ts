@@ -1,5 +1,5 @@
 import { SupabaseAuthRepository } from "@/infrastructure/repositories/supabase/SupabaseAuthRepository";
-import { SupabaseBadgeRepository } from "@/infrastructure/repositories/supabase/SupabaseBadgeRepository";
+import { SupabaseProfileBadgeRepository } from "@/infrastructure/repositories/supabase/SupabaseProfileBadgeRepository";
 import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -25,12 +25,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    const badgeRepo = new SupabaseBadgeRepository(supabase);
+    const badgeRepo = new SupabaseProfileBadgeRepository(supabase);
 
     // ดึง badges และ progress จาก active profile
     const [badges, progress] = await Promise.all([
-      badgeRepo.getByProfileId(profile.id),
-      badgeRepo.getProgress(profile.id),
+      badgeRepo.getBadges(),
+      badgeRepo.getProgress(),
     ]);
 
     return NextResponse.json({
@@ -73,15 +73,15 @@ export async function POST(request: Request) {
     }
 
     // ใช้ badge repository แทนการเรียก RPC ตรงๆ
-    const badgeRepo = new SupabaseBadgeRepository(supabase);
+    const badgeRepo = new SupabaseProfileBadgeRepository(supabase);
 
     // ตรวจสอบและมอบ badges อัตโนมัติ
-    const newlyAwarded = await badgeRepo.checkAndAwardBadges(profile.id);
+    const newlyAwarded = await badgeRepo.checkAndAwardBadges();
 
     // ดึง badges และ progress ล่าสุด
     const [badges, progress] = await Promise.all([
-      badgeRepo.getByProfileId(profile.id),
-      badgeRepo.getProgress(profile.id),
+      badgeRepo.getBadges(),
+      badgeRepo.getProgress(),
     ]);
 
     return NextResponse.json({

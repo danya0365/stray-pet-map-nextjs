@@ -7,9 +7,9 @@
 
 "use client";
 
-import type { IProfileBadgeRepository } from "@/application/repositories/IProfileBadgeRepository";
 import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
-import { ApiBadgeRepository } from "@/infrastructure/repositories/api/ApiBadgeRepository";
+import { ApiPetPostRepository } from "@/infrastructure/repositories/api/ApiPetPostRepository";
+import { ApiProfileBadgeRepository } from "@/infrastructure/repositories/api/ApiProfileBadgeRepository";
 import { ProfilePresenter } from "./ProfilePresenter";
 
 export class ProfilePresenterClientFactory {
@@ -17,9 +17,14 @@ export class ProfilePresenterClientFactory {
     // Use API Repositories for client-side (no direct Supabase connection)
     // This avoids connection pool issues
     const authRepository = new ApiAuthRepository();
-    const badgeRepository: IProfileBadgeRepository = new ApiBadgeRepository();
+    const badgeRepository = new ApiProfileBadgeRepository();
+    const petPostRepository = new ApiPetPostRepository();
 
-    return new ProfilePresenter(authRepository, badgeRepository);
+    return new ProfilePresenter(
+      authRepository,
+      badgeRepository,
+      petPostRepository,
+    );
   }
 }
 

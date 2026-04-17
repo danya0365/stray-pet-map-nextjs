@@ -29,6 +29,7 @@
   - **NEW:** `SupabaseReportRepository.ts` (implements `IReportRepository`)
 - **Presenters:** Home, Map, Search, PetDetail, CreatePost, Profile, Favorites — แต่ละอันมี Presenter + ClientFactory + ServerFactory + usePresenter hook
 - **NEW Presenters:** `DonationPresenter` (webhook processing), `RoadMapPresenter` (donation stats)
+- **Profile Enhancement:** แสดงโพสต์ของ user + สถิติ + ลบโพสต์ได้
 
 ### 3. Layout & Navigation
 
@@ -127,7 +128,7 @@
 - [x] **Favorites / Bookmark** — ✅ หน้า `/favorites` + SupabaseFavoriteRepository พร้อม ต้อง integrate UI
 - [x] **Search ขั้นสูง** — ✅ Complete — Filter ตาม ชนิด, พันธุ์, สี, เพศ, สถานะ (เพิ่ม breed, color filters)
 - [x] **Report โพสต์** — ✅ Complete — ปุ่มรายงาน + Modal + API + Repository Pattern
-- [ ] **หน้า Profile ขั้นสูง** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
+- [x] **หน้า Profile ขั้นสูง** — ✅ Complete — แสดงโพสต์ของตัวเอง + สถิติ (posts, helped, points) + ลบโพสต์ได้ (แก้ไข: coming soon)
 - [ ] **Reverse Geocoding** — แปลง lat/lng เป็นชื่อที่อยู่อัตโนมัติ (เพื่อ auto-suggest title ดีขึ้น)
 - [ ] **ระบบ Gamification** — คะแนน, Levels, Badges, Leaderboard (ออกแบบแล้ว ยังไม่ implement)
 

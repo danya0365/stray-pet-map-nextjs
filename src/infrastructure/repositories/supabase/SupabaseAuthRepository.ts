@@ -16,19 +16,12 @@ export class SupabaseAuthRepository implements IAuthRepository {
   }
 
   async getProfile(): Promise<AuthProfile | null> {
-    const user = await this.getUser();
-    if (!user) return null;
+    // Use RPC to get active profile
+    const { data: profile, error } = await this.supabase
+      .rpc("get_active_profile")
+      .single();
 
-    const { data: profiles } = await this.supabase
-      .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
-      .eq("auth_id", user.id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: true })
-      .limit(1);
-
-    const profile = profiles?.[0] ?? null;
-    if (!profile) return null;
+    if (error || !profile) return null;
 
     // Get role
     const { data: roleData } = await this.supabase

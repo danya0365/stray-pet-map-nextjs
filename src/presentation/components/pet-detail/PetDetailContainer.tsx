@@ -18,6 +18,21 @@ function useModalState(initial = false) {
   };
 }
 
+// Coming Soon modal with feature name
+function useComingSoonModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [feature, setFeature] = useState("");
+  return {
+    isOpen,
+    feature,
+    open: (featureName: string) => {
+      setFeature(featureName);
+      setIsOpen(true);
+    },
+    close: () => setIsOpen(false),
+  };
+}
+
 interface PetDetailContainerProps {
   initialViewModel: PetDetailViewModel;
 }
@@ -46,6 +61,9 @@ export function PetDetailContainer({
 
   // Report modal state
   const reportModal = useModalState(false);
+
+  // Coming Soon modal state
+  const comingSoonModal = useComingSoonModal();
 
   useEffect(() => {
     const fetchFundingGoal = async () => {
@@ -92,6 +110,28 @@ export function PetDetailContainer({
     openForPet(viewModel.post.id, viewModel.post.title);
   };
 
+  // Button click handlers for features not yet implemented
+  const handleFoundPetClick = () => {
+    comingSoonModal.open("แจ้งพบเจอน้อง (การตามหาเจ้าของ)");
+  };
+
+  const handleShareClick = () => {
+    // Try native share API first, fallback to coming soon
+    if (navigator.share) {
+      navigator
+        .share({
+          title: viewModel.post.title,
+          text: `ดู${viewModel.post.title} ใน StrayPetMap`,
+          url: window.location.href,
+        })
+        .catch(() => {
+          // User cancelled or failed
+        });
+    } else {
+      comingSoonModal.open("แชร์ไปยัง Social Media");
+    }
+  };
+
   return (
     <PetDetailView
       viewModel={viewModel}
@@ -102,13 +142,18 @@ export function PetDetailContainer({
       isCloseModalOpen={isCloseModalOpen}
       isClosingPost={isClosingPost}
       isReportModalOpen={reportModal.isOpen}
+      isComingSoonModalOpen={comingSoonModal.isOpen}
+      comingSoonFeature={comingSoonModal.feature}
       onOpenAdoptionModal={openAdoptionModal}
       onCloseAdoptionModal={closeAdoptionModal}
       onOpenCloseModal={openCloseModal}
       onCloseCloseModal={closeCloseModal}
       onOpenReportModal={reportModal.open}
       onCloseReportModal={reportModal.close}
+      onCloseComingSoon={comingSoonModal.close}
       onAdoptClick={handleAdoptClick}
+      onFoundPetClick={handleFoundPetClick}
+      onShareClick={handleShareClick}
       onClosePost={handleClosePost}
       onDonateClick={handleDonateClick}
     />
