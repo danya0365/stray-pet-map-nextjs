@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiAuthRepository } from "@/infrastructure/repositories/api/ApiAuthRepository";
+import { useDonationContext } from "@/presentation/components/donation/DonationProvider";
 import { useAuthPresenter } from "@/presentation/presenters/auth/useAuthPresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import {
@@ -32,6 +33,7 @@ const navLinks = [
 export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const router = useRouter();
+  const { open: openDonation } = useDonationContext();
   const {
     user,
     profile,
@@ -102,6 +104,15 @@ export function Navbar() {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
+
+          {/* Support Button (Desktop) */}
+          <button
+            onClick={openDonation}
+            className="hidden items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20 sm:flex"
+          >
+            <Heart className="h-4 w-4" />
+            <span className="hidden sm:inline">สนับสนุน</span>
+          </button>
 
           {/* Auth */}
           {!isInitialized ? (

@@ -1,7 +1,12 @@
+"use client";
+
 import { Heart, PawPrint } from "lucide-react";
 import Link from "next/link";
+import { useDonationContext } from "../donation/DonationProvider";
 
 export function Footer() {
+  const { open } = useDonationContext();
+
   return (
     <footer className="mt-auto hidden border-t border-border/40 bg-background md:block">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 sm:flex-row sm:justify-between">
@@ -19,6 +24,18 @@ export function Footer() {
         </p>
 
         <nav className="flex gap-4 text-xs text-foreground/50">
+          <button
+            onClick={open}
+            className="transition-colors hover:text-primary"
+          >
+            สนับสนุน
+          </button>
+          <Link
+            href="/road-map"
+            className="transition-colors hover:text-primary"
+          >
+            Roadmap
+          </Link>
           <Link href="/about" className="transition-colors hover:text-primary">
             เกี่ยวกับเรา
           </Link>
