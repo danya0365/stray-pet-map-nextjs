@@ -282,6 +282,22 @@ export class MockPetPostRepository implements IPetPostRepository {
     return this.items.find((item) => item.id === id) || null;
   }
 
+  async getByIdWithOwner(id: string): Promise<PetPost | null> {
+    await this.delay(100);
+    const post = this.items.find((item) => item.id === id);
+    if (!post) return null;
+
+    // Add mock owner data
+    return {
+      ...post,
+      owner: {
+        profileId: post.profileId,
+        displayName: "Mock User",
+        avatarUrl: undefined,
+      },
+    };
+  }
+
   // ============================================================
   // WRITE
   // ============================================================
