@@ -27,13 +27,13 @@ export function ImpactCard({
   const targetText = petName ? `ให้น้อง${petName}` : "ให้ StrayPetMap";
 
   // Generate share text
-  const shareText = `🐾 ${displayName} เพิ่งบริจาค ${amount} บาท ${targetText} ผ่าน StrayPetMap\n\nมาร่วมเป็นฮีโร่ช่วยน้องกัน! 🦸‍♀️🦸‍♂️\nhttps://straypetmap.com/donate/leaderboard`;
+  const shareText = `🐾 ${displayName} เพิ่งสนับสนุน ${amount} บาท ${targetText} ผ่าน StrayPetMap\n\nมาร่วมเป็นผู้สนับสนุนกัน! 🦸‍♀️🦸‍♂️\nhttps://straypetmap.com/donate/leaderboard`;
 
   const handleShare = async () => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "StrayPetMap - ฮีโร่ช่วยน้อง",
+          title: "StrayPetMap - ผู้สนับสนุน",
           text: shareText,
         });
       } else {
@@ -60,9 +60,9 @@ export function ImpactCard({
         <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
           <CheckCircle className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-lg font-bold">ขอบคุณสำหรับการบริจาค! 💚</h3>
+        <h3 className="text-lg font-bold">ขอบคุณสำหรับการสนับสนุน! 💚</h3>
         <p className="text-sm text-muted-foreground">
-          คุณ{isAnonymous ? "ได้บริจาค" : displayName + " ได้บริจาค"}{" "}
+          คุณ{isAnonymous ? "ได้สนับสนุน" : displayName + " ได้สนับสนุน"}{" "}
           <span className="font-semibold text-primary">{amount} บาท</span>
         </p>
       </div>
@@ -110,16 +110,18 @@ export function ImpactCard({
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-muted py-2.5 text-sm font-medium text-foreground transition-all hover:bg-muted/80"
         >
           <Heart className="h-4 w-4" />
-          ดูกระดานผู้บริจาค
+          ดูกระดานผู้สนับสนุน
         </Link>
       </div>
 
       {/* Footer note */}
       <div className="mt-4 text-center text-xs text-muted-foreground">
         <p>
-          ใบเสร็จรับเงินจะถูกส่งไปยังอีเมลของคุณ
+          ใบเสร็จรับเงินจะถูกส่งไปยังอีเมลของคุณ (หากระบุไว้)
           <br />
-          (หากระบุไว้)
+          <span className="text-amber-600">
+            ใบเสร็จนี้ไม่สามารถนำไปหักภาษีได้
+          </span>
         </p>
       </div>
     </div>

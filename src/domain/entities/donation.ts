@@ -3,27 +3,36 @@
  * Following Clean Architecture - Domain layer
  */
 
-export type DonationTargetType = "pet" | "fund";
+export type DonationTargetType = "pet" | "fund" | "dev";
 export type DonationPaymentMethod = "stripe_promptpay" | "stripe_card";
-export type DonationPaymentStatus = "pending" | "completed" | "failed" | "refunded";
-export type FundingGoalType = "medical" | "food" | "shelter" | "transport" | "other";
+export type DonationPaymentStatus =
+  | "pending"
+  | "completed"
+  | "failed"
+  | "refunded";
+export type FundingGoalType =
+  | "medical"
+  | "food"
+  | "shelter"
+  | "transport"
+  | "other";
 
 /**
  * Core Donation entity
  */
 export interface Donation {
   id: string;
-  
+
   // Donor info
-  donorId: string | null;  // null = guest
+  donorId: string | null; // null = guest
   donorName: string;
   donorEmail?: string;
   isAnonymous: boolean;
-  
+
   // Target
   targetType: DonationTargetType;
-  petPostId: string | null;  // null = general fund
-  
+  petPostId: string | null; // null = general fund
+
   // Payment
   amount: number;
   currency: string;
@@ -31,14 +40,14 @@ export interface Donation {
   paymentStatus: DonationPaymentStatus;
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
-  
+
   // Message & Recognition
   message?: string;
   showOnLeaderboard: boolean;
-  
+
   // Gamification
   pointsAwarded: number;
-  
+
   // Timestamps
   createdAt: Date;
   completedAt?: Date;
@@ -91,7 +100,7 @@ export interface DonationStats {
  * Create donation parameters
  */
 export interface CreateDonationParams {
-  donorId?: string;  // undefined = guest
+  donorId?: string; // undefined = guest
   donorName?: string;
   donorEmail?: string;
   isAnonymous?: boolean;

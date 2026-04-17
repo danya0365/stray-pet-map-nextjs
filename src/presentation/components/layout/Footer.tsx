@@ -28,14 +28,14 @@ export function Footer() {
             onClick={open}
             className="transition-colors hover:text-primary"
           >
-            สนับสนุน
+            ให้กำลังใจ
           </button>
           <Link
             href="/donate/leaderboard"
             className="flex items-center gap-1 transition-colors hover:text-primary"
           >
             <Trophy className="h-3 w-3" />
-            ฮีโร่
+            ผู้สนับสนุน
           </Link>
           <Link
             href="/road-map"
@@ -47,7 +47,13 @@ export function Footer() {
             เกี่ยวกับเรา
           </Link>
           <Link
-            href="/privacy"
+            href="/legal/terms"
+            className="transition-colors hover:text-primary"
+          >
+            เงื่อนไข
+          </Link>
+          <Link
+            href="/legal/privacy"
             className="transition-colors hover:text-primary"
           >
             นโยบาย

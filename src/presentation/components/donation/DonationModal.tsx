@@ -102,8 +102,10 @@ export function DonationModal({
     : selectedAmount;
   const displayTitle =
     targetType === "pet" && petName
-      ? `บริจาคให้น้อง${petName}`
-      : "สนับสนุน StrayPetMap";
+      ? `ให้ผู้ดูแลน้อง${petName}`
+      : targetType === "dev"
+        ? "ให้กำลังใจทีมงาน"
+        : "สนับสนุน StrayPetMap";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -136,57 +138,68 @@ export function DonationModal({
               <h2 className="text-xl font-bold">{displayTitle}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {targetType === "pet"
-                  ? "ช่วยเหลือค่าอาหารและค่ารักษาพยาบาล"
-                  : "ช่วยเราช่วยเหลือสัตว์จรจัดต่อไป"}
+                  ? "ส่งต่อให้ผู้ดูแลน้องโดยตรง"
+                  : targetType === "dev"
+                    ? "ขอบคุณที่ให้กำลังใจพวกเรา"
+                    : "ช่วยเราพัฒนาแพลตฟอร์มต่อไป"}
               </p>
             </div>
           </div>
 
           {/* Content */}
           <div className="space-y-5 p-6">
-            {/* Mode Selection - Only show if petPostId provided */}
-            {petPostId ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setTargetType("fund")}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-3 transition-all ${
-                    targetType === "fund"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-muted/30 hover:border-primary/30"
-                  }`}
-                >
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">กองทุนกลาง</span>
-                  <span className="text-[10px] opacity-70">
-                    ช่วยเหลือทั่วไป
-                  </span>
-                </button>
-                <button
-                  onClick={() => setTargetType("pet")}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-3 transition-all ${
-                    targetType === "pet"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-muted/30 hover:border-primary/30"
-                  }`}
-                >
-                  <PawPrint className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {petName ? `น้อง${petName}` : "ให้น้องตัวนี้"}
-                  </span>
-                  <span className="text-[10px] opacity-70">
-                    บริจาคเฉพาะน้อง
-                  </span>
-                </button>
-              </div>
-            ) : (
-              /* Single mode indicator for general fund only */
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
-                <div className="flex items-center justify-center gap-2 text-primary">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">บริจาคกองทุนกลาง</span>
-                </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  ต้องการบริจาคให้น้องเฉพาะตัว? กรุณาไปที่หน้ารายละเอียดน้อง
+            {/* Mode Selection - 3 modes */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setTargetType("dev")}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-3 transition-all ${
+                  targetType === "dev"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-muted/30 hover:border-primary/30"
+                }`}
+              >
+                <Heart className="h-4 w-4" />
+                <span className="text-sm font-medium">กำลังใจ Dev</span>
+                <span className="text-[10px] opacity-70">ให้ทีมพัฒนา</span>
+              </button>
+              <button
+                onClick={() => setTargetType("fund")}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-3 transition-all ${
+                  targetType === "fund"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-muted/30 hover:border-primary/30"
+                }`}
+              >
+                <Building2 className="h-4 w-4" />
+                <span className="text-sm font-medium">แพลตฟอร์ม</span>
+                <span className="text-[10px] opacity-70">พัฒนาต่อ</span>
+              </button>
+              <button
+                onClick={() => setTargetType("pet")}
+                disabled={!petPostId}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-3 transition-all ${
+                  targetType === "pet"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-muted/30 hover:border-primary/30"
+                } ${!petPostId ? "cursor-not-allowed opacity-50" : ""}`}
+              >
+                <PawPrint className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {petName ? `น้อง${petName}` : "ผู้ดูแลน้อง"}
+                </span>
+                <span className="text-[10px] opacity-70">
+                  {petName ? "ส่งต่อผู้ดูแล" : "ไปที่หน้าน้อง"}
+                </span>
+              </button>
+            </div>
+
+            {/* Warning when pet mode selected but no pet */}
+            {targetType === "pet" && !petPostId && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                <p className="flex items-center gap-1.5">
+                  <span>⚠️</span>
+                  กรุณาไปที่หน้ารายละเอียดน้องก่อน แล้วกด &quot;สนับสนุน&quot;
+                  จากตรงนั้น
                 </p>
               </div>
             )}
@@ -196,7 +209,7 @@ export function DonationModal({
               <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <User className="h-4 w-4 text-primary" />
-                  <span>ข้อมูลผู้บริจาค</span>
+                  <span>ข้อมูลผู้สนับสนุน</span>
                 </div>
                 <input
                   type="text"
@@ -269,7 +282,7 @@ export function DonationModal({
                   ) : (
                     <EyeOff className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span>แสดงในกระดานผู้บริจาค</span>
+                  <span>แสดงในกระดานผู้สนับสนุน</span>
                 </div>
                 <button
                   onClick={() => setShowOnLeaderboard(!showOnLeaderboard)}
@@ -318,10 +331,22 @@ export function DonationModal({
               className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
             >
               <Map className="h-4 w-4" />
-              <span>ดู Roadmap ว่าเงินจะไปใช้ทำอะไรต่อ</span>
+              <span>ดู Roadmap แผนพัฒนาแพลตฟอร์ม</span>
             </Link>
 
-            {/* Donate Button */}
+            {/* Legal Disclaimer */}
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-[10px] text-muted-foreground">
+              <p className="mb-1">
+                <strong>หมายเหตุทางกฎหมาย:</strong>
+              </p>
+              <p>
+                StrayPetMap ดำเนินการโดยบุคคลธรรมดา ไม่ใช่นิติบุคคล
+                การสนับสนุนเป็นการให้กำลังใจ (tipping) ไม่ใช่การบริจาคตามกฎหมาย
+                ใบเสร็จรับเงินนี้ไม่สามารถนำไปหักภาษีได้
+              </p>
+            </div>
+
+            {/* Support Button */}
             <button
               onClick={handleDonate}
               disabled={isLoading || finalAmount < 20}
@@ -334,7 +359,12 @@ export function DonationModal({
                 </span>
               ) : (
                 <span>
-                  {targetType === "pet" ? "บริจาค" : "สนับสนุน"} {finalAmount}฿
+                  {targetType === "pet"
+                    ? "ส่งต่อให้ผู้ดูแล"
+                    : targetType === "dev"
+                      ? "ให้กำลังใจ"
+                      : "สนับสนุน"}{" "}
+                  {finalAmount}฿
                 </span>
               )}
             </button>

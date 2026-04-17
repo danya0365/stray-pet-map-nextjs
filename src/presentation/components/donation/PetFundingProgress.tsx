@@ -21,13 +21,13 @@ export function PetFundingProgress({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Heart className="h-4 w-4" />
-            <span>น้อง{petName} ยังไม่มีเป้าหมายการระดมทุน</span>
+            <span>น้อง{petName} ยังไม่มีเป้าหมายการสนับสนุน</span>
           </div>
           <button
             onClick={onDonateClick}
             className="text-sm font-medium text-primary hover:underline"
           >
-            บริจาคให้น้อง
+            สนับสนุนให้น้อง
           </button>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function PetFundingProgress({
           </div>
           <div>
             <div className="font-semibold">
-              เป้าหมาย{goalTypeLabels[goal.goalType]}
+              เป้าหมาย{goalTypeLabels[goal.goalType]}ของน้อง
             </div>
             <div className="text-xs text-muted-foreground">
               {isCompleted
@@ -131,7 +131,7 @@ export function PetFundingProgress({
         >
           <span className="flex items-center justify-center gap-2">
             <Heart className="h-4 w-4" />
-            ร่วมบริจาคให้น้อง{petName}
+            ส่งต่อให้ผู้ดูแลน้อง{petName}
           </span>
         </button>
       )}
@@ -139,7 +139,7 @@ export function PetFundingProgress({
       {/* Completed Message */}
       {isCompleted && (
         <div className="rounded-xl bg-green-100 p-3 text-center text-sm text-green-700">
-          🎉 ขอบคุณผู้ใจดีทุกท่าน! น้อง{petName} ครบเป้าหมายแล้ว
+          🎉 ขอบคุณผู้สนับสนุนทุกท่าน! น้อง{petName} ครบเป้าหมายแล้ว
         </div>
       )}
     </div>

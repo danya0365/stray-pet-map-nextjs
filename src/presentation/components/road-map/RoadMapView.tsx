@@ -1,24 +1,24 @@
 "use client";
 
 import type {
-  RoadMapViewModel,
-  RoadMapTierData,
-  RoadMapStats,
-  RoadMapFeature,
   FeatureStatus,
+  RoadMapFeature,
+  RoadMapStats,
   RoadMapTier,
+  RoadMapTierData,
+  RoadMapViewModel,
 } from "@/application/repositories/IRoadMapRepository";
 import { cn } from "@/presentation/lib/cn";
 import {
+  Calendar,
   Check,
-  Clock,
-  Lock,
-  Heart,
-  Zap,
   ChevronRight,
+  Clock,
+  Heart,
+  Lock,
   Star,
   Users,
-  Calendar,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -194,8 +194,6 @@ function FeatureRow({
   );
 }
 
-
-
 // ─── Donation Progress Bar ─────────────────────────────────
 function DonationProgress({ stats }: { stats: RoadMapStats }) {
   const nextTierAmount = (() => {
@@ -215,7 +213,7 @@ function DonationProgress({ stats }: { stats: RoadMapStats }) {
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-foreground/50">
-            ยอดบริจาคสะสม
+            ยอดสนับสนุนสะสม
           </p>
           <p className="text-3xl font-bold text-primary">
             ฿{stats.currentAmount.toLocaleString()}
@@ -223,7 +221,9 @@ function DonationProgress({ stats }: { stats: RoadMapStats }) {
         </div>
         <div className="flex items-center gap-4 sm:text-right">
           <div>
-            <p className="text-sm font-medium text-foreground/50">ผู้สนับสนุน</p>
+            <p className="text-sm font-medium text-foreground/50">
+              ผู้สนับสนุน
+            </p>
             <p className="text-xl font-bold text-foreground">
               {stats.donorCount} คน
             </p>
@@ -364,7 +364,7 @@ function TierCard({
       {/* Bottom: note for fully locked tiers */}
       {!isCurrentOrPast && !isCurrent && tier.id !== "free" && (
         <div className="mt-4 rounded-xl border border-dashed border-border/50 bg-muted/50 px-4 py-2.5 text-center text-xs text-foreground/40">
-          📅 ฟีเจอร์เหล่านี้มีแผนทำแน่นอน — บริจาคช่วย fast-track ได้!
+          📅 ฟีเจอร์เหล่านี้มีแผนทำแน่นอน — สนับสนุนช่วย fast-track ได้!
         </div>
       )}
     </div>
@@ -392,11 +392,11 @@ function DonationCTA() {
         </div>
 
         <h2 className="mb-3 text-2xl font-bold sm:text-3xl">
-          บริจาคเพื่อน้องสัตว์
+          สนับสนุนเพื่อน้องสัตว์
         </h2>
 
         <p className="mx-auto mb-6 max-w-xl text-sm text-foreground/60 sm:text-base">
-          ทุกบาทที่คุณบริจาค ช่วยให้เราพัฒนาฟีเจอร์ใหม่ๆ
+          ทุกบาทที่คุณสนับสนุน ช่วยให้เราพัฒนาฟีเจอร์ใหม่ๆ
           เพื่อให้สัตว์จรมีโอกาส
           <br />
           ได้บ้านมากขึ้น — แพลตฟอร์มนี้รันด้วยใจและการสนับสนุนจากคุณ ❤️
@@ -432,8 +432,8 @@ function DonationCTA() {
         </div>
 
         <p className="text-xs text-foreground/40">
-          ✨ ฟีเจอร์บริจาคในแอปจะพร้อมใช้เมื่อถึง Champion Tier
-          — ฝากติดตามด้วยนะครับ!
+          ✨ ฟีเจอร์สนับสนุนในแอปจะพร้อมใช้เมื่อถึง Champion Tier —
+          ฝากติดตามด้วยนะครับ!
         </p>
       </div>
     </section>
@@ -450,7 +450,9 @@ function StatusLegend() {
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Status icons */}
         <div className="flex flex-col gap-2">
-          <p className="text-[11px] font-semibold text-foreground/40">สถานะฟีเจอร์</p>
+          <p className="text-[11px] font-semibold text-foreground/40">
+            สถานะฟีเจอร์
+          </p>
           <span className="flex items-center gap-1.5 text-xs text-foreground/60">
             <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <Check className="h-2.5 w-2.5 text-green-600 dark:text-green-400" />
@@ -473,23 +475,29 @@ function StatusLegend() {
 
         {/* Dual-track explanation */}
         <div className="flex flex-col gap-2">
-          <p className="text-[11px] font-semibold text-foreground/40">ระบบ Dual-track</p>
+          <p className="text-[11px] font-semibold text-foreground/40">
+            ระบบ Dual-track
+          </p>
           <span className="flex items-start gap-1.5 text-xs text-foreground/60">
             <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/40" />
             <span>
               <span className="font-semibold text-foreground/70">กำหนดการ</span>
               {" — "}จะทำแน่นอนภายใน quarter นั้น
               <br />
-              <span className="text-foreground/40">ไม่ว่ายอดบริจาคจะถึงหรือไม่</span>
+              <span className="text-foreground/40">
+                ไม่ว่ายอดสนับสนุนจะถึงหรือไม่
+              </span>
             </span>
           </span>
           <span className="flex items-start gap-1.5 text-xs text-foreground/60">
             <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             <span>
               <span className="font-semibold text-primary">Fast-track</span>
-              {" — "}ถ้าบริจาคถึงเป้า
+              {" — "}ถ้าสนับสนุนถึงเป้า
               <br />
-              <span className="text-foreground/40">เราเริ่มทำทันที ไม่ต้องรอ deadline!</span>
+              <span className="text-foreground/40">
+                เราเริ่มทำทันที ไม่ต้องรอ deadline!
+              </span>
             </span>
           </span>
         </div>
@@ -523,9 +531,7 @@ export function RoadMapView({ initialViewModel }: RoadMapViewProps) {
           <Zap className="h-4 w-4" />
           แผนพัฒนาแพลตฟอร์ม
         </div>
-        <h1 className="mb-3 text-4xl font-bold sm:text-5xl">
-          Road Map 🐾
-        </h1>
+        <h1 className="mb-3 text-4xl font-bold sm:text-5xl">Road Map 🐾</h1>
         <p className="mx-auto max-w-lg text-base text-foreground/60">
           ยิ่งชุมชนสนับสนุนมาก — เราพัฒนาฟีเจอร์เด็ดๆ ให้น้องสัตว์มีบ้าน
           <br />
@@ -558,12 +564,12 @@ export function RoadMapView({ initialViewModel }: RoadMapViewProps) {
         <p className="text-sm text-foreground/60">
           <span className="font-semibold text-foreground">โน้ตจากทีม:</span>{" "}
           ทุกฟีเจอร์ในนี้{" "}
-          <span className="font-semibold text-foreground">จะทำแน่นอน</span>
-          {" "}ตามกำหนดการที่ระบุไว้ — ไม่มีการล็อคถาวร ไม่มีการบังคับบริจาค
+          <span className="font-semibold text-foreground">จะทำแน่นอน</span>{" "}
+          ตามกำหนดการที่ระบุไว้ — ไม่มีการล็อคถาวร ไม่มีการบังคับสนับสนุน
           <br />
           แต่ถ้าชุมชนช่วยกัน ยอดถึงเร็ว เราเริ่มทำ{" "}
-          <span className="font-semibold text-primary">ทันที</span>
-          {" "}โดยไม่ต้องรอ deadline ❤️
+          <span className="font-semibold text-primary">ทันที</span> โดยไม่ต้องรอ
+          deadline ❤️
         </p>
       </div>
 

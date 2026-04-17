@@ -112,7 +112,7 @@ export function Navbar() {
             className="hidden items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20 sm:flex"
           >
             <Heart className="h-4 w-4" />
-            <span className="hidden sm:inline">สนับสนุน</span>
+            <span className="hidden sm:inline">ให้กำลังใจ</span>
           </button>
 
           {/* Auth */}
@@ -247,7 +247,7 @@ export function Navbar() {
                       className="flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/5"
                     >
                       <Trophy className="h-4 w-4 text-yellow-500" />
-                      ฮีโร่ช่วยน้อง
+                      ผู้สนับสนุน
                     </Link>
                     {profile?.role === "admin" && (
                       <Link

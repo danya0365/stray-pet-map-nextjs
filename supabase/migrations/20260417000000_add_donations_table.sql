@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS public.donations (
   donor_email TEXT,                              -- for receipt
   is_anonymous BOOLEAN DEFAULT FALSE,            -- hide from leaderboard
   
-  -- Donation target (dual mode)
-  target_type TEXT NOT NULL CHECK (target_type IN ('pet', 'fund')),
+  -- Donation target (triple mode: pet-specific, platform, dev-support)
+  target_type TEXT NOT NULL CHECK (target_type IN ('pet', 'fund', 'dev')),
   pet_post_id UUID REFERENCES public.pet_posts(id),  -- NULL = general fund
   
   -- Amount & Payment

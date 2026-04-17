@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Trophy, Medal, Crown, Sparkles, PawPrint, Heart } from "lucide-react";
-import Link from "next/link";
 import { useDonation } from "@/presentation/hooks/useDonation";
+import { Crown, Heart, Medal, PawPrint, Sparkles, Trophy } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const TABS = [
   { id: "weekly", label: "ฮีโร่ประจำสัปดาห์", icon: Sparkles },
@@ -11,11 +11,7 @@ const TABS = [
 ];
 
 const RANK_ICONS = [Crown, Medal, Medal];
-const RANK_COLORS = [
-  "text-yellow-500",
-  "text-gray-400",
-  "text-amber-600",
-];
+const RANK_COLORS = ["text-yellow-500", "text-gray-400", "text-amber-600"];
 
 export default function DonationLeaderboardPage() {
   const [activeTab, setActiveTab] = useState<"weekly" | "alltime">("weekly");
@@ -36,10 +32,10 @@ export default function DonationLeaderboardPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            ฮีโร่ช่วยน้อง 🏆
+            กระดานผู้สนับสนุน 🏆
           </h1>
           <p className="mt-3 text-lg text-muted-foreground">
-            ขอบคุณผู้ใจดีทุกท่านที่ช่วยเหลือน้องๆ ให้มีชีวิตที่ดีขึ้น
+            ขอบคุณผู้ใจดีทุกท่านที่ให้กำลังใจและสนับสนุน StrayPetMap
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Link
@@ -79,19 +75,19 @@ export default function DonationLeaderboardPage() {
             <div className="text-2xl font-bold text-primary">
               {leaderboard.stats?.totalRaised?.toLocaleString() || "0"}฿
             </div>
-            <div className="text-sm text-muted-foreground">ยอดบริจาครวม</div>
+            <div className="text-sm text-muted-foreground">ยอดสนับสนุนรวม</div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4 text-center">
             <div className="text-2xl font-bold text-secondary">
               {leaderboard.stats?.uniqueDonors || "0"}
             </div>
-            <div className="text-sm text-muted-foreground">ผู้บริจาค</div>
+            <div className="text-sm text-muted-foreground">ผู้สนับสนุน</div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4 text-center">
             <div className="text-2xl font-bold text-accent">
               {leaderboard.stats?.totalDonations || "0"}
             </div>
-            <div className="text-sm text-muted-foreground">ครั้งบริจาค</div>
+            <div className="text-sm text-muted-foreground">ครั้งสนับสนุน</div>
           </div>
         </div>
 
@@ -105,9 +101,9 @@ export default function DonationLeaderboardPage() {
           ) : leaderboard.entries.length === 0 ? (
             <div className="py-12 text-center">
               <Heart className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">ยังไม่มีข้อมูลผู้บริจาค</p>
+              <p className="text-muted-foreground">ยังไม่มีข้อมูลผู้สนับสนุน</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                มาเป็นฮีโร่คนแรกกัน! 🦸
+                มาเป็นผู้สนับสนุนคนแรกกัน! 🦸
               </p>
             </div>
           ) : (
@@ -162,7 +158,7 @@ export default function DonationLeaderboardPage() {
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      บริจาค {entry.donationCount} ครั้ง
+                      สนับสนุน {entry.donationCount} ครั้ง
                     </div>
                   </div>
 
@@ -173,7 +169,10 @@ export default function DonationLeaderboardPage() {
                     </div>
                     {entry.lastDonationAt && (
                       <div className="text-xs text-muted-foreground">
-                        ล่าสุด: {new Date(entry.lastDonationAt).toLocaleDateString("th-TH")}
+                        ล่าสุด:{" "}
+                        {new Date(entry.lastDonationAt).toLocaleDateString(
+                          "th-TH",
+                        )}
                       </div>
                     )}
                   </div>
@@ -186,14 +185,14 @@ export default function DonationLeaderboardPage() {
         {/* CTA */}
         <div className="mt-8 text-center">
           <p className="mb-4 text-muted-foreground">
-            อยากเห็นชื่อตัวเองในกระดานผู้บริจาค?
+            อยากเห็นชื่อตัวเองในกระดานผู้สนับสนุน?
           </p>
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-xl border-2 border-primary px-6 py-3 font-medium text-primary transition-all hover:bg-primary hover:text-white"
           >
             <Heart className="h-4 w-4" />
-            ร่วมบริจาคเลย
+            ร่วมสนับสนุนเลย
           </Link>
         </div>
       </div>
