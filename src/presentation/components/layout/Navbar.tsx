@@ -16,6 +16,7 @@ import {
   Search,
   Settings,
   SwitchCamera,
+  Trophy,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -239,6 +240,14 @@ export function Navbar() {
                     >
                       <User className="h-4 w-4" />
                       โปรไฟล์
+                    </Link>
+                    <Link
+                      href="/donate/leaderboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/5"
+                    >
+                      <Trophy className="h-4 w-4 text-yellow-500" />
+                      ฮีโร่ช่วยน้อง
                     </Link>
                     {profile?.role === "admin" && (
                       <Link

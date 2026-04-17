@@ -2,10 +2,22 @@ import { StripeDonationRepository } from "@/infrastructure/repositories/stripe/S
 import { NextResponse } from "next/server";
 
 // POST /api/donate/checkout - สร้าง Stripe checkout session สำหรับ donation
+// Supports dual mode: pet-specific + general fund + guest donations
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, message, successUrl, cancelUrl } = body;
+    const {
+      amount,
+      message,
+      successUrl,
+      cancelUrl,
+      targetType = "fund", // 'pet' | 'fund'
+      petPostId,
+      donorName,
+      donorEmail,
+      isAnonymous = false,
+      showOnLeaderboard = true,
+    } = body;
 
     // Validation
     if (!amount || amount < 20) {
@@ -18,6 +30,14 @@ export async function POST(request: Request) {
     if (!successUrl || !cancelUrl) {
       return NextResponse.json(
         { error: "Missing successUrl or cancelUrl" },
+        { status: 400 },
+      );
+    }
+
+    // Validate targetType
+    if (targetType === "pet" && !petPostId) {
+      return NextResponse.json(
+        { error: "petPostId is required when targetType is 'pet'" },
         { status: 400 },
       );
     }
@@ -37,6 +57,12 @@ export async function POST(request: Request) {
       message,
       successUrl,
       cancelUrl,
+      targetType,
+      petPostId,
+      donorName,
+      donorEmail,
+      isAnonymous,
+      showOnLeaderboard,
     });
 
     return NextResponse.json(result);

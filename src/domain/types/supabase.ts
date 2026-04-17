@@ -63,6 +63,87 @@ export type Database = {
           },
         ]
       }
+      donations: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          donor_email: string | null
+          donor_id: string | null
+          donor_name: string
+          id: string
+          is_anonymous: boolean | null
+          message: string | null
+          payment_method: string
+          payment_status: string
+          pet_post_id: string | null
+          points_awarded: number
+          show_on_leaderboard: boolean | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string | null
+          payment_method: string
+          payment_status?: string
+          pet_post_id?: string | null
+          points_awarded?: number
+          show_on_leaderboard?: boolean | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string | null
+          payment_method?: string
+          payment_status?: string
+          pet_post_id?: string | null
+          points_awarded?: number
+          show_on_leaderboard?: boolean | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_pet_post_id_fkey"
+            columns: ["pet_post_id"]
+            isOneToOne: false
+            referencedRelation: "pet_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -195,6 +276,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pet_images_pet_post_id_fkey"
+            columns: ["pet_post_id"]
+            isOneToOne: false
+            referencedRelation: "pet_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_post_funding_goals: {
+        Row: {
+          created_at: string
+          current_amount: number
+          deadline: string | null
+          description: string | null
+          goal_type: string
+          id: string
+          is_active: boolean
+          pet_post_id: string
+          target_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          description?: string | null
+          goal_type: string
+          id?: string
+          is_active?: boolean
+          pet_post_id: string
+          target_amount: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          is_active?: boolean
+          pet_post_id?: string
+          target_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_post_funding_goals_pet_post_id_fkey"
             columns: ["pet_post_id"]
             isOneToOne: false
             referencedRelation: "pet_posts"
@@ -542,6 +670,41 @@ export type Database = {
       }
     }
     Views: {
+      donation_leaderboard_alltime: {
+        Row: {
+          avatar_url: string | null
+          donation_count: number | null
+          donor_id: string | null
+          donor_name: string | null
+          level: number | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
+      donation_leaderboard_weekly: {
+        Row: {
+          avatar_url: string | null
+          donation_count: number | null
+          donor_id: string | null
+          donor_name: string | null
+          last_donation_at: string | null
+          level: number | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
+      donation_stats: {
+        Row: {
+          monthly_donations: number | null
+          monthly_raised: number | null
+          total_donations: number | null
+          total_raised: number | null
+          unique_donors: number | null
+          weekly_donations: number | null
+          weekly_raised: number | null
+        }
+        Relationships: []
+      }
       profile_badge_counts: {
         Row: {
           avatar_url: string | null

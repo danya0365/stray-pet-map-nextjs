@@ -1,8 +1,10 @@
 "use client";
 
+import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
 import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
+import { PetFundingProgress } from "@/presentation/components/donation/PetFundingProgress";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
@@ -74,6 +76,7 @@ const genderLabel: Record<string, string> = {
 // View Props - รับ state และ callbacks จาก Presenter
 interface PetDetailViewProps {
   viewModel: PetDetailViewModel;
+  fundingGoal: PetFundingGoal | null;
   isOwner: boolean;
   canClose: boolean;
   isAdoptionModalOpen: boolean;
@@ -85,11 +88,13 @@ interface PetDetailViewProps {
   onCloseCloseModal: () => void;
   onAdoptClick: () => void;
   onClosePost: (outcome: PetPostOutcome) => Promise<void>;
+  onDonateClick: () => void;
 }
 
 // View Component - 100% Logic-Free รับ state และ callbacks จาก props
 export function PetDetailView({
   viewModel,
+  fundingGoal,
   isOwner,
   canClose,
   isAdoptionModalOpen,
@@ -100,6 +105,7 @@ export function PetDetailView({
   onAdoptClick,
   onOpenCloseModal,
   onClosePost,
+  onDonateClick,
 }: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
@@ -243,6 +249,13 @@ export function PetDetailView({
               </span>
             )}
           </div>
+
+          {/* Funding Progress */}
+          <PetFundingProgress
+            goal={fundingGoal}
+            petName={post.title}
+            onDonateClick={onDonateClick}
+          />
 
           {/* Actions */}
           {canClose ? (

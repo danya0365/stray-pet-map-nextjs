@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, PawPrint } from "lucide-react";
+import { Heart, PawPrint, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useDonationContext } from "../donation/DonationProvider";
 
@@ -23,13 +23,20 @@ export function Footer() {
           เพื่อสัตว์จรทุกตัว
         </p>
 
-        <nav className="flex gap-4 text-xs text-foreground/50">
+        <nav className="flex flex-wrap justify-center gap-4 text-xs text-foreground/50">
           <button
             onClick={open}
             className="transition-colors hover:text-primary"
           >
             สนับสนุน
           </button>
+          <Link
+            href="/donate/leaderboard"
+            className="flex items-center gap-1 transition-colors hover:text-primary"
+          >
+            <Trophy className="h-3 w-3" />
+            ฮีโร่
+          </Link>
           <Link
             href="/road-map"
             className="transition-colors hover:text-primary"
@@ -43,7 +50,7 @@ export function Footer() {
             href="/privacy"
             className="transition-colors hover:text-primary"
           >
-            นโยบายความเป็นส่วนตัว
+            นโยบาย
           </Link>
         </nav>
       </div>
