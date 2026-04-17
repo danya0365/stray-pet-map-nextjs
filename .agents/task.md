@@ -1,6 +1,6 @@
 # Stray Pet Map — Task Tracker
 
-> อัปเดตล่าสุด: 12 เม.ย. 2026
+> อัปเดตล่าสุด: 17 เม.ย. 2026
 
 ---
 
@@ -10,9 +10,12 @@
 
 - สร้าง migration `20260212000000_stray_pet_map_schema.sql`
 - 6 tables: `pet_types`, `pet_posts`, `pet_images`, `adoption_requests`, `favorites`, `reports`
+- **NEW:** Migration `20260417000000_add_donations_table.sql` — ตาราง `donations` + `pet_post_funding_goals`
+- **NEW:** Migration `20260417000001_donation_stats_view.sql` — Views `roadmap_stats`, `donation_leaderboard`
 - Enums: `pet_gender`, `pet_post_status`, `adoption_request_status`, `report_reason`, `report_status`
 - RLS Policies ครบทุกตาราง
 - Triggers auto-update `updated_at`
+- **RPC:** `check_and_award_badges()` สำหรับระบบเกมิฟิเคชัน
 
 ### 2. Clean Architecture Foundation
 
@@ -21,7 +24,10 @@
 - **Infrastructure:**
   - Mock: `MockPetPostRepository.ts`
   - Supabase: `SupabasePetPostRepository.ts`, `SupabaseAuthRepository.ts`, `SupabaseFavoriteRepository.ts`, `SupabaseAdoptionRequestRepository.ts`, `SupabasePetTypeRepository.ts`, `SupabaseStorageRepository.ts`
+  - **NEW:** `SupabaseDonationRepository.ts`, `SupabaseRoadMapRepository.ts`
+  - **NEW:** `StripeRepository.ts` (implements `IStripeRepository`)
 - **Presenters:** Home, Map, Search, PetDetail, CreatePost, Profile, Favorites — แต่ละอันมี Presenter + ClientFactory + ServerFactory + usePresenter hook
+- **NEW Presenters:** `DonationPresenter` (webhook processing), `RoadMapPresenter` (donation stats)
 
 ### 3. Layout & Navigation
 
@@ -82,6 +88,24 @@
   - Description chips ต่อท้ายข้อความ (ไม่ทับ)
   - ปุ่ม "ข้ามไปรีวิว" สำหรับ step 4
 
+### 10. ระบบบริจาค (Donation) ✅
+
+- **API:** `/api/donate/checkout` — สร้าง Stripe Checkout Session
+- **API:** `/api/donate/webhook` — รับ webhook จาก Stripe (ใช้ `DonationPresenter`)
+- **Presenter Pattern:** `DonationPresenter` + `DonationPresenterServerFactory`
+- **Repository:** `StripeRepository` (implement `IStripeRepository` ตาม pattern)
+- **Features:**
+  - บริจาคให้น้องรายตัว (ผูกกับ `pet_post_id`)
+  - บริจาคกองทุนกลาง (ไม่ผูก pet_post)
+  - บริจาคให้ Dev (ซับพอร์ตทีมพัฒนา)
+  - ระบบคำนวณ points (1 point ต่อ 10 บาท, cap 200/วัน)
+  - ระบบ badge อัตโนมัติ (`check_and_award_badges` RPC)
+- **หน้า:**
+  - `/donate/leaderboard` — กระดานผู้สนับสนุน (weekly/alltime)
+  - `/donate/success` — หน้าขอบคุณหลังบริจาค
+  - `/road-map` — แสดงยอดบริจาคสะสม + แผนพัฒนา
+- **Payment Methods:** Stripe (Card + PromptPay)
+
 ---
 
 ## ⏳ ฟีเจอร์ที่ยังค้าง / ต้องทำต่อ
@@ -93,21 +117,24 @@
 - [x] **Submit โพสต์จริง** — ✅ Complete — Flow: CreatePostForm → useCreatePostPresenter → ApiPetPostRepository → /api/pet-posts → SupabasePetPostRepository → DB
 - [x] **Upload รูปภาพจริง** — ✅ Complete — Flow: CreatePostForm → presenter.uploadThumbnail → ApiStorageRepository → /api/storage/upload → SupabaseStorage → thumbnails bucket
 - [x] **ดึง pet_types จาก DB** — ✅ SupabasePetTypeRepository พร้อมใช้งาน
+- [x] **ระบบบริจาค (Donation)** — ✅ Complete — Stripe Integration + Webhook + Presenter Pattern + ตาราง donations + กระดานผู้สนับสนุน
+- [x] **Road Map Page** — ✅ Complete — แสดงยอดบริจาคสะสม + แผนพัฒนาฟีเจอร์
 
 ### ระดับ Medium Priority
 
 - [x] **Adoption Request** — ✅ Complete — API Routes + ApiAdoptionRequestRepository + AdoptionRequestModal (PetDetail) พร้อมใช้งาน
 - [x] **Favorites / Bookmark** — ✅ หน้า `/favorites` + SupabaseFavoriteRepository พร้อม ต้อง integrate UI
 - [ ] **Search ขั้นสูง** — Filter ตาม ชนิด, พันธุ์, สี, ระยะทาง, สถานะ (ตอนนี้มีแค่สถานะ)
-- [ ] **หน้า Profile** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
+- [ ] **หน้า Profile ขั้นสูง** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
 - [ ] **Reverse Geocoding** — แปลง lat/lng เป็นชื่อที่อยู่อัตโนมัติ (เพื่อ auto-suggest title ดีขึ้น)
+- [ ] **ระบบ Gamification** — คะแนน, Levels, Badges, Leaderboard (ออกแบบแล้ว ยังไม่ implement)
 
 ### ระดับ Low Priority
 
 - [ ] **Report โพสต์** — ปุ่มแจ้งรายงานโพสต์ไม่เหมาะสม
 - [ ] **Notification** — แจ้งเตือนเมื่อมีคนสนใจรับเลี้ยงน้อง
 - [ ] **SEO / OG Tags** — metadata สำหรับ share ลิงก์บน social
-- [ ] **Admin Dashboard** — จัดการโพสต์, ดู reports, อนุมัติ/ปฏิเสธ adoption requests
+- [ ] **Admin Dashboard** — 🚧 มีหน้า placeholder แล้ว ต้องเชื่อมข้อมูลจริง (โพสต์, reports, adoption requests)
 - [ ] **PWA / Offline** — ทำให้ใช้งานได้เบื้องต้นแบบ offline
 
 ---
@@ -285,4 +312,5 @@ LIMIT 10;
 - **Build status:** ผ่าน
 - **Lint status:** ผ่าน (แก้ไข React Compiler warning แล้ว)
 - **Supabase Repositories:** พร้อมใช้งาน 6 ตัว (PetPost, Auth, Favorite, AdoptionRequest, PetType, Storage)
-- **Integration Status:** ✅ CreatePostForm เชื่อมต่อกับ Supabase ผ่าน API routes เรียบร้อยแล้ว
+- **Integration Status:** ✅ CreatePostForm + Donation System เชื่อมต่อกับ Supabase ผ่าน API routes เรียบร้อยแล้ว
+- **Donation Status:** ✅ Stripe webhook + Presenter pattern + Leaderboard พร้อมใช้งาน
