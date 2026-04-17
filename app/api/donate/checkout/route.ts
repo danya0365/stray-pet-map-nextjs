@@ -1,4 +1,4 @@
-import { StripeDonationRepository } from "@/infrastructure/repositories/stripe/StripeDonationRepository";
+import { StripeRepository } from "@/infrastructure/repositories/stripe/StripeRepository";
 import { NextResponse } from "next/server";
 
 // POST /api/donate/checkout - สร้าง Stripe checkout session สำหรับ donation
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const repo = new StripeDonationRepository(stripeSecretKey);
+    const repo = new StripeRepository(stripeSecretKey);
     const result = await repo.createCheckoutSession({
       amount,
       message,

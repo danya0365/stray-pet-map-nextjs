@@ -3,16 +3,16 @@
  * Factory for creating RoadMapPresenter instances on the server side
  */
 
+import { SupabaseRoadMapRepository } from "@/infrastructure/repositories/supabase/SupabaseRoadMapRepository";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { RoadMapPresenter } from "./RoadMapPresenter";
-import { MockRoadMapRepository } from "@/infrastructure/repositories/mock/MockRoadMapRepository";
 
-export class RoadMapPresenterServerFactory {
-  static create(): RoadMapPresenter {
-    const repository = new MockRoadMapRepository();
-    return new RoadMapPresenter(repository);
-  }
-}
-
-export function createServerRoadMapPresenter(): RoadMapPresenter {
-  return RoadMapPresenterServerFactory.create();
+/**
+ * Factory for creating server-side RoadMapPresenter
+ * Uses Supabase repository for real donation stats
+ */
+export async function createServerRoadMapPresenter(): Promise<RoadMapPresenter> {
+  const supabase = await createServerSupabaseClient();
+  const repository = new SupabaseRoadMapRepository(supabase);
+  return new RoadMapPresenter(repository);
 }

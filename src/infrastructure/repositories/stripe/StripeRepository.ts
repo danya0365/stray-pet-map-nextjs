@@ -1,18 +1,18 @@
 /**
- * StripeDonationRepository
+ * StripeRepository
  * Stripe implementation for donation checkout
  * Supports PromptPay and Credit Card
  * Dual mode: pet-specific + general fund + guest donations
  */
 
 import type {
-  DonationCheckoutParams,
-  DonationCheckoutResult,
-  IDonationRepository,
-} from "@/application/repositories/IDonationRepository";
+  CheckoutSessionParams,
+  CheckoutSessionResult,
+  IStripeRepository,
+} from "@/application/repositories/IStripeRepository";
 import Stripe from "stripe";
 
-export class StripeDonationRepository implements IDonationRepository {
+export class StripeRepository implements IStripeRepository {
   private stripe: Stripe;
 
   constructor(secretKey: string) {
@@ -20,14 +20,14 @@ export class StripeDonationRepository implements IDonationRepository {
       throw new Error("Stripe secret key is missing");
     }
     this.stripe = new Stripe(secretKey, {
-      apiVersion: "2025-03-31.basil",
+      apiVersion: "2026-03-25.dahlia",
       typescript: true,
     });
   }
 
   async createCheckoutSession(
-    params: DonationCheckoutParams,
-  ): Promise<DonationCheckoutResult> {
+    params: CheckoutSessionParams,
+  ): Promise<CheckoutSessionResult> {
     // Determine product name based on target type
     const productName =
       params.targetType === "pet" && params.petPostId
@@ -77,5 +77,17 @@ export class StripeDonationRepository implements IDonationRepository {
       sessionId: session.id,
       url: session.url,
     };
+  }
+
+  /**
+   * Construct Stripe event from webhook payload
+   * Used for webhook signature verification
+   */
+  async constructEvent(
+    payload: string | Buffer,
+    signature: string,
+    secret: string,
+  ): Promise<Stripe.Event> {
+    return this.stripe.webhooks.constructEvent(payload, signature, secret);
   }
 }

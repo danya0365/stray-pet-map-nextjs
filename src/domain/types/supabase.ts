@@ -670,6 +670,25 @@ export type Database = {
       }
     }
     Views: {
+      donation_leaderboard: {
+        Row: {
+          donation_count: number | null
+          donor_id: string | null
+          donor_name: string | null
+          last_donation_at: string | null
+          rank: number | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donation_leaderboard_alltime: {
         Row: {
           avatar_url: string | null
@@ -743,6 +762,13 @@ export type Database = {
           },
         ]
       }
+      roadmap_stats: {
+        Row: {
+          total_raised: number | null
+          unique_donors: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_and_award_badges: {
@@ -803,6 +829,14 @@ export type Database = {
       get_profile_role: {
         Args: { profile_id: string }
         Returns: Database["public"]["Enums"]["profile_role"]
+      }
+      get_user_donation_stats: {
+        Args: { user_uuid: string }
+        Returns: {
+          donation_count: number
+          total_donated: number
+          total_points: number
+        }[]
       }
       get_user_profiles: {
         Args: never

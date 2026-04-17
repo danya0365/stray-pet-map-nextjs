@@ -7,16 +7,16 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerRoadMapPresenter();
+  const presenter = await createServerRoadMapPresenter();
   return presenter.generateMetadata();
 }
 
 /**
  * Road Map page — Server Component for SEO optimization
- * แสดงแผนการพัฒนาฟีเจอร์ ตามยอดบริจาคที่สะสม
+ * แสดงแผนการพัฒนาฟีเจอร์ ตามยอดสนับสนุนที่สะสม
  */
 export default async function RoadMapPage() {
-  const presenter = createServerRoadMapPresenter();
+  const presenter = await createServerRoadMapPresenter();
 
   try {
     const viewModel = await presenter.getViewModel();

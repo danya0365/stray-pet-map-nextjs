@@ -14,7 +14,7 @@ interface UseDonationOptions {
 interface DonationParams {
   amount: number;
   message: string;
-  targetType: "pet" | "fund";
+  targetType: "pet" | "fund" | "dev";
   petPostId?: string;
   donorName?: string;
   donorEmail?: string;
