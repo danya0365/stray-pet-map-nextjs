@@ -97,6 +97,20 @@ export function SearchFilterBar({
     [filters, onFiltersChange],
   );
 
+  const setBreed = useCallback(
+    (breed: string) => {
+      onFiltersChange({ ...filters, breed: breed || undefined });
+    },
+    [filters, onFiltersChange],
+  );
+
+  const setColor = useCallback(
+    (color: string) => {
+      onFiltersChange({ ...filters, color: color || undefined });
+    },
+    [filters, onFiltersChange],
+  );
+
   const clearAll = useCallback(() => {
     setSearchInput("");
     onSearchChange("");
@@ -104,7 +118,12 @@ export function SearchFilterBar({
   }, [onSearchChange, onFiltersChange]);
 
   const hasActiveFilters =
-    search || filters.status || filters.petTypeId || filters.gender;
+    search ||
+    filters.status ||
+    filters.petTypeId ||
+    filters.gender ||
+    filters.breed ||
+    filters.color;
 
   return (
     <div className="flex flex-col gap-3">
@@ -256,6 +275,32 @@ export function SearchFilterBar({
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Breed & Color */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-2 text-xs font-medium text-foreground/50">
+                สายพันธุ์
+              </p>
+              <input
+                type="text"
+                value={filters.breed || ""}
+                onChange={(e) => setBreed(e.target.value)}
+                placeholder="เช่น ไทย, เปอร์เซีย, ชิวาวา..."
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-medium text-foreground/50">สี</p>
+              <input
+                type="text"
+                value={filters.color || ""}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="เช่น ส้ม, ดำ, ขาว, ลาย..."
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+              />
             </div>
           </div>
 

@@ -8,6 +8,16 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useEffect, useState } from "react";
 import { PetDetailView } from "./PetDetailView";
 
+// Simple modal state hook
+function useModalState(initial = false) {
+  const [isOpen, setIsOpen] = useState(initial);
+  return {
+    isOpen,
+    open: () => setIsOpen(true),
+    close: () => setIsOpen(false),
+  };
+}
+
 interface PetDetailContainerProps {
   initialViewModel: PetDetailViewModel;
 }
@@ -33,6 +43,9 @@ export function PetDetailContainer({
 
   // Fetch funding goal
   const [fundingGoal, setFundingGoal] = useState<PetFundingGoal | null>(null);
+
+  // Report modal state
+  const reportModal = useModalState(false);
 
   useEffect(() => {
     const fetchFundingGoal = async () => {
@@ -88,10 +101,13 @@ export function PetDetailContainer({
       isAdoptionModalOpen={isAdoptionModalOpen}
       isCloseModalOpen={isCloseModalOpen}
       isClosingPost={isClosingPost}
+      isReportModalOpen={reportModal.isOpen}
       onOpenAdoptionModal={openAdoptionModal}
       onCloseAdoptionModal={closeAdoptionModal}
       onOpenCloseModal={openCloseModal}
       onCloseCloseModal={closeCloseModal}
+      onOpenReportModal={reportModal.open}
+      onCloseReportModal={reportModal.close}
       onAdoptClick={handleAdoptClick}
       onClosePost={handleClosePost}
       onDonateClick={handleDonateClick}

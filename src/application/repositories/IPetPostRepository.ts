@@ -39,9 +39,12 @@ export interface PetPostFilters {
   petTypeId?: string;
   gender?: PetGender;
   province?: string;
+  breed?: string; // กรองตามสายพันธุ์
+  color?: string; // กรองตามสี
   isVaccinated?: boolean;
   isNeutered?: boolean;
   profileId?: string;
+  estimatedAge?: string; // กรองตามช่วงอายุ เช่น "0-1", "1-3", "3-5", "5+"
 }
 
 export interface NearByFilter {

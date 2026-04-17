@@ -6,6 +6,7 @@ import { AdoptionRequestModal } from "@/presentation/components/adoption/Adoptio
 import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
 import { PetFundingProgress } from "@/presentation/components/donation/PetFundingProgress";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
+import { ReportModal } from "@/presentation/components/report/ReportModal";
 import { Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
 import dayjs from "dayjs";
@@ -82,10 +83,13 @@ interface PetDetailViewProps {
   isAdoptionModalOpen: boolean;
   isCloseModalOpen: boolean;
   isClosingPost: boolean;
+  isReportModalOpen: boolean;
   onOpenAdoptionModal: () => void;
   onCloseAdoptionModal: () => void;
   onOpenCloseModal: () => void;
   onCloseCloseModal: () => void;
+  onOpenReportModal: () => void;
+  onCloseReportModal: () => void;
   onAdoptClick: () => void;
   onClosePost: (outcome: PetPostOutcome) => Promise<void>;
   onDonateClick: () => void;
@@ -104,8 +108,11 @@ export function PetDetailView({
   onCloseCloseModal,
   onAdoptClick,
   onOpenCloseModal,
+  onOpenReportModal,
+  onCloseReportModal,
   onClosePost,
   onDonateClick,
+  isReportModalOpen,
 }: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
@@ -359,6 +366,7 @@ export function PetDetailView({
             </button>
             <button
               type="button"
+              onClick={onOpenReportModal}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted"
             >
               <Flag className="h-3.5 w-3.5" />
@@ -382,6 +390,13 @@ export function PetDetailView({
         purpose={post.purpose}
         onConfirm={onClosePost}
         isLoading={isClosingPost}
+      />
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={onCloseReportModal}
+        petPostId={post.id}
+        petTitle={post.title}
       />
     </div>
   );

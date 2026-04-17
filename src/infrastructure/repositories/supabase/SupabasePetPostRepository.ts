@@ -357,6 +357,15 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     if (filters.profileId) {
       query = query.eq("profile_id", filters.profileId);
     }
+    if (filters.breed) {
+      query = query.ilike("breed", `%${filters.breed}%`);
+    }
+    if (filters.color) {
+      query = query.ilike("color", `%${filters.color}%`);
+    }
+    if (filters.estimatedAge) {
+      query = query.eq("estimated_age", filters.estimatedAge);
+    }
 
     return query;
   }

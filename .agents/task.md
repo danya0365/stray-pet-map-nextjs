@@ -26,6 +26,7 @@
   - Supabase: `SupabasePetPostRepository.ts`, `SupabaseAuthRepository.ts`, `SupabaseFavoriteRepository.ts`, `SupabaseAdoptionRequestRepository.ts`, `SupabasePetTypeRepository.ts`, `SupabaseStorageRepository.ts`
   - **NEW:** `SupabaseDonationRepository.ts`, `SupabaseRoadMapRepository.ts`
   - **NEW:** `StripeRepository.ts` (implements `IStripeRepository`)
+  - **NEW:** `SupabaseReportRepository.ts` (implements `IReportRepository`)
 - **Presenters:** Home, Map, Search, PetDetail, CreatePost, Profile, Favorites — แต่ละอันมี Presenter + ClientFactory + ServerFactory + usePresenter hook
 - **NEW Presenters:** `DonationPresenter` (webhook processing), `RoadMapPresenter` (donation stats)
 
@@ -124,14 +125,14 @@
 
 - [x] **Adoption Request** — ✅ Complete — API Routes + ApiAdoptionRequestRepository + AdoptionRequestModal (PetDetail) พร้อมใช้งาน
 - [x] **Favorites / Bookmark** — ✅ หน้า `/favorites` + SupabaseFavoriteRepository พร้อม ต้อง integrate UI
-- [ ] **Search ขั้นสูง** — Filter ตาม ชนิด, พันธุ์, สี, ระยะทาง, สถานะ (ตอนนี้มีแค่สถานะ)
+- [x] **Search ขั้นสูง** — ✅ Complete — Filter ตาม ชนิด, พันธุ์, สี, เพศ, สถานะ (เพิ่ม breed, color filters)
+- [x] **Report โพสต์** — ✅ Complete — ปุ่มรายงาน + Modal + API + Repository Pattern
 - [ ] **หน้า Profile ขั้นสูง** — ✅ หน้า `/profile` พร้อม ต้องเพิ่มโพสต์ของตัวเอง, แก้ไข/ลบโพสต์, adoption requests
 - [ ] **Reverse Geocoding** — แปลง lat/lng เป็นชื่อที่อยู่อัตโนมัติ (เพื่อ auto-suggest title ดีขึ้น)
 - [ ] **ระบบ Gamification** — คะแนน, Levels, Badges, Leaderboard (ออกแบบแล้ว ยังไม่ implement)
 
 ### ระดับ Low Priority
 
-- [ ] **Report โพสต์** — ปุ่มแจ้งรายงานโพสต์ไม่เหมาะสม
 - [ ] **Notification** — แจ้งเตือนเมื่อมีคนสนใจรับเลี้ยงน้อง
 - [ ] **SEO / OG Tags** — metadata สำหรับ share ลิงก์บน social
 - [ ] **Admin Dashboard** — 🚧 มีหน้า placeholder แล้ว ต้องเชื่อมข้อมูลจริง (โพสต์, reports, adoption requests)
