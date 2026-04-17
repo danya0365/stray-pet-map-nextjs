@@ -49,13 +49,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const { stats, badges, badgeProgress } = profile;
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-4 py-8">
         {/* Profile Header */}
-        <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+        <div className="mb-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
             {/* Avatar */}
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-gray-100 sm:h-32 sm:w-32">
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-muted sm:h-32 sm:w-32">
               {profile.avatarUrl &&
               (profile.avatarUrl.startsWith("http") ||
                 profile.avatarUrl.startsWith("/")) ? (
@@ -67,39 +67,43 @@ export default async function PublicProfilePage({ params }: PageProps) {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <User className="h-12 w-12 text-gray-400" />
+                  <User className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
             </div>
 
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="mb-1 text-2xl font-bold text-gray-900">
+              <h1 className="mb-1 text-2xl font-bold text-foreground">
                 {profile.displayName}
                 {profile.isVerified && (
-                  <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                     ✓ ยืนยันแล้ว
                   </span>
                 )}
               </h1>
               {profile.username && (
-                <p className="mb-3 text-gray-500">@{profile.username}</p>
+                <p className="mb-3 text-muted-foreground">
+                  @{profile.username}
+                </p>
               )}
               {profile.bio && (
-                <p className="mb-4 max-w-lg text-gray-700">{profile.bio}</p>
+                <p className="mb-4 max-w-lg text-muted-foreground">
+                  {profile.bio}
+                </p>
               )}
 
               {/* Stats */}
               <div className="flex flex-wrap justify-center gap-4 sm:justify-start">
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" />
                   <span>{stats.totalPosts} โพสต์</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Heart className="h-4 w-4" />
                   <span>{stats.helpedCount} ช่วยสำเร็จ</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Award className="h-4 w-4" />
                   <span>{stats.totalBadges} ตราสัญลักษณ์</span>
                 </div>
@@ -110,8 +114,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
         {/* Badges Section */}
         {badges.length > 0 && (
-          <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          <div className="mb-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               ตราสัญลักษณ์ ({badges.length})
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -134,13 +138,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
         )}
 
         {/* Posts Section */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             โพสต์ล่าสุด ({postsResult.total})
           </h2>
 
           {postsResult.posts.length === 0 ? (
-            <div className="py-12 text-center text-gray-500">
+            <div className="py-12 text-center text-muted-foreground">
               <p>ยังไม่มีโพสต์</p>
             </div>
           ) : (
@@ -149,10 +153,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
                 <Link
                   key={post.id}
                   href={`/pets/${post.id}`}
-                  className="group overflow-hidden rounded-xl border border-gray-100 bg-white transition-shadow hover:shadow-md"
+                  className="group overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md"
                 >
                   {/* Thumbnail */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                  <div className="relative aspect-4/3 overflow-hidden bg-muted">
                     {post.thumbnailUrl ? (
                       <Image
                         src={post.thumbnailUrl}
@@ -161,7 +165,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-gray-400">
+                      <div className="flex h-full items-center justify-center text-muted-foreground">
                         <MapPin className="h-8 w-8" />
                       </div>
                     )}
@@ -172,7 +176,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                           ? "bg-emerald-100 text-emerald-700"
                           : post.status === "adopted"
                             ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
+                            : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {post.status === "available"
@@ -187,13 +191,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
                   {/* Info */}
                   <div className="p-3">
-                    <h3 className="mb-1 line-clamp-1 font-medium text-gray-900">
+                    <h3 className="mb-1 line-clamp-1 font-medium text-foreground">
                       {post.title}
                     </h3>
-                    <p className="line-clamp-2 text-sm text-gray-600">
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
                       {post.description || "ไม่มีคำอธิบาย"}
                     </p>
-                    <p className="mt-2 text-xs text-gray-400">
+                    <p className="mt-2 text-xs text-muted-foreground/70">
                       {new Date(post.createdAt).toLocaleDateString("th-TH")}
                     </p>
                   </div>
@@ -205,7 +209,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           {/* Load More */}
           {postsResult.hasMore && (
             <div className="mt-6 text-center">
-              <button className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200">
+              <button className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80">
                 ดูเพิ่มเติม
               </button>
             </div>
