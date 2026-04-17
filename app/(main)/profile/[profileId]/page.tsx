@@ -1,16 +1,18 @@
 import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
 import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
-import { notFound } from "next/navigation";
+import { Award, Heart, MapPin, User } from "lucide-react";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Award, Heart, MapPin, User } from "lucide-react";
+import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ profileId: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { profileId } = await params;
   const supabase = await createServerSupabaseClient();
   const repo = new SupabasePublicProfileRepository(supabase);
@@ -24,7 +26,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${profile.displayName} | StrayPetMap`,
-    description: profile.bio ?? `โปรไฟล์ของ ${profile.displayName} บน StrayPetMap - แพลตฟอร์มช่วยเหลือสัตว์จรจัด`,
+    description:
+      profile.bio ??
+      `โปรไฟล์ของ ${profile.displayName} บน StrayPetMap - แพลตฟอร์มช่วยเหลือสัตว์จรจัด`,
   };
 }
 
@@ -51,8 +55,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
         <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
             {/* Avatar */}
-            <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 sm:h-32 sm:w-32">
-              {profile.avatarUrl ? (
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-gray-100 sm:h-32 sm:w-32">
+              {profile.avatarUrl &&
+              (profile.avatarUrl.startsWith("http") ||
+                profile.avatarUrl.startsWith("/")) ? (
                 <Image
                   src={profile.avatarUrl}
                   alt={profile.displayName}
@@ -117,7 +123,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
                   <span className="text-2xl">{badge.icon}</span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{badge.name}</p>
-                    <p className="text-xs capitalize opacity-75">{badge.tier}</p>
+                    <p className="text-xs capitalize opacity-75">
+                      {badge.tier}
+                    </p>
                   </div>
                 </div>
               ))}

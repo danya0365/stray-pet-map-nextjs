@@ -52,6 +52,13 @@ export interface PetPost {
   isArchived: boolean; // ซ่อนจาก list หลักแต่ยังเข้าถึงได้
   createdAt: string;
   updatedAt: string;
+
+  // Owner info (optional - populated by getByIdWithOwner)
+  owner?: {
+    profileId: string;
+    displayName: string;
+    avatarUrl?: string;
+  };
 }
 
 export interface PetPostStats {

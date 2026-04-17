@@ -24,6 +24,7 @@ import {
   Scissors,
   Share2,
   Syringe,
+  User,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -217,6 +218,38 @@ export function PetDetailView({
               )}
             </div>
           </div>
+
+          {/* Owner Card */}
+          {post.owner && (
+            <Link
+              href={`/profile/${post.owner.profileId}`}
+              className="flex items-center gap-3 rounded-xl border border-border/40 bg-card p-3 transition-all hover:shadow-md"
+            >
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
+                {post.owner.avatarUrl &&
+                (post.owner.avatarUrl.startsWith("http") ||
+                  post.owner.avatarUrl.startsWith("/")) ? (
+                  <Image
+                    src={post.owner.avatarUrl}
+                    alt={post.owner.displayName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-foreground/50">โพสต์โดย</p>
+                <p className="truncate text-sm font-medium">
+                  {post.owner.displayName}
+                </p>
+              </div>
+              <ArrowLeft className="h-4 w-4 shrink-0 rotate-180 text-foreground/30" />
+            </Link>
+          )}
 
           {/* Description */}
           {post.description && (

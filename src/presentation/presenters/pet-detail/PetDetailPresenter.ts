@@ -11,7 +11,8 @@ export class PetDetailPresenter {
 
   async getViewModel(id: string): Promise<PetDetailViewModel | null> {
     try {
-      const post = await this.repository.getById(id);
+      // ใช้ getByIdWithOwner เพื่อดึงข้อมูลเจ้าของโพสต์มาด้วย
+      const post = await this.repository.getByIdWithOwner(id);
       if (!post) return null;
 
       return { post };

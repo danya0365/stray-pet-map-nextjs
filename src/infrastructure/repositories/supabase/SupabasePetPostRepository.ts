@@ -42,7 +42,9 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   async query(params: PetPostQuery): Promise<PetPostQueryResult> {
     let q = this.supabase
       .from("pet_posts")
-      .select("*, pet_types(*)", { count: "exact" })
+      .select("*, pet_types(*), profiles(id, full_name, avatar_url)", {
+        count: "exact",
+      })
       .eq("is_active", true);
 
     // ── Filters ──
@@ -84,7 +86,17 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     const { data, error, count } = await q;
     if (error) throw error;
 
-    let posts = (data as PetPostWithType[]).map((row) => this.mapToDomain(row));
+    let posts = (
+      data as Array<
+        PetPostWithType & {
+          profiles: {
+            id: string;
+            full_name: string | null;
+            avatar_url: string | null;
+          } | null;
+        }
+      >
+    ).map((row) => this.mapToDomainWithOwner(row));
     const total = count ?? 0;
 
     // ── NearBy filter (post-processing) ──
@@ -157,6 +169,38 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     }
 
     return this.mapToDomain(data as PetPostWithType);
+  }
+
+  async getByIdWithOwner(id: string): Promise<PetPost | null> {
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("*, pet_types(*), profiles(id, full_name, avatar_url)")
+      .eq("id", id)
+      .eq("is_active", true)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null; // Not found
+      throw error;
+    }
+
+    const post = this.mapToDomain(data as PetPostWithType);
+
+    // Add owner info if profiles data exists
+    if (data?.profiles) {
+      const profile = data.profiles as {
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      };
+      post.owner = {
+        profileId: profile.id,
+        displayName: profile.full_name ?? "Anonymous",
+        avatarUrl: profile.avatar_url ?? undefined,
+      };
+    }
+
+    return post;
   }
 
   // ============================================================
@@ -409,6 +453,29 @@ export class SupabasePetPostRepository implements IPetPostRepository {
       createdAt: row.created_at ?? "",
       updatedAt: row.updated_at ?? "",
     };
+  }
+
+  private mapToDomainWithOwner(
+    row: PetPostWithType & {
+      profiles: {
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      } | null;
+    },
+  ): PetPost {
+    const post = this.mapToDomain(row);
+
+    // Add owner info if profiles data exists
+    if (row.profiles) {
+      post.owner = {
+        profileId: row.profiles.id,
+        displayName: row.profiles.full_name ?? "Anonymous",
+        avatarUrl: row.profiles.avatar_url ?? undefined,
+      };
+    }
+
+    return post;
   }
 
   private toSnakeCase(field: string): string {

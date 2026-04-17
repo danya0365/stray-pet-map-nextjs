@@ -87,6 +87,12 @@ export interface IPetPostRepository {
 
   getById(id: string): Promise<PetPost | null>;
 
+  /**
+   * ดึงโพสต์พร้อมข้อมูลเจ้าของ (full_name, avatar_url)
+   * ใช้สำหรับแสดงลิงก์ไปยังโปรไฟล์เจ้าของโพสต์
+   */
+  getByIdWithOwner(id: string): Promise<PetPost | null>;
+
   create(data: CreatePetPostPayload): Promise<PetPost>;
 
   update(id: string, data: UpdatePetPostData): Promise<PetPost>;

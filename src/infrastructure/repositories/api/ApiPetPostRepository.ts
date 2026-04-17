@@ -80,6 +80,17 @@ export class ApiPetPostRepository implements IPetPostRepository {
     return res.json();
   }
 
+  async getByIdWithOwner(id: string): Promise<PetPost | null> {
+    // Client-side ใช้ endpoint เดียวกับ getById แต่ server จะส่ง owner info มาด้วย
+    const res = await fetch(`${this.baseUrl}/${id}?includeOwner=true`);
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถโหลดข้อมูลได้");
+    }
+    return res.json();
+  }
+
   async create(data: CreatePetPostPayload): Promise<PetPost> {
     const res = await fetch(this.baseUrl, {
       method: "POST",
