@@ -713,9 +713,9 @@ function UserPostsSection({
                   <span
                     className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${
                       post.status === "available"
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-primary text-primary-foreground"
                         : post.status === "adopted"
-                          ? "bg-blue-500 text-white"
+                          ? "bg-secondary text-secondary-foreground"
                           : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -723,9 +723,9 @@ function UserPostsSection({
                   </span>
 
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20 dark:group-hover:bg-white/10">
                     <div className="translate-y-2 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm">
+                      <div className="flex items-center gap-1 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm">
                         ดูรายละเอียด
                         <ChevronRight className="h-3.5 w-3.5" />
                       </div>
@@ -743,7 +743,7 @@ function UserPostsSection({
 
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
                     {hasOutcome && (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                         {outcomeLabels[post.outcome!]}
                       </span>
                     )}
@@ -779,7 +779,7 @@ function UserPostsSection({
                       type="button"
                       onClick={() => setShowDeleteConfirm(post.id)}
                       disabled={isDeletingPost === post.id}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
                       title="ลบ"
                     >
                       {isDeletingPost === post.id ? (
