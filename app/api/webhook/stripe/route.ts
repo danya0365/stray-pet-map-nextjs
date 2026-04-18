@@ -5,9 +5,18 @@ import Stripe from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// POST /api/donate/webhook - รับ webhook จาก Stripe
-// Saves donation + awards gamification points
-// ✅ Following Clean Architecture: Uses Presenter, not repositories directly
+/**
+ * POST /api/webhook/stripe - รับ webhook จาก Stripe
+ * Saves donation + awards gamification points
+ * ✅ Following Clean Architecture: Uses Presenter, not repositories directly
+ *
+ * ⚠️ IMPORTANT: This endpoint is configured in Stripe Dashboard as:
+ *    https://straypetmap.online/api/webhook/stripe
+ *
+ * If the domain changes, you MUST update the webhook URL in:
+ * - Stripe Dashboard → Developers → Webhooks → Endpoint URL
+ * Otherwise, payment webhooks will fail silently.
+ */
 export async function POST(request: Request) {
   try {
     if (!webhookSecret) {
