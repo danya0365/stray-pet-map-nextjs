@@ -45,6 +45,8 @@ export class ApiPetPostRepository implements IPetPostRepository {
       if (f.petTypeId) searchParams.set("petTypeId", f.petTypeId);
       if (f.gender) searchParams.set("gender", f.gender);
       if (f.province) searchParams.set("province", f.province);
+      if (f.breed) searchParams.set("breed", f.breed);
+      if (f.color) searchParams.set("color", f.color);
     }
 
     if (params.pagination.type === "offset") {

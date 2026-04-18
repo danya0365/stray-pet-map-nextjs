@@ -39,6 +39,32 @@ const genderOptions: { value: PetGender; label: string }[] = [
   { value: "unknown", label: "ไม่ทราบ" },
 ];
 
+// Common breed suggestions for quick filter
+const BREED_SUGGESTIONS = [
+  "ไทยหลังอาน",
+  "วิเชียรมาศ",
+  "ชิวาวา",
+  "เปอร์เซีย",
+  "ปอมเมอเรเนียน",
+  "สก็อตติชโฟลด์",
+  "พุดเดิ้ล",
+  "บางแก้ว",
+  "บีเกิล",
+  "พันทาง",
+];
+
+// Common color suggestions for quick filter
+const COLOR_SUGGESTIONS = [
+  "ขาว",
+  "ดำ",
+  "น้ำตาล",
+  "ส้ม",
+  "เทา",
+  "ครีม",
+  "ดำ-ขาว",
+  "ลาย",
+];
+
 interface MapFilterPanelProps {
   filters: PetPostFilters;
   onFiltersChange: (filters: PetPostFilters) => void;
@@ -322,29 +348,73 @@ export function MapFilterPanel({
             </div>
           </div>
 
-          {/* Breed & Color */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="mb-2 text-xs font-medium text-foreground/50">
-                สายพันธุ์
-              </p>
-              <input
-                type="text"
-                value={filters.breed || ""}
-                onChange={(e) => setBreed(e.target.value)}
-                placeholder="เช่น ไทย, เปอร์เซีย, ชิวาวา..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
-              />
+          {/* Breed Quick Chips */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-foreground/50">
+              สายพันธุ์
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setBreed("")}
+                className={cn(
+                  "rounded-lg border px-3 py-1 text-xs font-medium transition-colors",
+                  !filters.breed
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-foreground/50 hover:bg-muted",
+                )}
+                type="button"
+              >
+                ทั้งหมด
+              </button>
+              {BREED_SUGGESTIONS.map((breed) => (
+                <button
+                  key={breed}
+                  onClick={() => setBreed(filters.breed === breed ? "" : breed)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors",
+                    filters.breed === breed
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
+                  )}
+                  type="button"
+                >
+                  {breed}
+                </button>
+              ))}
             </div>
-            <div>
-              <p className="mb-2 text-xs font-medium text-foreground/50">สี</p>
-              <input
-                type="text"
-                value={filters.color || ""}
-                onChange={(e) => setColor(e.target.value)}
-                placeholder="เช่น ส้ม, ดำ, ขาว, ลาย..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
-              />
+          </div>
+
+          {/* Color Quick Chips */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-foreground/50">สี</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setColor("")}
+                className={cn(
+                  "rounded-lg border px-3 py-1 text-xs font-medium transition-colors",
+                  !filters.color
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-foreground/50 hover:bg-muted",
+                )}
+                type="button"
+              >
+                ทั้งหมด
+              </button>
+              {COLOR_SUGGESTIONS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => setColor(filters.color === color ? "" : color)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors",
+                    filters.color === color
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
+                  )}
+                  type="button"
+                >
+                  {color}
+                </button>
+              ))}
             </div>
           </div>
 

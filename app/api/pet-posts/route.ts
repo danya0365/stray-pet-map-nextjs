@@ -36,6 +36,8 @@ export async function GET(request: Request) {
     const petTypeId = searchParams.get("petTypeId") || undefined;
     const gender = searchParams.get("gender") || undefined;
     const province = searchParams.get("province") || undefined;
+    const breed = searchParams.get("breed") || undefined;
+    const color = searchParams.get("color") || undefined;
 
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = parseInt(searchParams.get("perPage") || "12", 10);
@@ -55,6 +57,8 @@ export async function GET(request: Request) {
         petTypeId,
         gender: gender as PetGender | undefined,
         province,
+        breed,
+        color,
       },
       pagination:
         paginationType === "cursor"
