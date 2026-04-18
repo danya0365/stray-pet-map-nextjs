@@ -21,7 +21,7 @@ INSERT INTO auth.users (
     '00000000-0000-0000-0000-000000000000',
     '00000000-0000-0000-0000-000000000001',
     'authenticated', 'authenticated',
-    'admin@straypetmap.com',
+    'admin@straypetmap.online',
     crypt(current_setting('my.app_password'), gen_salt('bf')),
     NOW(), NOW(),
     '{"provider":"email","providers":["email"]}',

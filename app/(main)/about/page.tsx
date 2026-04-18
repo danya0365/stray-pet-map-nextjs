@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+  const appDomain = process.env.NEXT_PUBLIC_APP_URL
+    ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
+    : "straypetmap.online";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -156,7 +160,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a
-              href="mailto:contact@straypetmap.com"
+              href={`mailto:contact@${appDomain}`}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-white shadow-lg shadow-primary/20 transition-all hover:shadow-xl"
             >
               <Mail className="h-5 w-5" />

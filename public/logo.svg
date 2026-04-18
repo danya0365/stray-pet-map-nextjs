@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dynamic Background / Shadow -->
+  <circle cx="256" cy="256" r="240" fill="#fffaf5" />
+  
+  <!-- Map Pin Container -->
+  <path d="M256 40C163.212 40 88 115.212 88 208C88 334 256 472 256 472C256 472 424 334 424 208C424 115.212 348.788 40 256 40Z" fill="#f2845c"/>
+  
+  <!-- Heart-shaped Paw Print -->
+  <!-- Main pad -->
+  <path d="M256 320C215 320 185 295 185 255C185 230 205 210 230 210C240 210 250 215 256 220C262 215 272 210 282 210C307 210 327 230 327 255C327 295 297 320 256 320Z" fill="white"/>
+  
+  <!-- Toes -->
+  <circle cx="180" cy="200" r="28" fill="white"/>
+  <circle cx="230" cy="160" r="32" fill="white"/>
+  <circle cx="282" cy="160" r="32" fill="white"/>
+  <circle cx="332" cy="200" r="28" fill="white"/>
+  
+  <!-- Subtle Glow / Accent circle -->
+  <circle cx="256" cy="256" r="250" stroke="#f2845c" stroke-opacity="0.1" stroke-width="4"/>
+</svg>

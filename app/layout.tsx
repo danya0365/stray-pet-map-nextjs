@@ -21,9 +21,39 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "StrayPetMap — ช่วยให้สัตว์มีบ้าน",
+  title: "StrayPetMap — ช่วยให้สัตว์จรมีบ้าน",
   description:
     "แพลตฟอร์มกลางสำหรับโพสต์ตำแหน่งสัตว์จร ค้นหาสัตว์ตามสเปก และเชื่อมคนอยากเลี้ยงกับคนช่วยสัตว์",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://straypetmap.online"), // เปลี่ยนเป็น URL จริงเมื่อขึ้น prod
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "StrayPetMap — ช่วยให้สัตว์จรมีบ้าน",
+    description: "แพลตฟอร์มกลางสำหรับโพสต์ตำแหน่งสัตว์จร ค้นหาสัตว์ตามสเปก และเชื่อมคนอยากเลี้ยงกับคนช่วยสัตว์",
+    url: "/",
+    siteName: "StrayPetMap",
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: "StrayPetMap — Helpers for stray pets",
+      },
+    ],
+    locale: "th_TH",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StrayPetMap — ช่วยให้สัตว์จรมีบ้าน",
+    description: "แพลตฟอร์มกลางสำหรับโพสต์ตำแหน่งสัตว์จร ค้นหาสัตว์ตามสเปก และเชื่อมคนอยากเลี้ยงกับคนช่วยสัตว์",
+    images: ["/og-image.svg"],
+  },
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

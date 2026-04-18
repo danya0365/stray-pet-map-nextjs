@@ -1,0 +1,28 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#fffaf5"/>
+  
+  <!-- Decorative Elements -->
+  <circle cx="1100" cy="100" r="150" fill="#7ecec0" fill-opacity="0.1"/>
+  <circle cx="100" cy="530" r="200" fill="#f2845c" fill-opacity="0.05"/>
+  
+  <!-- Logo Section -->
+  <g transform="translate(100, 165)">
+    <!-- Map Pin -->
+    <path d="M150 40C93.212 40 48 85.212 48 142C48 219 150 300 150 300C150 300 252 219 252 142C252 85.212 206.788 40 150 40Z" fill="#f2845c"/>
+    <!-- Paw -->
+    <path d="M150 210C125 210 107 195 107 170C107 155 119 143 134 143C140 143 146 146 150 149C154 146 160 143 166 143C181 143 193 155 193 170C193 195 175 210 150 210Z" fill="white"/>
+    <circle cx="104" cy="137" r="17" fill="white"/>
+    <circle cx="134" cy="113" r="19" fill="white"/>
+    <circle cx="166" cy="113" r="19" fill="white"/>
+    <circle cx="196" cy="137" r="17" fill="white"/>
+  </g>
+  
+  <!-- Text Section -->
+  <text x="420" y="280" font-family="sans-serif" font-weight="bold" font-size="72" fill="#3d3533">Stray Pet Map</text>
+  <text x="420" y="360" font-family="sans-serif" font-size="36" fill="#f2845c">ช่วยให้สัตว์จรมีบ้าน... ได้ง่ายขึ้น</text>
+  
+  <!-- Bottom Bar -->
+  <rect y="580" width="1200" height="50" fill="#f2845c"/>
+  <text x="600" y="615" font-family="sans-serif" font-size="24" fill="white" text-anchor="middle">www.straypetmap.online — แพลตฟอร์มกลางเพื่อสัตว์จร</text>
+</svg>

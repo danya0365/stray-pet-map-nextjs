@@ -27,7 +27,7 @@ export function ImpactCard({
   const targetText = petName ? `ให้น้อง${petName}` : "ให้ StrayPetMap";
 
   // Generate share text
-  const shareText = `🐾 ${displayName} เพิ่งสนับสนุน ${amount} บาท ${targetText} ผ่าน StrayPetMap\n\nมาร่วมเป็นผู้สนับสนุนกัน! 🦸‍♀️🦸‍♂️\nhttps://straypetmap.com/donate/leaderboard`;
+  const shareText = `🐾 ${displayName} เพิ่งสนับสนุน ${amount} บาท ${targetText} ผ่าน StrayPetMap\n\nมาร่วมเป็นผู้สนับสนุนกัน! 🦸‍♀️🦸‍♂️\n${process.env.NEXT_PUBLIC_APP_URL || "https://straypetmap.online"}/donate/leaderboard`;
 
   const handleShare = async () => {
     try {
