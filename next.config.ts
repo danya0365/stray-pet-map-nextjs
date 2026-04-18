@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
   // Image Optimization
   // ============================================
   images: {
-    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
     // Domain ที่อนุญาตให้โหลด images
     remotePatterns: [
       {
@@ -73,7 +73,8 @@ const nextConfig: NextConfig = {
         hostname: "*.vibify.site",
       },
       { protocol: "https", hostname: "placedog.net" },
-      { protocol: "https", hostname: "placekitten.com" },
+      { protocol: "https", hostname: "placecats.com" },
+      { protocol: "https", hostname: "loremflickr.com" },
     ],
   },
 };
