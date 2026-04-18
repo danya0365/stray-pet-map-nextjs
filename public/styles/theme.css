@@ -17,6 +17,8 @@
   --border: #ecddd2;
   --card: #ffffff;
   --card-foreground: #3d3533;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
 }
 
 .dark {
@@ -27,9 +29,11 @@
   --secondary: #5aab9e;
   --accent: #d4818f;
   --muted: #292524;
-  --border: #3d3533;
-  --card: #292524;
+  --border: #403a36;
+  --card: #252220;
   --card-foreground: #f5ede6;
+  --destructive: #fca5a5;
+  --destructive-foreground: #1c1917;
 }
 
 @theme inline {
@@ -43,6 +47,8 @@
   --color-border: var(--border);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --font-sans: var(--font-noto-sans-thai), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

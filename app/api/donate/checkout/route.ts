@@ -1,0 +1,76 @@
+import { StripeRepository } from "@/infrastructure/repositories/stripe/StripeRepository";
+import { NextResponse } from "next/server";
+
+// POST /api/donate/checkout - สร้าง Stripe checkout session สำหรับ donation
+// Supports dual mode: pet-specific + general fund + guest donations
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const {
+      amount,
+      message,
+      successUrl,
+      cancelUrl,
+      targetType = "fund", // 'pet' | 'fund'
+      petPostId,
+      donorName,
+      donorEmail,
+      isAnonymous = false,
+      showOnLeaderboard = true,
+    } = body;
+
+    // Validation
+    if (!amount || amount < 20) {
+      return NextResponse.json(
+        { error: "Amount must be at least 20 THB" },
+        { status: 400 },
+      );
+    }
+
+    if (!successUrl || !cancelUrl) {
+      return NextResponse.json(
+        { error: "Missing successUrl or cancelUrl" },
+        { status: 400 },
+      );
+    }
+
+    // Validate targetType
+    if (targetType === "pet" && !petPostId) {
+      return NextResponse.json(
+        { error: "petPostId is required when targetType is 'pet'" },
+        { status: 400 },
+      );
+    }
+
+    // Create checkout session
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return NextResponse.json(
+        { error: "Stripe is not configured" },
+        { status: 500 },
+      );
+    }
+
+    const repo = new StripeRepository(stripeSecretKey);
+    const result = await repo.createCheckoutSession({
+      amount,
+      message,
+      successUrl,
+      cancelUrl,
+      targetType,
+      petPostId,
+      donorName,
+      donorEmail,
+      isAnonymous,
+      showOnLeaderboard,
+    });
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error creating donation checkout:", error);
+    return NextResponse.json(
+      { error: "Failed to create checkout session" },
+      { status: 500 },
+    );
+  }
+}

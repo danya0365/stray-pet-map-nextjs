@@ -34,6 +34,10 @@ export class ApiPetPostRepository implements IPetPostRepository {
 
     if (params.filters) {
       const f = params.filters;
+      if (f.purpose) {
+        const purposes = Array.isArray(f.purpose) ? f.purpose : [f.purpose];
+        searchParams.set("purpose", purposes.join(","));
+      }
       if (f.status) {
         const statuses = Array.isArray(f.status) ? f.status : [f.status];
         searchParams.set("status", statuses.join(","));
@@ -41,11 +45,25 @@ export class ApiPetPostRepository implements IPetPostRepository {
       if (f.petTypeId) searchParams.set("petTypeId", f.petTypeId);
       if (f.gender) searchParams.set("gender", f.gender);
       if (f.province) searchParams.set("province", f.province);
+      if (f.breed) searchParams.set("breed", f.breed);
+      if (f.color) searchParams.set("color", f.color);
     }
 
     if (params.pagination.type === "offset") {
       searchParams.set("page", String(params.pagination.page));
       searchParams.set("perPage", String(params.pagination.perPage));
+    } else if (params.pagination.type === "cursor") {
+      searchParams.set("paginationType", "cursor");
+      searchParams.set("limit", String(params.pagination.limit));
+      if (params.pagination.cursor) {
+        searchParams.set("cursor", params.pagination.cursor);
+      }
+    }
+
+    if (params.nearBy) {
+      searchParams.set("nearLat", String(params.nearBy.latitude));
+      searchParams.set("nearLng", String(params.nearBy.longitude));
+      searchParams.set("nearRadius", String(params.nearBy.radiusKm));
     }
 
     const qs = searchParams.toString();
@@ -68,6 +86,17 @@ export class ApiPetPostRepository implements IPetPostRepository {
     return res.json();
   }
 
+  async getByIdWithOwner(id: string): Promise<PetPost | null> {
+    // Client-side ใช้ endpoint เดียวกับ getById แต่ server จะส่ง owner info มาด้วย
+    const res = await fetch(`${this.baseUrl}/${id}?includeOwner=true`);
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถโหลดข้อมูลได้");
+    }
+    return res.json();
+  }
+
   async create(data: CreatePetPostPayload): Promise<PetPost> {
     const res = await fetch(this.baseUrl, {
       method: "POST",
@@ -77,7 +106,11 @@ export class ApiPetPostRepository implements IPetPostRepository {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || "ไม่สามารถสร้างโพสต์ได้");
+      const parts = [error.error || "ไม่สามารถสร้างโพสต์ได้"];
+      if (error.details) parts.push(`Details: ${error.details}`);
+      if (error.hint) parts.push(`Hint: ${error.hint}`);
+      if (error.code) parts.push(`Code: ${error.code}`);
+      throw new Error(parts.join(" | "));
     }
 
     return res.json();
@@ -121,14 +154,37 @@ export class ApiPetPostRepository implements IPetPostRepository {
     }
 
     const qs = searchParams.toString();
-    const res = await fetch(
-      `${this.baseUrl}/stats${qs ? `?${qs}` : ""}`,
-    );
+    const res = await fetch(`${this.baseUrl}/stats${qs ? `?${qs}` : ""}`);
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || "ไม่สามารถโหลดสถิติได้");
     }
 
     return res.json();
+  }
+
+  async getSuccessStories(limit?: number): Promise<PetPost[]> {
+    const qs = limit ? `?limit=${limit}` : "";
+    const res = await fetch(`${this.baseUrl}/success-stories${qs}`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถโหลดเรื่องราวความสำเร็จได้");
+    }
+    const data = await res.json();
+    return data.stories || [];
+  }
+
+  // ไม่รองรับใน client-side API (server-only)
+  async findExpiredPosts(): Promise<{ id: string; createdAt: string }[]> {
+    throw new Error("findExpiredPosts is not supported in client-side API");
+  }
+
+  // ไม่รองรับใน client-side API (server-only)
+  async findExpiringSoonPosts(): Promise<
+    { id: string; title: string; createdAt: string; purpose: string }[]
+  > {
+    throw new Error(
+      "findExpiringSoonPosts is not supported in client-side API",
+    );
   }
 }

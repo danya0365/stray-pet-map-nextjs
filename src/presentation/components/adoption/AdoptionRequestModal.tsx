@@ -1,10 +1,9 @@
 "use client";
 
-import { createClient } from "@/infrastructure/supabase/client";
-import { SupabaseAdoptionRequestRepository } from "@/infrastructure/repositories/supabase/SupabaseAdoptionRequestRepository";
+import { ApiAdoptionRequestRepository } from "@/infrastructure/repositories/api/ApiAdoptionRequestRepository";
 import { cn } from "@/presentation/lib/cn";
 import { CheckCircle2, Heart, Loader2, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 interface AdoptionRequestModalProps {
   isOpen: boolean;
@@ -22,8 +21,13 @@ export function AdoptionRequestModal({
   const [message, setMessage] = useState("");
   const [phone, setPhone] = useState("");
   const [lineId, setLineId] = useState("");
-  const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [state, setState] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // API Repository instance (client-side, no Supabase credentials exposed)
+  const repo = useMemo(() => new ApiAdoptionRequestRepository(), []);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -32,8 +36,6 @@ export function AdoptionRequestModal({
       setErrorMsg("");
 
       try {
-        const supabase = createClient();
-        const repo = new SupabaseAdoptionRequestRepository(supabase);
         await repo.create({
           petPostId,
           message: message || undefined,
@@ -48,7 +50,7 @@ export function AdoptionRequestModal({
         setState("error");
       }
     },
-    [petPostId, message, phone, lineId],
+    [repo, petPostId, message, phone, lineId],
   );
 
   if (!isOpen) return null;

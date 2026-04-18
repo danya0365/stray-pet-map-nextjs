@@ -7,12 +7,19 @@ import type {
 import type {
   CreatePetPostPayload,
   PetPost,
+  PetPostPurpose,
   PetPostStats,
+  PetPostStatus,
   PetType,
   UpdatePetPostData,
 } from "@/domain/entities/pet-post";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+// ── Query Builder Type ─────────────────────────────────
+// Use a generic type that accepts any Supabase query builder
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type QueryBuilder = any;
 
 // ── DB row types ───────────────────────────────────────────
 
@@ -33,13 +40,21 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   // ============================================================
 
   async query(params: PetPostQuery): Promise<PetPostQueryResult> {
+    console.log(
+      "[SupabasePetPostRepository.query] params:",
+      JSON.stringify(params, null, 2),
+    );
+
     let q = this.supabase
       .from("pet_posts")
-      .select("*, pet_types(*)", { count: "exact" })
+      .select("*, pet_types(*), profiles(id, full_name, avatar_url)", {
+        count: "exact",
+      })
       .eq("is_active", true);
 
     // ── Filters ──
     q = this.applyFilters(q, params.filters);
+    console.log("[SupabasePetPostRepository.query] filters applied");
 
     // ── Search ──
     if (params.search) {
@@ -75,9 +90,30 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     }
 
     const { data, error, count } = await q;
-    if (error) throw error;
+    if (error) {
+      console.error("[SupabasePetPostRepository.query] Supabase error:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      throw error;
+    }
+    console.log(
+      `[SupabasePetPostRepository.query] Success: ${data?.length ?? 0} rows, total: ${count ?? 0}`,
+    );
 
-    let posts = (data as PetPostWithType[]).map((row) => this.mapToDomain(row));
+    let posts = (
+      data as Array<
+        PetPostWithType & {
+          profiles: {
+            id: string;
+            full_name: string | null;
+            avatar_url: string | null;
+          } | null;
+        }
+      >
+    ).map((row) => this.mapToDomainWithOwner(row));
     const total = count ?? 0;
 
     // ── NearBy filter (post-processing) ──
@@ -152,6 +188,38 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     return this.mapToDomain(data as PetPostWithType);
   }
 
+  async getByIdWithOwner(id: string): Promise<PetPost | null> {
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("*, pet_types(*), profiles(id, full_name, avatar_url)")
+      .eq("id", id)
+      .eq("is_active", true)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null; // Not found
+      throw error;
+    }
+
+    const post = this.mapToDomain(data as PetPostWithType);
+
+    // Add owner info if profiles data exists
+    if (data?.profiles) {
+      const profile = data.profiles as {
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      };
+      post.owner = {
+        profileId: profile.id,
+        displayName: profile.full_name ?? "Anonymous",
+        avatarUrl: profile.avatar_url ?? undefined,
+      };
+    }
+
+    return post;
+  }
+
   // ============================================================
   // WRITE
   // ============================================================
@@ -165,6 +233,10 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     if (profileError || !profileData) {
       throw new Error("ไม่สามารถระบุตัวตนผู้ใช้ได้ กรุณาเข้าสู่ระบบ");
     }
+
+    // Auto-determine status based on purpose (ถ้า user ไม่ระบุ status)
+    const purpose = payload.purpose ?? "rehome_pet";
+    const autoStatus = this.getStatusFromPurpose(purpose, payload.status);
 
     const { data, error } = await this.supabase
       .from("pet_posts")
@@ -183,7 +255,8 @@ export class SupabasePetPostRepository implements IPetPostRepository {
         longitude: payload.longitude,
         address: payload.address ?? "",
         province: payload.province ?? "",
-        status: payload.status ?? "available",
+        purpose: purpose,
+        status: autoStatus,
         thumbnail_url: payload.thumbnailUrl ?? "",
       })
       .select("*, pet_types(*)")
@@ -191,6 +264,26 @@ export class SupabasePetPostRepository implements IPetPostRepository {
 
     if (error) throw error;
     return this.mapToDomain(data as PetPostWithType);
+  }
+
+  // Auto-set status based on purpose
+  private getStatusFromPurpose(
+    purpose: PetPostPurpose,
+    explicitStatus?: PetPostStatus,
+  ): PetPostStatus {
+    // ถ้า user ระบุ status เอง ใช้ค่านั้นเลย (สำหรับ admin หรือ update flow พิเศษ)
+    if (explicitStatus) return explicitStatus;
+
+    // ถ้าไม่ระบุ ให้ set ตาม purpose
+    switch (purpose) {
+      case "lost_pet":
+        return "missing"; // ตามหาน้อง → สถานะ missing
+      case "rehome_pet":
+      case "community_cat":
+        return "available"; // หาบ้าน → สถานะ available
+      default:
+        return "available";
+    }
   }
 
   async update(id: string, updateData: UpdatePetPostData): Promise<PetPost> {
@@ -216,11 +309,17 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     if (updateData.address !== undefined) payload.address = updateData.address;
     if (updateData.province !== undefined)
       payload.province = updateData.province;
+    if (updateData.purpose !== undefined) payload.purpose = updateData.purpose;
     if (updateData.status !== undefined) payload.status = updateData.status;
+    if (updateData.outcome !== undefined) payload.outcome = updateData.outcome;
+    if (updateData.resolvedAt !== undefined)
+      payload.resolved_at = updateData.resolvedAt;
     if (updateData.thumbnailUrl !== undefined)
       payload.thumbnail_url = updateData.thumbnailUrl;
     if (updateData.isActive !== undefined)
       payload.is_active = updateData.isActive;
+    if (updateData.isArchived !== undefined)
+      payload.is_archived = updateData.isArchived;
 
     const { data, error } = await this.supabase
       .from("pet_posts")
@@ -275,16 +374,31 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   // ============================================================
 
   private applyFilters(
-    query: ReturnType<SupabaseClient<Database>["from"]>,
+    query: QueryBuilder,
     filters?: PetPostFilters,
-  ) {
+  ): QueryBuilder {
     if (!filters) return query;
 
+    if (filters.purpose) {
+      const purposes = Array.isArray(filters.purpose)
+        ? filters.purpose
+        : [filters.purpose];
+      query = query.in("purpose", purposes);
+    }
     if (filters.status) {
       const statuses = Array.isArray(filters.status)
         ? filters.status
         : [filters.status];
       query = query.in("status", statuses);
+    }
+    if (filters.outcome) {
+      const outcomes = Array.isArray(filters.outcome)
+        ? filters.outcome
+        : [filters.outcome];
+      query = query.in("outcome", outcomes);
+    }
+    if (filters.isArchived !== undefined) {
+      query = query.eq("is_archived", filters.isArchived);
     }
     if (filters.petTypeId) {
       query = query.eq("pet_type_id", filters.petTypeId);
@@ -303,6 +417,15 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     }
     if (filters.profileId) {
       query = query.eq("profile_id", filters.profileId);
+    }
+    if (filters.breed) {
+      query = query.ilike("breed", `%${filters.breed}%`);
+    }
+    if (filters.color) {
+      query = query.ilike("color", `%${filters.color}%`);
+    }
+    if (filters.estimatedAge) {
+      query = query.eq("estimated_age", filters.estimatedAge);
     }
 
     return query;
@@ -337,12 +460,39 @@ export class SupabasePetPostRepository implements IPetPostRepository {
       longitude: row.longitude,
       address: row.address ?? "",
       province: row.province ?? "",
+      purpose: row.purpose,
       status: row.status,
+      outcome: row.outcome,
+      resolvedAt: row.resolved_at,
       thumbnailUrl: row.thumbnail_url ?? "",
       isActive: row.is_active,
+      isArchived: row.is_archived,
       createdAt: row.created_at ?? "",
       updatedAt: row.updated_at ?? "",
     };
+  }
+
+  private mapToDomainWithOwner(
+    row: PetPostWithType & {
+      profiles: {
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      } | null;
+    },
+  ): PetPost {
+    const post = this.mapToDomain(row);
+
+    // Add owner info if profiles data exists
+    if (row.profiles) {
+      post.owner = {
+        profileId: row.profiles.id,
+        displayName: row.profiles.full_name ?? "Anonymous",
+        avatarUrl: row.profiles.avatar_url ?? undefined,
+      };
+    }
+
+    return post;
   }
 
   private toSnakeCase(field: string): string {
@@ -351,6 +501,8 @@ export class SupabasePetPostRepository implements IPetPostRepository {
       updatedAt: "updated_at",
       title: "title",
       distance: "created_at", // fallback — distance is handled in JS
+      resolvedAt: "resolved_at",
+      isArchived: "is_archived",
     };
     return map[field] ?? field;
   }
@@ -372,5 +524,83 @@ export class SupabasePetPostRepository implements IPetPostRepository {
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  // ดึงเรื่องราวความสำเร็จ (โพสต์ที่ outcome = owner_found หรือ rehomed)
+  async getSuccessStories(limit = 6): Promise<PetPost[]> {
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("*, pet_types(*)")
+      .in("outcome", ["owner_found", "rehomed"])
+      .eq("is_archived", true)
+      .not("resolved_at", "is", null)
+      .order("resolved_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error("Error fetching success stories:", error);
+      throw error;
+    }
+
+    return (data as PetPostWithType[]).map((row) => this.mapToDomain(row));
+  }
+
+  // ดึงโพสต์ที่หมดอายุ (สำหรับ auto-archive)
+  async findExpiredPosts(
+    expiryDays: number,
+  ): Promise<{ id: string; createdAt: string }[]> {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() - expiryDays);
+
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("id, created_at")
+      .is("outcome", null)
+      .eq("is_archived", false)
+      .lt("created_at", expiryDate.toISOString());
+
+    if (error) {
+      console.error("Error finding expired posts:", error);
+      throw error;
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      createdAt: row.created_at ?? new Date().toISOString(),
+    }));
+  }
+
+  // ดึงโพสต์ที่ใกล้หมดอายุ (สำหรับแจ้งเตือน)
+  async findExpiringSoonPosts(
+    expiryDays: number,
+    warningDays: number,
+  ): Promise<
+    { id: string; title: string; createdAt: string; purpose: string }[]
+  > {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() - expiryDays);
+
+    const warningDate = new Date();
+    warningDate.setDate(warningDate.getDate() - (expiryDays - warningDays));
+
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .select("id, title, created_at, purpose")
+      .is("outcome", null)
+      .eq("is_archived", false)
+      .gte("created_at", expiryDate.toISOString())
+      .lt("created_at", warningDate.toISOString());
+
+    if (error) {
+      console.error("Error finding expiring soon posts:", error);
+      throw error;
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      createdAt: row.created_at ?? new Date().toISOString(),
+      purpose: row.purpose,
+    }));
   }
 }

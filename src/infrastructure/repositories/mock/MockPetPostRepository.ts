@@ -39,9 +39,13 @@ const MOCK_PET_POSTS: PetPost[] = [
     longitude: 100.5784,
     address: "ซอยสุขุมวิท 55 (ทองหล่อ)",
     province: "กรุงเทพมหานคร",
+    purpose: "rehome_pet",
     status: "available",
+    outcome: null,
+    resolvedAt: null,
     thumbnailUrl: "https://placedog.net/400/300?id=1",
     isActive: true,
+    isArchived: false,
     createdAt: "2026-04-10T08:30:00.000Z",
     updatedAt: "2026-04-10T08:30:00.000Z",
   },
@@ -70,9 +74,13 @@ const MOCK_PET_POSTS: PetPost[] = [
     longitude: 100.55,
     address: "ตลาดจตุจักร",
     province: "กรุงเทพมหานคร",
+    purpose: "rehome_pet",
     status: "available",
+    outcome: null,
+    resolvedAt: null,
     thumbnailUrl: "https://placekitten.com/400/300",
     isActive: true,
+    isArchived: false,
     createdAt: "2026-04-09T14:00:00.000Z",
     updatedAt: "2026-04-09T14:00:00.000Z",
   },
@@ -101,9 +109,13 @@ const MOCK_PET_POSTS: PetPost[] = [
     longitude: 100.5018,
     address: "วัดโพธิ์",
     province: "กรุงเทพมหานคร",
+    purpose: "rehome_pet",
     status: "available",
+    outcome: null,
+    resolvedAt: null,
     thumbnailUrl: "https://placedog.net/400/300?id=3",
     isActive: true,
+    isArchived: false,
     createdAt: "2026-04-08T10:00:00.000Z",
     updatedAt: "2026-04-08T10:00:00.000Z",
   },
@@ -132,9 +144,13 @@ const MOCK_PET_POSTS: PetPost[] = [
     longitude: 100.5614,
     address: "ลาดพร้าว 71",
     province: "กรุงเทพมหานคร",
+    purpose: "lost_pet",
     status: "missing",
+    outcome: null,
+    resolvedAt: null,
     thumbnailUrl: "https://placekitten.com/401/300",
     isActive: true,
+    isArchived: false,
     createdAt: "2026-04-11T06:00:00.000Z",
     updatedAt: "2026-04-11T06:00:00.000Z",
   },
@@ -163,9 +179,13 @@ const MOCK_PET_POSTS: PetPost[] = [
     longitude: 100.553,
     address: "สวนรถไฟ จตุจักร",
     province: "กรุงเทพมหานคร",
+    purpose: "rehome_pet",
     status: "pending",
+    outcome: null,
+    resolvedAt: null,
     thumbnailUrl: "https://placedog.net/400/300?id=5",
     isActive: true,
+    isArchived: false,
     createdAt: "2026-04-07T16:30:00.000Z",
     updatedAt: "2026-04-10T09:00:00.000Z",
   },
@@ -194,9 +214,13 @@ const MOCK_PET_POSTS: PetPost[] = [
     longitude: 100.534,
     address: "สยามพารากอน",
     province: "กรุงเทพมหานคร",
+    purpose: "rehome_pet",
     status: "adopted",
+    outcome: "rehomed",
+    resolvedAt: "2026-04-05T18:00:00.000Z",
     thumbnailUrl: "https://placekitten.com/402/300",
     isActive: true,
+    isArchived: false,
     createdAt: "2026-04-01T12:00:00.000Z",
     updatedAt: "2026-04-05T18:00:00.000Z",
   },
@@ -258,6 +282,22 @@ export class MockPetPostRepository implements IPetPostRepository {
     return this.items.find((item) => item.id === id) || null;
   }
 
+  async getByIdWithOwner(id: string): Promise<PetPost | null> {
+    await this.delay(100);
+    const post = this.items.find((item) => item.id === id);
+    if (!post) return null;
+
+    // Add mock owner data
+    return {
+      ...post,
+      owner: {
+        profileId: post.profileId,
+        displayName: "Mock User",
+        avatarUrl: undefined,
+      },
+    };
+  }
+
   // ============================================================
   // WRITE
   // ============================================================
@@ -281,9 +321,13 @@ export class MockPetPostRepository implements IPetPostRepository {
       longitude: data.longitude,
       address: data.address || "",
       province: data.province || "",
-      status: "available",
+      purpose: data.purpose ?? "rehome_pet",
+      status: data.status ?? "available",
+      outcome: null,
+      resolvedAt: null,
       thumbnailUrl: data.thumbnailUrl || "",
       isActive: true,
+      isArchived: false,
       createdAt: dayjs().toISOString(),
       updatedAt: dayjs().toISOString(),
     };
@@ -341,6 +385,78 @@ export class MockPetPostRepository implements IPetPostRepository {
       adoptedPosts: adopted,
       missingPosts: missing,
     };
+  }
+
+  // ============================================================
+  // SUCCESS STORIES
+  // ============================================================
+
+  async getSuccessStories(limit = 6): Promise<PetPost[]> {
+    await this.delay(100);
+
+    return this.items
+      .filter(
+        (item) =>
+          (item.outcome === "owner_found" || item.outcome === "rehomed") &&
+          item.isArchived === true &&
+          item.resolvedAt !== null,
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.resolvedAt!).getTime() - new Date(a.resolvedAt!).getTime(),
+      )
+      .slice(0, limit);
+  }
+
+  // ============================================================
+  // AUTO-ARCHIVE HELPERS
+  // ============================================================
+
+  async findExpiredPosts(
+    expiryDays: number,
+  ): Promise<{ id: string; createdAt: string }[]> {
+    await this.delay(100);
+
+    const expiryDate = dayjs().subtract(expiryDays, "day");
+
+    return this.items
+      .filter(
+        (item) =>
+          item.outcome === null &&
+          item.isArchived === false &&
+          dayjs(item.createdAt).isBefore(expiryDate),
+      )
+      .map((item) => ({
+        id: item.id,
+        createdAt: item.createdAt,
+      }));
+  }
+
+  async findExpiringSoonPosts(
+    expiryDays: number,
+    warningDays: number,
+  ): Promise<
+    { id: string; title: string; createdAt: string; purpose: string }[]
+  > {
+    await this.delay(100);
+
+    const expiryDate = dayjs().subtract(expiryDays, "day");
+    const warningDate = dayjs().subtract(expiryDays - warningDays, "day");
+
+    return this.items
+      .filter(
+        (item) =>
+          item.outcome === null &&
+          item.isArchived === false &&
+          dayjs(item.createdAt).isAfter(expiryDate) &&
+          dayjs(item.createdAt).isBefore(warningDate),
+      )
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        createdAt: item.createdAt,
+        purpose: item.purpose,
+      }));
   }
 
   // ============================================================

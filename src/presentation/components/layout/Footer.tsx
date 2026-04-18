@@ -1,9 +1,14 @@
-import { PawPrint, Heart } from "lucide-react";
+"use client";
+
+import { Heart, PawPrint, Trophy } from "lucide-react";
 import Link from "next/link";
+import { useDonationContext } from "../donation/DonationProvider";
 
 export function Footer() {
+  const { open } = useDonationContext();
+
   return (
-    <footer className="mt-auto border-t border-border/40 bg-background">
+    <footer className="mt-auto hidden border-t border-border/40 bg-background md:block">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 sm:flex-row sm:justify-between">
         <Link
           href="/"
@@ -18,15 +23,40 @@ export function Footer() {
           เพื่อสัตว์จรทุกตัว
         </p>
 
-        <nav className="flex gap-4 text-xs text-foreground/50">
+        <nav className="flex flex-wrap justify-center gap-4 text-xs text-foreground/50">
+          <button
+            onClick={open}
+            className="transition-colors hover:text-primary"
+          >
+            ให้กำลังใจ
+          </button>
+          <Link
+            href="/donate/leaderboard"
+            className="flex items-center gap-1 transition-colors hover:text-primary"
+          >
+            <Trophy className="h-3 w-3" />
+            ผู้สนับสนุน
+          </Link>
+          <Link
+            href="/road-map"
+            className="transition-colors hover:text-primary"
+          >
+            Roadmap
+          </Link>
           <Link href="/about" className="transition-colors hover:text-primary">
             เกี่ยวกับเรา
           </Link>
           <Link
-            href="/privacy"
+            href="/legal/terms"
             className="transition-colors hover:text-primary"
           >
-            นโยบายความเป็นส่วนตัว
+            เงื่อนไข
+          </Link>
+          <Link
+            href="/legal/privacy"
+            className="transition-colors hover:text-primary"
+          >
+            นโยบาย
           </Link>
         </nav>
       </div>

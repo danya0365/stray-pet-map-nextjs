@@ -1,5 +1,14 @@
-import type { IPetPostRepository, PetPostQueryResult, PetPostFilters } from "@/application/repositories/IPetPostRepository";
-import type { PetPost, PetPostStats } from "@/domain/entities/pet-post";
+import type {
+  IPetPostRepository,
+  PetPostFilters,
+  PetPostQueryResult,
+} from "@/application/repositories/IPetPostRepository";
+import type { IPetTypeRepository } from "@/application/repositories/IPetTypeRepository";
+import type {
+  PetPost,
+  PetPostStats,
+  PetType,
+} from "@/domain/entities/pet-post";
 import type { Metadata } from "next";
 
 export interface MapViewModel {
@@ -8,14 +17,18 @@ export interface MapViewModel {
   totalCount: number;
   hasMore: boolean;
   nextCursor?: string | null;
+  petTypes: PetType[];
 }
 
 export class MapPresenter {
-  constructor(private readonly repository: IPetPostRepository) {}
+  constructor(
+    private readonly repository: IPetPostRepository,
+    private readonly petTypeRepository?: IPetTypeRepository,
+  ) {}
 
   async getViewModel(filters?: PetPostFilters): Promise<MapViewModel> {
     try {
-      const [queryResult, stats] = await Promise.all([
+      const [queryResult, stats, petTypes] = await Promise.all([
         this.repository.query({
           filters: {
             status: ["available", "missing", "pending"],
@@ -26,6 +39,7 @@ export class MapPresenter {
           pagination: { type: "cursor", limit: 50 },
         }),
         this.repository.getStats(filters),
+        this.petTypeRepository?.getAll() ?? Promise.resolve([]),
       ]);
 
       return {
@@ -34,6 +48,7 @@ export class MapPresenter {
         totalCount: queryResult.total,
         hasMore: queryResult.hasMore ?? false,
         nextCursor: queryResult.nextCursor,
+        petTypes,
       };
     } catch (error) {
       console.error("Error getting map view model:", error);

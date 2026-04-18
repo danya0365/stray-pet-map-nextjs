@@ -36,7 +36,7 @@ INSERT INTO public.pet_posts (
     'ส้มธรรมดา', 'ส้ม', 'male', 'ประมาณ 3 ปี',
     NULL, TRUE,
     13.7999, 100.5500, 'ตลาดจตุจักร', 'กรุงเทพมหานคร',
-    'available', 'https://placekitten.com/400/300'
+    'available', 'https://placecats.com/400/300'
   ),
   -- 3) ลูกหมา 3 ตัว ถูกทิ้งหน้าวัด
   (
@@ -60,7 +60,7 @@ INSERT INTO public.pet_posts (
     'เปอร์เซีย ผสม', 'ดำ', 'female', 'ประมาณ 1 ปี',
     TRUE, TRUE,
     13.8180, 100.5614, 'ลาดพร้าว 71', 'กรุงเทพมหานคร',
-    'missing', 'https://placekitten.com/401/300'
+    'missing', 'https://placecats.com/401/300'
   ),
   -- 5) บีเกิล สวนรถไฟ
   (
@@ -84,7 +84,7 @@ INSERT INTO public.pet_posts (
     'ขาวมณี', 'ขาว', 'female', 'ประมาณ 6 เดือน',
     TRUE, FALSE,
     13.7460, 100.5340, 'สยามพารากอน', 'กรุงเทพมหานคร',
-    'adopted', 'https://placekitten.com/402/300'
+    'adopted', 'https://placecats.com/402/300'
   ),
   -- 7) กระต่าย เชียงใหม่
   (
@@ -96,7 +96,7 @@ INSERT INTO public.pet_posts (
     'พันธุ์ผสม', 'ขาว', 'unknown', 'ไม่แน่ใจ',
     NULL, NULL,
     18.7883, 98.9853, 'สวนสาธารณะหนองบวกหาด', 'เชียงใหม่',
-    'available', 'https://placedog.net/400/300?id=7'
+    'available', 'https://loremflickr.com/400/300/rabbit'
   ),
   -- 8) น้องหมาโกลเด้น ขอนแก่น
   (
@@ -120,7 +120,7 @@ INSERT INTO public.pet_posts (
     'พันทาง', 'ลายเสือ', 'male', '1-2 ปี',
     NULL, NULL,
     7.8804, 98.2920, 'หาดป่าตอง', 'ภูเก็ต',
-    'available', 'https://placekitten.com/403/300'
+    'available', 'https://placecats.com/403/300'
   ),
   -- 10) น้องหมาชิวาวา หาย นนทบุรี
   (
@@ -141,12 +141,12 @@ INSERT INTO public.pet_posts (
 INSERT INTO public.pet_images (pet_post_id, image_url, sort_order) VALUES
   ('a0000000-0000-0000-0000-000000000001', 'https://placedog.net/500/400?id=11', 1),
   ('a0000000-0000-0000-0000-000000000001', 'https://placedog.net/500/400?id=12', 2),
-  ('a0000000-0000-0000-0000-000000000002', 'https://placekitten.com/500/400', 1),
+  ('a0000000-0000-0000-0000-000000000002', 'https://placecats.com/500/400', 1),
   ('a0000000-0000-0000-0000-000000000003', 'https://placedog.net/500/400?id=31', 1),
   ('a0000000-0000-0000-0000-000000000003', 'https://placedog.net/500/400?id=32', 2),
   ('a0000000-0000-0000-0000-000000000003', 'https://placedog.net/500/400?id=33', 3),
-  ('a0000000-0000-0000-0000-000000000004', 'https://placekitten.com/501/400', 1),
-  ('a0000000-0000-0000-0000-000000000007', 'https://placedog.net/500/400?id=71', 1),
+  ('a0000000-0000-0000-0000-000000000004', 'https://placecats.com/501/400', 1),
+  ('a0000000-0000-0000-0000-000000000007', 'https://loremflickr.com/500/400/rabbit', 1),
   ('a0000000-0000-0000-0000-000000000008', 'https://placedog.net/500/400?id=81', 1),
   ('a0000000-0000-0000-0000-000000000008', 'https://placedog.net/500/400?id=82', 2);
 

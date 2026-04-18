@@ -8,11 +8,14 @@ export interface AuthProfile {
   avatarUrl: string | null;
   bio: string | null;
   role: "user" | "moderator" | "admin";
+  createdAt?: string; // For consistent sorting
 }
 
 export interface IAuthRepository {
   getUser(): Promise<User | null>;
   getProfile(): Promise<AuthProfile | null>;
+  getProfiles(): Promise<AuthProfile[]>;
+  switchProfile(profileId: string): Promise<AuthProfile | null>;
   signInWithPassword(
     email: string,
     password: string,

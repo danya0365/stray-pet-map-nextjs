@@ -16,19 +16,12 @@ export class SupabaseAuthRepository implements IAuthRepository {
   }
 
   async getProfile(): Promise<AuthProfile | null> {
-    const user = await this.getUser();
-    if (!user) return null;
+    // Use RPC to get active profile
+    const { data: profile, error } = await this.supabase
+      .rpc("get_active_profile")
+      .single();
 
-    const { data: profiles } = await this.supabase
-      .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio")
-      .eq("auth_id", user.id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: true })
-      .limit(1);
-
-    const profile = profiles?.[0] ?? null;
-    if (!profile) return null;
+    if (error || !profile) return null;
 
     // Get role
     const { data: roleData } = await this.supabase
@@ -45,6 +38,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
       avatarUrl: profile.avatar_url,
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
+      createdAt: profile.created_at || undefined,
     };
   }
 
@@ -82,5 +76,107 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
   async signOut(): Promise<void> {
     await this.supabase.auth.signOut();
+  }
+
+  async getProfiles(): Promise<AuthProfile[]> {
+    const user = await this.getUser();
+    if (!user) return [];
+
+    // Fetch ALL profiles for this user (not just active ones)
+    // so the switcher can show all available profiles
+    const { data: profilesData, error } = await this.supabase
+      .from("profiles")
+      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .eq("auth_id", user.id);
+
+    if (error || !profilesData) return [];
+
+    // Get roles for all profiles
+    const profilesWithRoles = await Promise.all(
+      profilesData.map(async (profile) => {
+        const { data: roleData } = await this.supabase
+          .from("profile_roles")
+          .select("role")
+          .eq("profile_id", profile.id)
+          .single();
+
+        return {
+          id: profile.id,
+          authId: profile.auth_id,
+          username: profile.username,
+          fullName: profile.full_name,
+          avatarUrl: profile.avatar_url,
+          bio: profile.bio,
+          role: (roleData?.role as AuthProfile["role"]) ?? "user",
+          createdAt: profile.created_at || undefined,
+        };
+      }),
+    );
+
+    // ✅ Sort by role priority: admin > moderator > user, then by id
+    const rolePriority: Record<string, number> = {
+      admin: 0,
+      moderator: 1,
+      user: 2,
+    };
+
+    return profilesWithRoles.sort((a, b) => {
+      const priorityA = rolePriority[a.role] ?? 2;
+      const priorityB = rolePriority[b.role] ?? 2;
+
+      // If same role, sort by id
+      if (priorityA === priorityB) {
+        return a.id.localeCompare(b.id);
+      }
+
+      return priorityA - priorityB;
+    });
+  }
+
+  async switchProfile(profileId: string): Promise<AuthProfile | null> {
+    const user = await this.getUser();
+    if (!user) return null;
+
+    // 1. Call RPC to set active profile (like live-learning pattern)
+    const { data: success, error: rpcError } = await this.supabase.rpc(
+      "set_profile_active",
+      {
+        profile_id: profileId,
+      },
+    );
+
+    if (rpcError || !success) {
+      console.error("Failed to switch profile via RPC:", rpcError);
+      // Fallback: continue without RPC if it doesn't exist
+    }
+
+    // 2. Get the profile data
+    const { data: profile, error: profileError } = await this.supabase
+      .from("profiles")
+      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .eq("id", profileId)
+      .eq("auth_id", user.id)
+      .eq("is_active", true)
+      .single();
+
+    if (profileError || !profile) return null;
+
+    // 3. Get role for the profile
+    const { data: roleData } = await this.supabase
+      .from("profile_roles")
+      .select("role")
+      .eq("profile_id", profile.id)
+      .single();
+
+    return {
+      id: profile.id,
+      authId: profile.auth_id,
+      username: profile.username,
+      fullName: profile.full_name,
+      avatarUrl: profile.avatar_url,
+      bio: profile.bio,
+      role: (roleData?.role as AuthProfile["role"]) ?? "user",
+      createdAt: profile.created_at || undefined,
+    };
   }
 }

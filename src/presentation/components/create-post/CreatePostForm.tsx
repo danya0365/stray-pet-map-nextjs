@@ -1,21 +1,18 @@
 "use client";
 
-import type { PetType } from "@/domain/entities/pet-post";
 import { LocationPickerModal } from "@/presentation/components/search/LocationPickerModal";
 import { cn } from "@/presentation/lib/cn";
 import type { CreatePostViewModel } from "@/presentation/presenters/create-post/CreatePostPresenter";
 import { useCreatePostPresenter } from "@/presentation/presenters/create-post/useCreatePostPresenter";
-import {
-  createPostSchema,
-  type CreatePostFormValues,
-} from "@/presentation/validations/createPostSchema";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   Camera,
   CheckCircle2,
+  ClipboardList,
+  Crosshair,
+  Info,
   Loader2,
   MapPin,
   PawPrint,
@@ -24,21 +21,17 @@ import {
   Syringe,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import { useForm } from "react-hook-form";
 
-// ── Constants ──────────────────────────────────────────
+// ── Constants (UI-only, no logic) ──────────────────────
 
 const STEPS = [
-  { id: 1, label: "จุดประสงค์", icon: "📷" },
-  { id: 2, label: "ตำแหน่ง", icon: "�" },
-  { id: 3, label: "ข้อมูลหลัก", icon: "�" },
-  { id: 4, label: "เพิ่มเติม", icon: "💊" },
+  { id: 1, label: "จุดประสงค์", Icon: Crosshair },
+  { id: 2, label: "ตำแหน่ง", Icon: MapPin },
+  { id: 3, label: "ข้อมูลหลัก", Icon: ClipboardList },
+  { id: 4, label: "เพิ่มเติม", Icon: Info },
 ] as const;
 
 const TOTAL_STEPS = STEPS.length;
-
-// PET_TYPES is now passed via props
 
 const GENDER_OPTIONS = [
   { value: "male" as const, label: "ผู้", icon: "♂️" },
@@ -46,18 +39,24 @@ const GENDER_OPTIONS = [
   { value: "unknown" as const, label: "ไม่ทราบ", icon: "❓" },
 ];
 
-const STATUS_OPTIONS = [
+const PURPOSE_OPTIONS = [
   {
-    value: "available" as const,
-    label: "น้องหาบ้าน",
-    desc: "น้องพร้อมมีเจ้าของใหม่",
-    icon: "🏠",
+    value: "community_cat" as const,
+    label: "น้องแมวจร",
+    desc: "หาบ้านให้น้องแมวจรที่พบตามสถานที่ต่างๆ",
+    icon: "🐱",
   },
   {
-    value: "missing" as const,
+    value: "lost_pet" as const,
     label: "ตามหาน้อง",
-    desc: "น้องหายไป ช่วยตามหา",
+    desc: "โพสต์เพื่อให้ทุกคนช่วยกันตามหาและให้เบาะแส",
     icon: "🔍",
+  },
+  {
+    value: "rehome_pet" as const,
+    label: "น้องหาบ้าน",
+    desc: "หาบ้านใหม่ให้น้องที่เจ้าของเดิมเลี้ยงไม่ไหว/ไม่สามารถดูแลต่อ",
+    icon: "🏠",
   },
 ];
 
@@ -117,41 +116,7 @@ const DESCRIPTION_TEMPLATES = [
   "พบน้องบาดเจ็บเล็กน้อย",
 ];
 
-function buildTitleSuggestions(
-  petTypeId: string | undefined,
-  status: string | undefined,
-  address: string | null,
-  petTypes: PetType[],
-): string[] {
-  const petLabel = petTypes.find((p) => p.id === petTypeId)?.name ?? "น้อง";
-  const shortAddress = address
-    ? address.split(",").slice(0, 2).join(",").trim()
-    : null;
-
-  const suggestions: string[] = [];
-
-  if (status === "available") {
-    suggestions.push(
-      `${petLabel}รอรับเลี้ยง${shortAddress ? ` พบที่${shortAddress}` : ""}`,
-    );
-    if (shortAddress) {
-      suggestions.push(`พบ${petLabel}จร ${shortAddress}`);
-    }
-    suggestions.push(`${petLabel}น่ารัก หาบ้านให้หน่อย`);
-  } else if (status === "missing") {
-    suggestions.push(
-      `ตามหา${petLabel}${shortAddress ? ` หายจาก${shortAddress}` : ""}`,
-    );
-    if (shortAddress) {
-      suggestions.push(`ใครเจอ${petLabel} แถว${shortAddress} ช่วยแจ้งด้วย`);
-    }
-    suggestions.push(`${petLabel}หาย ช่วยตามหาด้วยค่ะ`);
-  }
-
-  return suggestions;
-}
-
-// ── Main component ─────────────────────────────────────
+// ── Main component (pure View) ─────────────────────────
 
 interface CreatePostViewProps {
   initialViewModel: CreatePostViewModel;
@@ -160,124 +125,20 @@ interface CreatePostViewProps {
 export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
   const router = useRouter();
   const [state, actions] = useCreatePostPresenter(initialViewModel);
-  const { submitting, error: presenterError, createdPost } = state;
-  const petTypes = initialViewModel.petTypes;
-
-  const [step, setStep] = useState(1);
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [locationAddress, setLocationAddress] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
   const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    trigger,
-    formState: { errors },
-  } = useForm<CreatePostFormValues>({
-    resolver: zodResolver(createPostSchema),
-    defaultValues: {
-      gender: "unknown",
-      status: "available",
-    },
-  });
-
-  const watchPetType = watch("petTypeId");
-  const watchGender = watch("gender");
-  const watchStatus = watch("status");
-  const watchLat = watch("latitude");
-  const watchIsVaccinated = watch("isVaccinated");
-  const watchIsNeutered = watch("isNeutered");
-
-  // ── Step navigation ────────────────────────────────
-
-  const canGoNext = useCallback(async (): Promise<boolean> => {
-    switch (step) {
-      case 1:
-        return await trigger(["status", "petTypeId"]);
-      case 2:
-        return await trigger(["latitude", "longitude"]);
-      case 3:
-        return await trigger(["title", "gender"]);
-      case 4:
-        return true;
-      default:
-        return true;
-    }
-  }, [step, trigger]);
-
-  const goNext = useCallback(async () => {
-    if (await canGoNext()) {
-      setStep((s) => Math.min(s + 1, TOTAL_STEPS + 1));
-    }
-  }, [canGoNext]);
-
-  const goBack = useCallback(() => {
-    setStep((s) => Math.max(s - 1, 1));
-  }, []);
-
-  const skipToReview = useCallback(() => {
-    setStep(TOTAL_STEPS + 1);
-  }, []);
-
-  // ── Handlers ───────────────────────────────────────
-
-  const handleLocationConfirm = useCallback(
-    (location: { latitude: number; longitude: number; address: string }) => {
-      setValue("latitude", location.latitude, { shouldValidate: true });
-      setValue("longitude", location.longitude, { shouldValidate: true });
-      setValue("address", location.address);
-      setLocationAddress(location.address);
-      setShowLocationPicker(false);
-    },
-    [setValue],
-  );
-
-  const handleImageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    },
-    [],
-  );
-
-  const onSubmit = useCallback(
-    async (data: CreatePostFormValues) => {
-      try {
-        await actions.submitPost(
-          {
-            petTypeId: data.petTypeId,
-            title: data.title,
-            description: data.description,
-            breed: data.breed,
-            color: data.color,
-            gender: data.gender,
-            estimatedAge: data.estimatedAge,
-            isVaccinated: data.isVaccinated ?? undefined,
-            isNeutered: data.isNeutered ?? undefined,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            address: data.address,
-            province: data.province,
-            status: data.status,
-            thumbnailUrl: data.thumbnailUrl,
-          },
-          imageFile,
-        );
-      } catch {
-        // error is handled by presenter
-      }
-    },
-    [actions, imageFile],
-  );
+    step,
+    isLastStep,
+    isReview,
+    errors,
+    watchedValues,
+    imagePreview,
+    showLocationPicker,
+    locationAddress,
+    submitting,
+    error: presenterError,
+    createdPost,
+  } = state;
+  const petTypes = initialViewModel.petTypes;
 
   // ── Success screen ─────────────────────────────────
 
@@ -300,10 +161,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
             ดูโพสต์
           </button>
           <button
-            onClick={() => {
-              actions.resetForm();
-              setStep(1);
-            }}
+            onClick={actions.resetForm}
             className="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-foreground/60 transition-colors hover:bg-muted"
             type="button"
           >
@@ -316,20 +174,19 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
   // ── Render ─────────────────────────────────────────
 
-  const isReview = step > TOTAL_STEPS;
-
   return (
     <>
       {/* Progress bar */}
       <div className="mb-8">
+        {/* Step indicators - mobile: icons only, larger; desktop: icon + label */}
         <div className="mb-3 flex items-center justify-between">
           {STEPS.map((s) => (
             <button
               key={s.id}
               type="button"
-              onClick={() => s.id < step && setStep(s.id)}
+              onClick={() => actions.goToStep(s.id)}
               className={cn(
-                "flex items-center gap-1.5 text-xs font-medium transition-colors",
+                "flex flex-col items-center gap-1.5 transition-colors",
                 s.id === step
                   ? "text-primary"
                   : s.id < step
@@ -337,27 +194,55 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                     : "cursor-default text-foreground/20",
               )}
             >
-              <span>{s.icon}</span>
-              <span className="hidden sm:inline">{s.label}</span>
+              {/* Mobile: larger icon; Desktop: normal icon + label */}
+              <div
+                className={cn(
+                  "flex items-center justify-center rounded-full transition-all",
+                  s.id === step
+                    ? "h-10 w-10 bg-primary/10 sm:h-8 sm:w-8"
+                    : s.id < step
+                      ? "h-10 w-10 bg-primary/5 sm:h-8 sm:w-8"
+                      : "h-10 w-10 bg-muted sm:h-8 sm:w-8",
+                )}
+              >
+                <s.Icon className="h-5 w-5 sm:h-4 sm:w-4" />
+              </div>
+              {/* Label - hidden on mobile, show on desktop */}
+              <span className="hidden text-xs font-medium sm:block">
+                {s.label}
+              </span>
             </button>
           ))}
         </div>
+
+        {/* Progress bar */}
         <div className="h-1.5 w-full rounded-full bg-muted">
           <div
             className="h-1.5 rounded-full bg-primary transition-all duration-300"
             style={{
-              width: `${isReview ? 100 : ((step - 1) / TOTAL_STEPS) * 100}%`,
+              width: `${isReview ? 100 : (step / TOTAL_STEPS) * 100}%`,
             }}
           />
         </div>
-        <p className="mt-2 text-center text-xs text-foreground/40">
-          {isReview ? "ตรวจสอบข้อมูล" : `ขั้นตอนที่ ${step} จาก ${TOTAL_STEPS}`}
+
+        {/* Step name indicator - show current step name on mobile */}
+        <p className="mt-2 text-center text-sm font-medium text-primary sm:text-xs sm:text-foreground/40 sm:font-normal">
+          {isReview ? (
+            "ตรวจสอบข้อมูล"
+          ) : (
+            <>
+              <span className="sm:hidden">{STEPS[step - 1]?.label}</span>
+              <span className="hidden sm:inline">
+                ขั้นตอนที่ {step} จาก {TOTAL_STEPS}
+              </span>
+            </>
+          )}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={(e) => e.preventDefault()}>
         {presenterError && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+          <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {presenterError}
           </div>
         )}
@@ -376,33 +261,37 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                 จุดประสงค์ *
               </p>
               <div className="flex flex-col gap-2">
-                {STATUS_OPTIONS.map((opt) => (
+                {PURPOSE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() =>
-                      setValue("status", opt.value, { shouldValidate: true })
+                      actions.setValue("purpose", opt.value, {
+                        shouldValidate: true,
+                      })
                     }
                     className={cn(
-                      "flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
-                      watchStatus === opt.value
-                        ? "border-primary bg-primary/5 shadow-sm"
+                      "flex items-center gap-3 rounded-xl border-2 bg-card px-4 py-3.5 text-left transition-all",
+                      watchedValues.purpose === opt.value
+                        ? "border-primary shadow-sm"
                         : "border-border hover:bg-muted/50",
                     )}
                   >
-                    <span className="text-2xl">{opt.icon}</span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xl">
+                      {opt.icon}
+                    </span>
                     <div>
                       <p
                         className={cn(
                           "text-sm font-semibold",
-                          watchStatus === opt.value
+                          watchedValues.purpose === opt.value
                             ? "text-primary"
                             : "text-foreground/70",
                         )}
                       >
                         {opt.label}
                       </p>
-                      <p className="text-xs text-foreground/40">{opt.desc}</p>
+                      <p className="text-xs text-foreground/50">{opt.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -445,7 +334,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={handleImageChange}
+                onChange={actions.handleImageChange}
               />
             </label>
 
@@ -454,28 +343,40 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               <p className="mb-2 text-xs font-medium text-foreground/60">
                 ชนิดสัตว์ *
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div
+                className={cn(
+                  "grid grid-cols-2 gap-3 rounded-xl p-1 transition-colors",
+                  errors.petTypeId &&
+                    "bg-destructive/5 ring-1 ring-destructive/30",
+                )}
+              >
                 {petTypes.map((pt) => (
                   <button
                     key={pt.id}
                     type="button"
                     onClick={() =>
-                      setValue("petTypeId", pt.id, { shouldValidate: true })
+                      actions.setValue("petTypeId", pt.id, {
+                        shouldValidate: true,
+                      })
                     }
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-2xl border-2 py-6 transition-all",
-                      watchPetType === pt.id
+                      watchedValues.petTypeId === pt.id
                         ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/30 hover:bg-muted/50",
+                        : errors.petTypeId
+                          ? "border-destructive/30 hover:border-destructive/50 hover:bg-destructive/5"
+                          : "border-border hover:border-primary/30 hover:bg-muted/50",
                     )}
                   >
                     <span className="text-4xl">{pt.icon}</span>
                     <span
                       className={cn(
                         "text-sm font-semibold",
-                        watchPetType === pt.id
+                        watchedValues.petTypeId === pt.id
                           ? "text-primary"
-                          : "text-foreground/60",
+                          : errors.petTypeId
+                            ? "text-destructive/70"
+                            : "text-foreground/60",
                       )}
                     >
                       {pt.name}
@@ -498,7 +399,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               subtitle="เลือกตำแหน่งที่พบน้องบนแผนที่"
             />
 
-            {watchLat ? (
+            {watchedValues.latitude ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-4">
                   <div className="flex items-center gap-3">
@@ -510,14 +411,14 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                         {locationAddress || "ตำแหน่งที่เลือก"}
                       </p>
                       <p className="text-xs text-foreground/40">
-                        {watch("latitude")?.toFixed(4)},{" "}
-                        {watch("longitude")?.toFixed(4)}
+                        {watchedValues.latitude?.toFixed(4)},{" "}
+                        {/* longitude is always set with latitude */}
                       </p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowLocationPicker(true)}
+                    onClick={actions.openLocationPicker}
                     className="text-xs font-medium text-primary hover:underline"
                   >
                     เปลี่ยน
@@ -527,11 +428,11 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
             ) : (
               <button
                 type="button"
-                onClick={() => setShowLocationPicker(true)}
+                onClick={actions.openLocationPicker}
                 className={cn(
                   "flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-4 py-10 transition-colors",
                   errors.latitude
-                    ? "border-red-400"
+                    ? "border-destructive"
                     : "border-border hover:border-primary/40 hover:bg-muted/50",
                 )}
               >
@@ -568,7 +469,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                 ชื่อเรื่อง *
               </p>
               <input
-                {...register("title")}
+                {...actions.register("title")}
                 placeholder="พิมพ์เอง หรือแตะเลือกด้านล่าง"
                 className={cn(inputClass, errors.title && inputErrorClass)}
               />
@@ -576,12 +477,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
               {/* Auto-suggest titles */}
               {(() => {
-                const suggestions = buildTitleSuggestions(
-                  watchPetType,
-                  watchStatus,
-                  locationAddress,
-                  petTypes,
-                );
+                const suggestions = actions.buildTitleSuggestions();
                 if (suggestions.length === 0) return null;
                 return (
                   <div className="mt-2 flex flex-col gap-1.5">
@@ -594,11 +490,13 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                           key={s}
                           type="button"
                           onClick={() =>
-                            setValue("title", s, { shouldValidate: true })
+                            actions.setValue("title", s, {
+                              shouldValidate: true,
+                            })
                           }
                           className={cn(
                             "rounded-full border px-3 py-1.5 text-xs transition-colors",
-                            watch("title") === s
+                            watchedValues.title === s
                               ? "border-primary bg-primary/10 text-primary"
                               : "border-border bg-card text-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
                           )}
@@ -623,11 +521,13 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                     key={opt.value}
                     type="button"
                     onClick={() =>
-                      setValue("gender", opt.value, { shouldValidate: true })
+                      actions.setValue("gender", opt.value, {
+                        shouldValidate: true,
+                      })
                     }
                     className={cn(
                       "flex flex-1 flex-col items-center gap-1 rounded-xl border py-3 transition-all",
-                      watchGender === opt.value
+                      watchedValues.gender === opt.value
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-border hover:bg-muted/50",
                     )}
@@ -636,7 +536,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                     <span
                       className={cn(
                         "text-xs font-medium",
-                        watchGender === opt.value
+                        watchedValues.gender === opt.value
                           ? "text-primary"
                           : "text-foreground/60",
                       )}
@@ -664,11 +564,12 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               placeholder="พิมพ์พันธุ์เอง..."
               suggestions={
                 BREED_SUGGESTIONS_BY_SLUG[
-                  petTypes.find((p) => p.id === watchPetType)?.slug ?? "dog"
+                  petTypes.find((p) => p.id === watchedValues.petTypeId)
+                    ?.slug ?? "dog"
                 ] ?? BREED_SUGGESTIONS_BY_SLUG["dog"]
               }
-              value={watch("breed") ?? ""}
-              onChange={(v) => setValue("breed", v)}
+              value={watchedValues.breed ?? ""}
+              onChange={(v) => actions.setValue("breed", v)}
             />
 
             {/* Color */}
@@ -676,8 +577,8 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               label="สี"
               placeholder="พิมพ์สีเอง..."
               suggestions={COLOR_SUGGESTIONS}
-              value={watch("color") ?? ""}
-              onChange={(v) => setValue("color", v)}
+              value={watchedValues.color ?? ""}
+              onChange={(v) => actions.setValue("color", v)}
             />
 
             {/* Estimated Age */}
@@ -685,8 +586,8 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               label="อายุโดยประมาณ"
               placeholder="พิมพ์อายุเอง..."
               suggestions={AGE_SUGGESTIONS}
-              value={watch("estimatedAge") ?? ""}
-              onChange={(v) => setValue("estimatedAge", v)}
+              value={watchedValues.estimatedAge ?? ""}
+              onChange={(v) => actions.setValue("estimatedAge", v)}
             />
 
             {/* Description */}
@@ -695,7 +596,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                 รายละเอียด
               </p>
               <textarea
-                {...register("description")}
+                {...actions.register("description")}
                 placeholder="เล่าเรื่องของน้องให้ฟังหน่อย..."
                 rows={3}
                 className={cn(inputClass, "resize-none")}
@@ -706,9 +607,9 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
                     key={tpl}
                     type="button"
                     onClick={() => {
-                      const current = watch("description") ?? "";
+                      const current = watchedValues.description ?? "";
                       const next = current ? `${current} ${tpl}` : tpl;
-                      setValue("description", next);
+                      actions.setValue("description", next);
                     }}
                     className="rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground/60 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                   >
@@ -724,14 +625,14 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
               <ToggleRow
                 icon={Syringe}
                 label="ฉีดวัคซีนแล้ว"
-                value={watchIsVaccinated}
-                onChange={(v) => setValue("isVaccinated", v)}
+                value={watchedValues.isVaccinated}
+                onChange={(v) => actions.setValue("isVaccinated", v)}
               />
               <ToggleRow
                 icon={Scissors}
                 label="ทำหมันแล้ว"
-                value={watchIsNeutered}
-                onChange={(v) => setValue("isNeutered", v)}
+                value={watchedValues.isNeutered}
+                onChange={(v) => actions.setValue("isNeutered", v)}
               />
             </div>
           </div>
@@ -758,38 +659,42 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
               <ReviewRow
                 label="ชนิด"
-                value={petTypes.find((p) => p.id === watchPetType)?.name}
+                value={
+                  petTypes.find((p) => p.id === watchedValues.petTypeId)?.name
+                }
               />
-              <ReviewRow label="ชื่อเรื่อง" value={watch("title")} />
+              <ReviewRow label="ชื่อเรื่อง" value={watchedValues.title} />
               <ReviewRow
                 label="จุดประสงค์"
                 value={
-                  STATUS_OPTIONS.find((s) => s.value === watchStatus)?.label
+                  PURPOSE_OPTIONS.find((s) => s.value === watchedValues.purpose)
+                    ?.label
                 }
               />
               <ReviewRow
                 label="เพศ"
                 value={
-                  GENDER_OPTIONS.find((g) => g.value === watchGender)?.label
+                  GENDER_OPTIONS.find((g) => g.value === watchedValues.gender)
+                    ?.label
                 }
               />
               <ReviewRow label="ตำแหน่ง" value={locationAddress} />
-              {watch("breed") && (
-                <ReviewRow label="พันธุ์" value={watch("breed")} />
+              {watchedValues.breed && (
+                <ReviewRow label="พันธุ์" value={watchedValues.breed} />
               )}
-              {watch("color") && (
-                <ReviewRow label="สี" value={watch("color")} />
+              {watchedValues.color && (
+                <ReviewRow label="สี" value={watchedValues.color} />
               )}
-              {watch("estimatedAge") && (
-                <ReviewRow label="อายุ" value={watch("estimatedAge")} />
+              {watchedValues.estimatedAge && (
+                <ReviewRow label="อายุ" value={watchedValues.estimatedAge} />
               )}
-              {watch("description") && (
+              {watchedValues.description && (
                 <div className="rounded-xl border border-border bg-card p-3">
                   <p className="mb-1 text-[10px] font-medium text-foreground/40">
                     รายละเอียด
                   </p>
                   <p className="text-sm text-foreground/80">
-                    {watch("description")}
+                    {watchedValues.description}
                   </p>
                 </div>
               )}
@@ -802,7 +707,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
           {step > 1 && (
             <button
               type="button"
-              onClick={goBack}
+              onClick={actions.goBack}
               className="flex items-center gap-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground/60 transition-colors hover:bg-muted"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -815,7 +720,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
           {step === 4 && (
             <button
               type="button"
-              onClick={skipToReview}
+              onClick={actions.skipToReview}
               className="flex items-center gap-1 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground/40 transition-colors hover:text-foreground/60"
             >
               <SkipForward className="h-4 w-4" />
@@ -823,18 +728,28 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
             </button>
           )}
 
-          {!isReview ? (
+          {!isLastStep && !isReview ? (
             <button
               type="button"
-              onClick={goNext}
+              onClick={actions.goNext}
               className="flex items-center gap-1 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
             >
               ถัดไป
               <ArrowRight className="h-4 w-4" />
             </button>
+          ) : isLastStep && !isReview ? (
+            <button
+              type="button"
+              onClick={actions.goNext}
+              className="flex items-center gap-1 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+            >
+              ตรวจสอบ
+              <ArrowRight className="h-4 w-4" />
+            </button>
           ) : (
             <button
-              type="submit"
+              type="button"
+              onClick={actions.handleFormSubmit}
               disabled={submitting}
               className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
@@ -856,8 +771,8 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
       <LocationPickerModal
         isOpen={showLocationPicker}
-        onClose={() => setShowLocationPicker(false)}
-        onConfirm={handleLocationConfirm}
+        onClose={actions.closeLocationPicker}
+        onConfirm={actions.handleLocationConfirm}
       />
     </>
   );
@@ -867,7 +782,7 @@ export function CreatePostView({ initialViewModel }: CreatePostViewProps) {
 
 const inputClass =
   "w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary";
-const inputErrorClass = "border-red-400 focus:border-red-500";
+const inputErrorClass = "border-destructive focus:border-destructive";
 
 function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -880,8 +795,8 @@ function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
 
 function ErrorText({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-      <AlertCircle className="h-3 w-3" />
+    <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
       {children}
     </p>
   );
@@ -977,7 +892,7 @@ function ToggleRow({
                 ? v === true
                   ? "bg-primary/10 text-primary"
                   : v === false
-                    ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    ? "bg-destructive/10 text-destructive"
                     : "bg-muted text-foreground"
                 : "text-foreground/40 hover:bg-muted",
             )}

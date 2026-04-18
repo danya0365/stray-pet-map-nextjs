@@ -1,59 +1,18 @@
 "use client";
 
-import type { PetPost } from "@/domain/entities/pet-post";
-import { SupabaseFavoriteRepository } from "@/infrastructure/repositories/supabase/SupabaseFavoriteRepository";
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
-import { createClient } from "@/infrastructure/supabase/client";
 import { PetPostCard } from "@/presentation/components/home/PetPostCard";
+import { useFavoritePresenter } from "@/presentation/presenters/favorites/useFavoritePresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { Heart, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export function FavoritesList() {
-  const { user, isLoading: authLoading } = useAuthStore();
-  const [posts, setPosts] = useState<PetPost[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const { isLoading: authLoading } = useAuthStore();
+  const [{ viewModel, loading }] = useFavoritePresenter();
 
-  useEffect(() => {
-    if (authLoading || !user) return;
+  const posts = viewModel?.posts ?? [];
 
-    let cancelled = false;
-
-    const load = async () => {
-      const supabase = createClient();
-      const favRepo = new SupabaseFavoriteRepository(supabase);
-      const postRepo = new SupabasePetPostRepository(supabase);
-
-      const postIds = await favRepo.getFavoritePostIds();
-      if (cancelled) return;
-
-      if (postIds.length === 0) {
-        setPosts([]);
-        setDataLoading(false);
-        return;
-      }
-
-      const results = await Promise.all(
-        postIds.map((id) => postRepo.getById(id)),
-      );
-      if (cancelled) return;
-      setPosts(results.filter((p): p is PetPost => p !== null));
-      setDataLoading(false);
-    };
-
-    load().catch(() => {
-      if (!cancelled) setDataLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, authLoading]);
-
-  const loading = authLoading || (user && dataLoading);
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />

@@ -1,0 +1,16 @@
+services:
+  nextjs-app:
+    build:
+      context: ..
+      dockerfile: nextjs-vps/Dockerfile
+    container_name: ${CONTAINER_NAME:-nextjs-ai-creator}
+    restart: always
+    ports:
+      - "${APP_PORT:-3005}:3000"
+    env_file:
+      - .env.production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

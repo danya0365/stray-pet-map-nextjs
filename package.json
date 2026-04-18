@@ -12,7 +12,8 @@
     "supabase-migrate": "supabase db reset",
     "supabase-generate": "supabase gen types typescript --local --schema public > src/domain/types/supabase.ts",
     "supabase-db-diff": "supabase db diff --schema public",
-    "lint": "eslint"
+    "lint": "eslint",
+    "scrape:fb": "tsx scripts/scraper/fb-group-scraper.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -32,6 +33,7 @@
     "react-map-gl": "^8.1.1",
     "react-spring": "^10.0.3",
     "react-to-print": "^3.3.0",
+    "stripe": "^22.0.2",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
@@ -41,9 +43,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.4.7",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
+    "playwright": "^1.52.0",
     "tailwindcss": "^4",
+    "tsx": "^4.19.4",
     "typescript": "^5"
   }
 }
