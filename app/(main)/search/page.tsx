@@ -1,3 +1,4 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { SupabasePetTypeRepository } from "@/infrastructure/repositories/supabase/SupabasePetTypeRepository";
 import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { SearchView } from "@/presentation/components/search/SearchView";
@@ -6,10 +7,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export function generateMetadata(): Metadata {
-  return {
-    title: "ค้นหาน้อง | StrayPetMap",
-    description: "ค้นหาสัตว์จรตามสถานะ ชนิด หรือตำแหน่ง",
-  };
+  return createBaseMetadata(
+    "ค้นหาน้อง | รับเลี้ยงสัตว์จร",
+    "ค้นหาสัตว์จรตามสถานะ ชนิด สายพันธุ์ สี หรือตำแหน่ง - หาบ้านให้หมาจร แมวจร",
+    {
+      url: "/search",
+      keywords: ["ค้นหาสัตว์", "รับเลี้ยง", "หาบ้าน", "search", "filter"],
+    },
+  );
 }
 
 export default async function SearchPage() {

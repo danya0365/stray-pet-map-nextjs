@@ -1,3 +1,4 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { RoadMapView } from "@/presentation/components/road-map/RoadMapView";
 import { createServerRoadMapPresenter } from "@/presentation/presenters/road-map/RoadMapPresenterServerFactory";
 import type { Metadata } from "next";
@@ -6,9 +7,15 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const presenter = await createServerRoadMapPresenter();
-  return presenter.generateMetadata();
+export function generateMetadata(): Metadata {
+  return createBaseMetadata(
+    "Road Map | แผนพัฒนาและยอดบริจาค",
+    "ดูแผนการพัฒนาฟีเจอร์ต่อไปของ StrayPetMap และยอดบริจาคสะสม - ร่วมสนับสนุนการช่วยเหลือสัตว์",
+    {
+      url: "/road-map",
+      keywords: ["Road Map", "แผนพัฒนา", "บริจาค", "donation", "roadmap"],
+    },
+  );
 }
 
 /**

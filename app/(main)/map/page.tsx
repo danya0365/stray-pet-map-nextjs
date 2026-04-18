@@ -1,3 +1,4 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { MapView } from "@/presentation/components/map/MapView";
 import { createServerMapPresenter } from "@/presentation/presenters/map/MapPresenterServerFactory";
 import type { Metadata } from "next";
@@ -6,10 +7,14 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export function generateMetadata(): Metadata {
-  return {
-    title: "แผนที่น้อง | StrayPetMap",
-    description: "ดูตำแหน่งสัตว์จรบนแผนที่",
-  };
+  return createBaseMetadata(
+    "แผนที่น้อง | ค้นหาสัตว์จรใกล้คุณ",
+    "ดูตำแหน่งสัตว์จรบนแผนที่แบบ real-time - หมาจร แมวจร ที่ต้องการความช่วยเหลือหรือหาบ้าน",
+    {
+      url: "/map",
+      keywords: ["แผนที่สัตว์จร", "หมาจร", "แมวจร", "map", "location"],
+    },
+  );
 }
 
 export default async function MapPage() {

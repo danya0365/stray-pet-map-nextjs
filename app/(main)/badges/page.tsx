@@ -1,10 +1,22 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { BadgeLeaderboardContainer } from "@/presentation/components/badges/BadgeLeaderboardContainer";
 import { Trophy } from "lucide-react";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Hall of Fame - นักช่วยเหลือสัตว์ยอดเยี่ยม",
-  description: "ตารางคะแนนผู้ใช้ที่มีตราสัญลักษณ์การช่วยเหลือสัตว์มากที่สุด",
-};
+export const metadata: Metadata = createBaseMetadata(
+  "Hall of Fame | นักช่วยเหลือสัตว์ยอดเยี่ยม",
+  "ตารางคะแนนผู้ใช้ที่มีตราสัญลักษณ์การช่วยเหลือสัตว์มากที่สุด - ผู้ใจบุญและฮีโร่สี่ขาของเรา",
+  {
+    url: "/badges",
+    keywords: [
+      "Hall of Fame",
+      "ตารางคะแนน",
+      "นักช่วยเหลือ",
+      "leaderboard",
+      "badges",
+    ],
+  },
+);
 
 export default function BadgesPage() {
   return (

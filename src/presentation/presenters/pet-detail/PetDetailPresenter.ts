@@ -1,4 +1,5 @@
 import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
+import { createPetMetadata } from "@/config/metadata";
 import type { PetPost } from "@/domain/entities/pet-post";
 import type { Metadata } from "next";
 
@@ -23,14 +24,24 @@ export class PetDetailPresenter {
   }
 
   generateMetadata(post: PetPost): Metadata {
-    return {
-      title: `${post.title} | StrayPetMap`,
-      description: post.description || `ดูรายละเอียดของ ${post.title}`,
-      openGraph: {
-        title: post.title,
-        description: post.description,
-        images: post.thumbnailUrl ? [{ url: post.thumbnailUrl }] : undefined,
-      },
-    };
+    // Build pet-specific keywords
+    const keywords = [
+      "สัตว์หาบ้าน",
+      "รับเลี้ยง",
+      "adoption",
+      post.petType?.name,
+      post.breed,
+      post.color,
+      post.province,
+    ].filter(Boolean) as string[];
+
+    return createPetMetadata(
+      post.title,
+      post.description ||
+        `ดูรายละเอียดของ ${post.title} - สนใจรับเลี้ยงหรือช่วยเหลือน้องได้ที่ StrayPetMap`,
+      post.thumbnailUrl || undefined,
+      post.id,
+      keywords,
+    );
   }
 }

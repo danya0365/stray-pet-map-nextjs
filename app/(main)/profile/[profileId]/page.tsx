@@ -1,3 +1,4 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
 import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import {
@@ -10,7 +11,7 @@ import {
   MapPin,
   User,
 } from "lucide-react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -28,17 +29,22 @@ export async function generateMetadata({
   const profile = await repo.getById(profileId);
 
   if (!profile) {
-    return {
-      title: "ไม่พบโปรไฟล์ | StrayPetMap",
-    };
+    return createBaseMetadata(
+      "ไม่พบโปรไฟล์ | StrayPetMap",
+      "ไม่พบข้อมูลโปรไฟล์ที่ต้องการ",
+    );
   }
 
-  return {
-    title: `${profile.displayName} | StrayPetMap`,
-    description:
-      profile.bio ??
-      `โปรไฟล์ของ ${profile.displayName} บน StrayPetMap - แพลตฟอร์มช่วยเหลือสัตว์จรจัด`,
-  };
+  return createBaseMetadata(
+    `${profile.displayName} | StrayPetMap`,
+    profile.bio ??
+      `โปรไฟล์ของ ${profile.displayName} บน StrayPetMap - ดูโพสต์และผลงานการช่วยเหลือสัตว์`,
+    {
+      url: `/profile/${profileId}`,
+      image: profile.avatarUrl || undefined,
+      keywords: ["โปรไฟล์", "profile", "นักช่วยเหลือ", "badges"],
+    },
+  );
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {

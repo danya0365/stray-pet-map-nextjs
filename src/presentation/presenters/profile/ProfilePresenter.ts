@@ -10,6 +10,7 @@ import type {
 } from "@/application/repositories/IAuthRepository";
 import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
 import type { IProfileBadgeRepository } from "@/application/repositories/IProfileBadgeRepository";
+import { createBaseMetadata, createProfileMetadata } from "@/config/metadata";
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
 import type { PetPost } from "@/domain/entities/pet-post";
 import type { User } from "@supabase/supabase-js";
@@ -116,11 +117,20 @@ export class ProfilePresenter {
   /**
    * Generate metadata for the page
    */
-  generateMetadata(): Metadata {
-    return {
-      title: "โปรไฟล์ของฉัน | StrayPetMap",
-      description: "จัดการโปรไฟล์และตราสัญลักษณ์ของคุณ",
-    };
+  generateMetadata(profile?: AuthProfile): Metadata {
+    if (profile) {
+      const displayName = profile.fullName || profile.username || "ผู้ใช้";
+      return createProfileMetadata(displayName, profile.avatarUrl || undefined);
+    }
+
+    return createBaseMetadata(
+      "โปรไฟล์ของฉัน | StrayPetMap",
+      "จัดการโปรไฟล์และตราสัญลักษณ์ของคุณ - ดูสถิติการช่วยเหลือสัตว์และโพสต์ของคุณ",
+      {
+        url: "/profile",
+        keywords: ["โปรไฟล์", "profile", "badges", "stats"],
+      },
+    );
   }
 
   // ============================================================
