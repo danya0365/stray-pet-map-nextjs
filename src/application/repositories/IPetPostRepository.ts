@@ -116,4 +116,7 @@ export interface IPetPostRepository {
   ): Promise<
     { id: string; title: string; createdAt: string; purpose: string }[]
   >;
+
+  // ปิดโพสต์ (เมื่อหาเจ้าของเจอ/รับเลี้ยงแล้ว)
+  close(id: string, outcome: PetPostOutcome): Promise<PetPost>;
 }

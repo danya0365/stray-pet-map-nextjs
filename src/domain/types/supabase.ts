@@ -63,6 +63,199 @@ export type Database = {
           },
         ]
       }
+      comment_gamification_log: {
+        Row: {
+          action: string
+          comment_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          points_awarded: number
+          profile_id: string
+        }
+        Insert: {
+          action: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          points_awarded?: number
+          profile_id: string
+        }
+        Update: {
+          action?: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          points_awarded?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_gamification_log_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_gamification_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_likes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          profile_id: string
+          reaction_type: Database["public"]["Enums"]["comment_reaction_type"]
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          profile_id: string
+          reaction_type?: Database["public"]["Enums"]["comment_reaction_type"]
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+          reaction_type?: Database["public"]["Enums"]["comment_reaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_reactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_at: string | null
+          deleted_reason: string | null
+          edited_at: string | null
+          id: string
+          is_deleted: boolean
+          is_edited: boolean
+          like_count: number
+          parent_comment_id: string | null
+          pet_post_id: string
+          profile_id: string
+          reply_count: number
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_reason?: string | null
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          like_count?: number
+          parent_comment_id?: string | null
+          pet_post_id: string
+          profile_id: string
+          reply_count?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_reason?: string | null
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          like_count?: number
+          parent_comment_id?: string | null
+          pet_post_id?: string
+          profile_id?: string
+          reply_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_pet_post_id_fkey"
+            columns: ["pet_post_id"]
+            isOneToOne: false
+            referencedRelation: "pet_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donations: {
         Row: {
           amount: number
@@ -549,16 +742,20 @@ export type Database = {
           bio: string | null
           created_at: string | null
           date_of_birth: string | null
+          experience_points: number
           full_name: string | null
           gender: string | null
           id: string
           is_active: boolean
           last_login: string | null
+          last_points_update: string | null
+          level: number
           login_count: number
           phone: string | null
           preferences: Json
           privacy_settings: Json
           social_links: Json | null
+          total_points: number
           updated_at: string | null
           username: string | null
           verification_status: string
@@ -570,16 +767,20 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          experience_points?: number
           full_name?: string | null
           gender?: string | null
           id?: string
           is_active?: boolean
           last_login?: string | null
+          last_points_update?: string | null
+          level?: number
           login_count?: number
           phone?: string | null
           preferences?: Json
           privacy_settings?: Json
           social_links?: Json | null
+          total_points?: number
           updated_at?: string | null
           username?: string | null
           verification_status?: string
@@ -591,16 +792,20 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          experience_points?: number
           full_name?: string | null
           gender?: string | null
           id?: string
           is_active?: boolean
           last_login?: string | null
+          last_points_update?: string | null
+          level?: number
           login_count?: number
           phone?: string | null
           preferences?: Json
           privacy_settings?: Json
           social_links?: Json | null
+          total_points?: number
           updated_at?: string | null
           username?: string | null
           verification_status?: string
@@ -668,15 +873,175 @@ export type Database = {
           },
         ]
       }
+      user_comment_stats: {
+        Row: {
+          avg_reply_depth: number
+          current_comment_streak: number
+          helpful_comments: number
+          last_comment_date: string | null
+          longest_comment_streak: number
+          profile_id: string
+          total_comments: number
+          total_helpful_received: number
+          total_likes_given: number
+          total_likes_received: number
+          total_received_replies: number
+          total_replies: number
+          updated_at: string
+        }
+        Insert: {
+          avg_reply_depth?: number
+          current_comment_streak?: number
+          helpful_comments?: number
+          last_comment_date?: string | null
+          longest_comment_streak?: number
+          profile_id: string
+          total_comments?: number
+          total_helpful_received?: number
+          total_likes_given?: number
+          total_likes_received?: number
+          total_received_replies?: number
+          total_replies?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_reply_depth?: number
+          current_comment_streak?: number
+          helpful_comments?: number
+          last_comment_date?: string | null
+          longest_comment_streak?: number
+          profile_id?: string
+          total_comments?: number
+          total_helpful_received?: number
+          total_likes_given?: number
+          total_likes_received?: number
+          total_received_replies?: number
+          total_replies?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_comment_stats_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
+      comment_leaderboard_alltime: {
+        Row: {
+          avatar_url: string | null
+          comments_count: number | null
+          full_name: string | null
+          likes_received: number | null
+          profile_id: string | null
+          profile_level: number | null
+          replies_received: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_leaderboard_monthly: {
+        Row: {
+          avatar_url: string | null
+          comments_count: number | null
+          full_name: string | null
+          likes_received: number | null
+          profile_id: string | null
+          profile_level: number | null
+          replies_received: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_leaderboard_weekly: {
+        Row: {
+          avatar_url: string | null
+          comments_count: number | null
+          full_name: string | null
+          likes_received: number | null
+          profile_id: string | null
+          profile_level: number | null
+          replies_received: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_reaction_counts: {
+        Row: {
+          comment_id: string | null
+          count: number | null
+          reaction_type:
+            | Database["public"]["Enums"]["comment_reaction_type"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_threads: {
+        Row: {
+          author_avatar: string | null
+          author_level: number | null
+          author_name: string | null
+          content: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_reason: string | null
+          depth: number | null
+          edited_at: string | null
+          id: string | null
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          like_count: number | null
+          parent_comment_id: string | null
+          path: string[] | null
+          pet_post_id: string | null
+          profile_id: string | null
+          reply_count: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       donation_leaderboard: {
         Row: {
           donation_count: number | null
+          donor_avatar: string | null
           donor_id: string | null
           donor_name: string | null
+          is_visible: boolean | null
           last_donation_at: string | null
-          rank: number | null
+          level: number | null
           total_amount: number | null
         }
         Relationships: [
@@ -771,12 +1136,34 @@ export type Database = {
       }
     }
     Functions: {
+      award_comment_points: {
+        Args: {
+          p_action: string
+          p_comment_id?: string
+          p_metadata?: Json
+          p_points?: number
+          p_profile_id: string
+        }
+        Returns: number
+      }
+      calculate_level_from_points: { Args: { points: number }; Returns: number }
       check_and_award_badges: {
         Args: { target_profile_id: string }
         Returns: {
           badge_name: string
           badge_tier: string
         }[]
+      }
+      check_and_award_comment_badges: {
+        Args: { p_profile_id: string }
+        Returns: {
+          badge_name: string
+          badge_tier: string
+        }[]
+      }
+      check_and_update_comment_streak: {
+        Args: { p_profile_id: string }
+        Returns: undefined
       }
       create_profile: {
         Args: { avatar_url?: string; full_name?: string; username: string }
@@ -791,16 +1178,20 @@ export type Database = {
           bio: string | null
           created_at: string | null
           date_of_birth: string | null
+          experience_points: number
           full_name: string | null
           gender: string | null
           id: string
           is_active: boolean
           last_login: string | null
+          last_points_update: string | null
+          level: number
           login_count: number
           phone: string | null
           preferences: Json
           privacy_settings: Json
           social_links: Json | null
+          total_points: number
           updated_at: string | null
           username: string | null
           verification_status: string
@@ -847,16 +1238,20 @@ export type Database = {
           bio: string | null
           created_at: string | null
           date_of_birth: string | null
+          experience_points: number
           full_name: string | null
           gender: string | null
           id: string
           is_active: boolean
           last_login: string | null
+          last_points_update: string | null
+          level: number
           login_count: number
           phone: string | null
           preferences: Json
           privacy_settings: Json
           social_links: Json | null
+          total_points: number
           updated_at: string | null
           username: string | null
           verification_status: string
@@ -880,6 +1275,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      sync_profile_gamification: {
+        Args: { p_profile_id: string }
+        Returns: {
+          new_level: number
+          new_points: number
+          old_level: number
+          old_points: number
+          profile_id: string
+        }[]
+      }
     }
     Enums: {
       adoption_request_status: "pending" | "approved" | "rejected" | "cancelled"
@@ -893,6 +1298,13 @@ export type Database = {
         | "super_helper"
         | "quick_responder"
         | "verified_rescuer"
+        | "first_comment"
+        | "active_commenter"
+        | "helpful_responder"
+        | "community_connector"
+        | "comment_streak"
+        | "liked_commenter"
+      comment_reaction_type: "like" | "helpful" | "insightful" | "heart"
       pet_gender: "male" | "female" | "unknown"
       pet_post_outcome:
         | "owner_found"
@@ -1048,7 +1460,14 @@ export const Constants = {
         "super_helper",
         "quick_responder",
         "verified_rescuer",
+        "first_comment",
+        "active_commenter",
+        "helpful_responder",
+        "community_connector",
+        "comment_streak",
+        "liked_commenter",
       ],
+      comment_reaction_type: ["like", "helpful", "insightful", "heart"],
       pet_gender: ["male", "female", "unknown"],
       pet_post_outcome: [
         "owner_found",

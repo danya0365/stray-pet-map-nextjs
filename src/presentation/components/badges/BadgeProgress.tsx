@@ -12,6 +12,13 @@ const BADGE_LABELS: Record<BadgeType, string> = {
   super_helper: "ซูเปอร์ฮีโร่",
   quick_responder: "ตอบเร็ว",
   verified_rescuer: "ยืนยันตัวตน",
+  // Comment badges
+  first_comment: "เสียงแรก",
+  active_commenter: "นักพูดคุยขยัน",
+  helpful_responder: "ผู้ให้คำแนะนำ",
+  community_connector: "นักเชื่อมโยง",
+  comment_streak: "ไม่มีวันหยุด",
+  liked_commenter: "คนดังในชุมชน",
 };
 
 const TIER_LABELS: Record<string, string> = {

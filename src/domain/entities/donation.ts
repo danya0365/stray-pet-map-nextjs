@@ -109,7 +109,7 @@ export interface CreateDonationParams {
   amount: number;
   message?: string;
   showOnLeaderboard?: boolean;
-  stripeSessionId: string;
+  stripeSessionId?: string; // Generated server-side for client checkout
 }
 
 /**

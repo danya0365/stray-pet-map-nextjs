@@ -7,6 +7,7 @@ import type {
 import type {
   CreatePetPostPayload,
   PetPost,
+  PetPostOutcome,
   PetPostPurpose,
   PetPostStats,
   PetPostStatus,
@@ -602,5 +603,30 @@ export class SupabasePetPostRepository implements IPetPostRepository {
       createdAt: row.created_at ?? new Date().toISOString(),
       purpose: row.purpose,
     }));
+  }
+
+  // ปิดโพสต์ (เมื่อหาเจ้าของเจอ/รับเลี้ยงแล้ว)
+  async close(id: string, outcome: PetPostOutcome): Promise<PetPost> {
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .update({
+        outcome,
+        status:
+          outcome === "rehomed" || outcome === "owner_found"
+            ? "adopted"
+            : "available",
+        resolved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("*, pet_types(*)")
+      .single();
+
+    if (error) {
+      console.error("Error closing post:", error);
+      throw error;
+    }
+
+    return this.mapToDomain(data as PetPostWithType);
   }
 }

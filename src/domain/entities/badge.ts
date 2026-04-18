@@ -1,6 +1,7 @@
 export type BadgeTier = "bronze" | "silver" | "gold" | "platinum";
 
 export type BadgeType =
+  // Post-related badges
   | "first_post" // สร้างโพสต์แรก
   | "successful_adoption" // ช่วยหาบ้านให้สัตว์สำเร็จ
   | "pet_finder" // ช่วยตามหาสัตว์หายเจอเจ้าของ
@@ -8,7 +9,14 @@ export type BadgeType =
   | "active_helper" // สร้างโพสต์ครบ 5 โพสต์
   | "super_helper" // สร้างโพสต์ครบ 20 โพสต์
   | "quick_responder" // ตอบรับคำขอรับเลี้ยงภายใน 24 ชม.
-  | "verified_rescuer"; // ยืนยันตัวตนและมีประวัติช่วยเหลือ
+  | "verified_rescuer" // ยืนยันตัวตนและมีประวัติช่วยเหลือ
+  // Comment-related badges
+  | "first_comment" // คอมเมนต์ครั้งแรก
+  | "active_commenter" // นักพูดคุยขยัน 50/200/500 คอมเมนต์
+  | "helpful_responder" // ผู้ให้คำแนะนำ (20 replies received)
+  | "community_connector" // นักเชื่อมโยง (avg reply depth >= 3)
+  | "comment_streak" // ไม่มีวันหยุด (streak 7/30/100 วัน)
+  | "liked_commenter"; // คนดังในชุมชน (100/500/2000 likes)
 
 export interface Badge {
   id: string;
@@ -44,7 +52,13 @@ export interface ProfileWithBadges {
 // Badge ค่าเริ่มต้น
 export const BADGE_DEFINITIONS: Record<
   BadgeType,
-  { name: string; description: string; icon: string; color: string; tiers: BadgeTier[] }
+  {
+    name: string;
+    description: string;
+    icon: string;
+    color: string;
+    tiers: BadgeTier[];
+  }
 > = {
   first_post: {
     name: "นักช่วยเหลือมือใหม่",
@@ -102,13 +116,53 @@ export const BADGE_DEFINITIONS: Record<
     color: "bg-teal-100 text-teal-700",
     tiers: ["platinum"],
   },
+  // Comment badges
+  first_comment: {
+    name: "เสียงแรก",
+    description: "คอมเมนต์ครั้งแรกในชุมชน",
+    icon: "💬",
+    color: "bg-blue-100 text-blue-700",
+    tiers: ["bronze"],
+  },
+  active_commenter: {
+    name: "นักพูดคุยขยัน",
+    description: "คอมเมนต์ครบ 50/200/500 ครั้ง",
+    icon: "💬",
+    color: "bg-indigo-100 text-indigo-700",
+    tiers: ["bronze", "silver", "gold"],
+  },
+  helpful_responder: {
+    name: "ผู้ให้คำแนะนำ",
+    description: "มีคน reply คอมเมนต์ของคุณ 20 ครั้ง",
+    icon: "🤝",
+    color: "bg-emerald-100 text-emerald-700",
+    tiers: ["silver"],
+  },
+  community_connector: {
+    name: "นักเชื่อมโยง",
+    description: "สร้างการสนทนาที่มีส่วนร่วมลึกซึ้ง",
+    icon: "🔗",
+    color: "bg-purple-100 text-purple-700",
+    tiers: ["gold"],
+  },
+  comment_streak: {
+    name: "ไม่มีวันหยุด",
+    description: "คอมเมนต์ต่อเนื่อง 7/30/100 วัน",
+    icon: "🔥",
+    color: "bg-orange-100 text-orange-700",
+    tiers: ["silver", "gold", "platinum"],
+  },
+  liked_commenter: {
+    name: "คนดังในชุมชน",
+    description: "ได้รับ 100/500/2000 likes จากคอมเมนต์",
+    icon: "❤️",
+    color: "bg-pink-100 text-pink-700",
+    tiers: ["bronze", "silver", "gold"],
+  },
 };
 
 // Tier requirements
-export const TIER_REQUIREMENTS: Record<
-  BadgeType,
-  Record<BadgeTier, number>
-> = {
+export const TIER_REQUIREMENTS: Record<BadgeType, Record<BadgeTier, number>> = {
   first_post: { bronze: 1, silver: 0, gold: 0, platinum: 0 },
   successful_adoption: { bronze: 1, silver: 3, gold: 10, platinum: 30 },
   pet_finder: { bronze: 1, silver: 5, gold: 15, platinum: 0 },
@@ -117,4 +171,11 @@ export const TIER_REQUIREMENTS: Record<
   super_helper: { bronze: 0, silver: 0, gold: 20, platinum: 0 },
   quick_responder: { bronze: 0, silver: 10, gold: 0, platinum: 0 },
   verified_rescuer: { bronze: 0, silver: 0, gold: 0, platinum: 1 },
+  // Comment tier requirements
+  first_comment: { bronze: 1, silver: 0, gold: 0, platinum: 0 },
+  active_commenter: { bronze: 50, silver: 200, gold: 500, platinum: 0 },
+  helpful_responder: { bronze: 0, silver: 20, gold: 0, platinum: 0 },
+  community_connector: { bronze: 0, silver: 0, gold: 1, platinum: 0 }, // 1 = has avg depth >= 3
+  comment_streak: { bronze: 0, silver: 7, gold: 30, platinum: 100 },
+  liked_commenter: { bronze: 100, silver: 500, gold: 2000, platinum: 0 },
 };

@@ -1,6 +1,6 @@
 import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
 import { createPetMetadata } from "@/config/metadata";
-import type { PetPost } from "@/domain/entities/pet-post";
+import type { PetPost, PetPostOutcome } from "@/domain/entities/pet-post";
 import type { Metadata } from "next";
 
 export interface PetDetailViewModel {
@@ -43,5 +43,9 @@ export class PetDetailPresenter {
       post.id,
       keywords,
     );
+  }
+
+  async close(id: string, outcome: PetPostOutcome): Promise<PetPost> {
+    return this.repository.close(id, outcome);
   }
 }

@@ -18,6 +18,7 @@ import type {
 import type {
   CreatePetPostPayload,
   PetPost,
+  PetPostOutcome,
   PetPostStats,
   UpdatePetPostData,
 } from "@/domain/entities/pet-post";
@@ -186,5 +187,20 @@ export class ApiPetPostRepository implements IPetPostRepository {
     throw new Error(
       "findExpiringSoonPosts is not supported in client-side API",
     );
+  }
+
+  async close(id: string, outcome: PetPostOutcome): Promise<PetPost> {
+    const res = await fetch(`${this.baseUrl}/${id}/close`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outcome }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถปิดโพสต์ได้");
+    }
+
+    return res.json();
   }
 }

@@ -105,7 +105,7 @@ export class ProfilePresenter {
         stats: {
           posts: posts?.length || 0,
           helped: helpedCount,
-          points: 0, // TODO: Get from gamification system when implemented
+          points: profile?.totalPoints ?? 0,
         },
       };
     } catch (error) {

@@ -4,6 +4,7 @@
  * Following Clean Architecture - Infrastructure layer
  */
 
+import type { IDonationRepository } from "@/application/repositories/IDonationRepository";
 import type {
   CreateDonationParams,
   Donation,
@@ -12,14 +13,17 @@ import type {
   PetFundingGoal,
   RecentDonation,
 } from "@/domain/entities/donation";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/domain/types/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export class SupabaseDonationRepository {
-  private supabase: SupabaseClient;
-
-  constructor(supabaseUrl: string, supabaseKey: string) {
-    this.supabase = createClient(supabaseUrl, supabaseKey);
-  }
+/**
+ * SupabaseDonationRepository
+ * Supabase implementation for donation CRUD operations
+ * ✅ Receives SupabaseClient via constructor (injected by factory)
+ * ✅ Following Clean Architecture - Infrastructure layer
+ */
+export class SupabaseDonationRepository implements IDonationRepository {
+  constructor(private readonly supabase: SupabaseClient<Database>) {}
 
   /**
    * Create a new donation record
@@ -258,6 +262,28 @@ export class SupabaseDonationRepository {
 
     if (error) return false;
     return (data?.length || 0) > 0;
+  }
+
+  async getTodayDonations(
+    donorId: string,
+  ): Promise<{ points_awarded: number }[]> {
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data, error } = await this.supabase
+      .from("donations")
+      .select("points_awarded")
+      .eq("donor_id", donorId)
+      .gte("created_at", today)
+      .lt("created_at", today + "T23:59:59");
+
+    if (error) return [];
+    return data || [];
+  }
+
+  async awardBadges(donorId: string): Promise<void> {
+    await this.supabase.rpc("check_and_award_badges", {
+      target_profile_id: donorId,
+    });
   }
 
   // Mappers

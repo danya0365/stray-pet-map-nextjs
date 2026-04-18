@@ -2,8 +2,8 @@
 
 import type { PetFundingGoal } from "@/domain/entities/donation";
 import { useDonationContext } from "@/presentation/components/donation";
-import { usePetDetailPresenter } from "@/presentation/hooks/usePetDetailPresenter";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
+import { usePetDetailPresenter } from "@/presentation/presenters/pet-detail/usePetDetailPresenter";
 import { createBrowserClient } from "@supabase/ssr";
 import { useEffect, useState } from "react";
 import { PetDetailView } from "./PetDetailView";
@@ -41,6 +41,8 @@ interface PetDetailContainerProps {
 export function PetDetailContainer({
   initialViewModel,
 }: PetDetailContainerProps) {
+  const [state, actions] = usePetDetailPresenter({ initialViewModel });
+
   const {
     viewModel,
     isOwner,
@@ -48,13 +50,16 @@ export function PetDetailContainer({
     isAdoptionModalOpen,
     isCloseModalOpen,
     isClosingPost,
+  } = state;
+
+  const {
     openAdoptionModal,
     closeAdoptionModal,
     openCloseModal,
     closeCloseModal,
     handleAdoptClick,
     handleClosePost,
-  } = usePetDetailPresenter({ initialViewModel });
+  } = actions;
 
   // Fetch funding goal
   const [fundingGoal, setFundingGoal] = useState<PetFundingGoal | null>(null);
@@ -66,6 +71,8 @@ export function PetDetailContainer({
   const comingSoonModal = useComingSoonModal();
 
   useEffect(() => {
+    if (!viewModel) return;
+
     const fetchFundingGoal = async () => {
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -101,12 +108,13 @@ export function PetDetailContainer({
     };
 
     fetchFundingGoal();
-  }, [viewModel.post.id]);
+  }, [viewModel]);
 
   // Donation handling
   const { openForPet } = useDonationContext();
 
   const handleDonateClick = () => {
+    if (!viewModel) return;
     openForPet(viewModel.post.id, viewModel.post.title);
   };
 
@@ -116,6 +124,7 @@ export function PetDetailContainer({
   };
 
   const handleShareClick = () => {
+    if (!viewModel) return;
     // Try native share API first, fallback to coming soon
     if (navigator.share) {
       navigator
@@ -131,6 +140,16 @@ export function PetDetailContainer({
       comingSoonModal.open("แชร์ไปยัง Social Media");
     }
   };
+
+  if (!viewModel) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">ไม่พบข้อมูลน้องที่ค้นหา</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PetDetailView

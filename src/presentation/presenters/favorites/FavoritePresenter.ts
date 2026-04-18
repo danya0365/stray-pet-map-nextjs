@@ -5,8 +5,8 @@
  */
 
 import type { IFavoriteRepository } from "@/application/repositories/IFavoriteRepository";
-import type { PetPost } from "@/domain/entities/pet-post";
 import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
+import type { PetPost } from "@/domain/entities/pet-post";
 
 // ============================================================
 // VIEW MODEL
@@ -73,8 +73,10 @@ export class FavoritePresenter {
     try {
       return await this.favoriteRepository.isFavorited(petPostId);
     } catch (error) {
-      console.error("Error checking favorite status:", error);
-      throw error;
+      // ถ้า user ไม่ได้ login หรือเกิด error อื่นๆ
+      // ให้ return false แทนการ throw error (เพราะ user ไม่ login = ไม่มีรายการโปรด)
+      console.log("Favorite check failed, returning false:", error);
+      return false;
     }
   }
 

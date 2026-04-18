@@ -1,5 +1,10 @@
 import type { IPublicProfileRepository } from "@/application/repositories/IPublicProfileRepository";
-import type { Badge, BadgeProgress, BadgeType } from "@/domain/entities/badge";
+import {
+  TIER_REQUIREMENTS,
+  type Badge,
+  type BadgeProgress,
+  type BadgeType,
+} from "@/domain/entities/badge";
 import type { PetPost } from "@/domain/entities/pet-post";
 import type {
   PublicProfile,
@@ -336,20 +341,12 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
   }
 
   private getNextTierTarget(type: BadgeType, current: number): number {
-    const requirements: Record<BadgeType, Record<string, number>> = {
-      successful_adoption: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      pet_finder: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      rescue_hero: { bronze: 3, silver: 10, gold: 25, platinum: 50 },
-      active_helper: { bronze: 5, silver: 15, gold: 30, platinum: 50 },
-      super_helper: { bronze: 10, silver: 25, gold: 50, platinum: 100 },
-      first_post: { bronze: 1, silver: 10, gold: 25, platinum: 50 },
-      quick_responder: { bronze: 1, silver: 5, gold: 15, platinum: 30 },
-      verified_rescuer: { bronze: 1, silver: 1, gold: 1, platinum: 1 },
-    };
-
     const tiers = ["bronze", "silver", "gold", "platinum"];
     for (const tier of tiers) {
-      const req = requirements[type][tier];
+      const req =
+        TIER_REQUIREMENTS[type][
+          tier as keyof (typeof TIER_REQUIREMENTS)["first_post"]
+        ];
       if (req > 0 && current < req) return req;
     }
     return 0;
@@ -359,17 +356,6 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
     type: BadgeType,
     current: number,
   ): "bronze" | "silver" | "gold" | "platinum" | undefined {
-    const requirements: Record<BadgeType, Record<string, number>> = {
-      successful_adoption: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      pet_finder: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      rescue_hero: { bronze: 3, silver: 10, gold: 25, platinum: 50 },
-      active_helper: { bronze: 5, silver: 15, gold: 30, platinum: 50 },
-      super_helper: { bronze: 10, silver: 25, gold: 50, platinum: 100 },
-      first_post: { bronze: 1, silver: 10, gold: 25, platinum: 50 },
-      quick_responder: { bronze: 1, silver: 5, gold: 15, platinum: 30 },
-      verified_rescuer: { bronze: 1, silver: 1, gold: 1, platinum: 1 },
-    };
-
     const tiers: Array<"bronze" | "silver" | "gold" | "platinum"> = [
       "bronze",
       "silver",
@@ -377,7 +363,10 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
       "platinum",
     ];
     for (const tier of tiers) {
-      const req = requirements[type][tier];
+      const req =
+        TIER_REQUIREMENTS[type][
+          tier as keyof (typeof TIER_REQUIREMENTS)["first_post"]
+        ];
       if (req > 0 && current < req) return tier;
     }
     return undefined;

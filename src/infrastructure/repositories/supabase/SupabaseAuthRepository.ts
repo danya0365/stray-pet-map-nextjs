@@ -39,6 +39,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
       createdAt: profile.created_at || undefined,
+      level: profile.level ?? 1,
+      totalPoints: profile.total_points ?? 0,
+      experiencePoints: profile.experience_points ?? 0,
     };
   }
 
@@ -86,7 +89,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
     // so the switcher can show all available profiles
     const { data: profilesData, error } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .select(
+        "id, auth_id, username, full_name, avatar_url, bio, created_at, level, total_points, experience_points",
+      )
       .eq("auth_id", user.id);
 
     if (error || !profilesData) return [];
@@ -109,6 +114,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
           bio: profile.bio,
           role: (roleData?.role as AuthProfile["role"]) ?? "user",
           createdAt: profile.created_at || undefined,
+          level: profile.level ?? 1,
+          totalPoints: profile.total_points ?? 0,
+          experiencePoints: profile.experience_points ?? 0,
         };
       }),
     );
@@ -153,7 +161,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
     // 2. Get the profile data
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .select(
+        "id, auth_id, username, full_name, avatar_url, bio, created_at, level, total_points, experience_points",
+      )
       .eq("id", profileId)
       .eq("auth_id", user.id)
       .eq("is_active", true)
@@ -177,6 +187,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
       createdAt: profile.created_at || undefined,
+      level: profile.level ?? 1,
+      totalPoints: profile.total_points ?? 0,
+      experiencePoints: profile.experience_points ?? 0,
     };
   }
 }

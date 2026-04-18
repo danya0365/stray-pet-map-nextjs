@@ -1,12 +1,13 @@
 import type { IProfileBadgeRepository } from "@/application/repositories/IProfileBadgeRepository";
-import type {
-  Badge,
-  BadgeProgress,
-  BadgeTier,
-  BadgeType,
-  ProfileWithBadges,
+import {
+  BADGE_DEFINITIONS,
+  TIER_REQUIREMENTS,
+  type Badge,
+  type BadgeProgress,
+  type BadgeTier,
+  type BadgeType,
+  type ProfileWithBadges,
 } from "@/domain/entities/badge";
-import { BADGE_DEFINITIONS } from "@/domain/entities/badge";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -195,19 +196,9 @@ export class SupabaseProfileBadgeRepository implements IProfileBadgeRepository {
 
   private getNextTierTarget(type: BadgeType, current: number): number {
     const tiers: BadgeTier[] = ["bronze", "silver", "gold", "platinum"];
-    const requirements: Record<BadgeType, Record<BadgeTier, number>> = {
-      successful_adoption: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      pet_finder: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      rescue_hero: { bronze: 3, silver: 10, gold: 25, platinum: 50 },
-      active_helper: { bronze: 5, silver: 15, gold: 30, platinum: 50 },
-      super_helper: { bronze: 10, silver: 25, gold: 50, platinum: 100 },
-      first_post: { bronze: 1, silver: 10, gold: 25, platinum: 50 },
-      quick_responder: { bronze: 1, silver: 5, gold: 15, platinum: 30 },
-      verified_rescuer: { bronze: 1, silver: 1, gold: 1, platinum: 1 },
-    };
 
     for (const tier of tiers) {
-      const req = requirements[type][tier];
+      const req = TIER_REQUIREMENTS[type][tier];
       if (req > 0 && current < req) return req;
     }
     return 0;
@@ -215,19 +206,9 @@ export class SupabaseProfileBadgeRepository implements IProfileBadgeRepository {
 
   private getNextTier(type: BadgeType, current: number): BadgeTier | undefined {
     const tiers: BadgeTier[] = ["bronze", "silver", "gold", "platinum"];
-    const requirements: Record<BadgeType, Record<BadgeTier, number>> = {
-      successful_adoption: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      pet_finder: { bronze: 1, silver: 3, gold: 5, platinum: 10 },
-      rescue_hero: { bronze: 3, silver: 10, gold: 25, platinum: 50 },
-      active_helper: { bronze: 5, silver: 15, gold: 30, platinum: 50 },
-      super_helper: { bronze: 10, silver: 25, gold: 50, platinum: 100 },
-      first_post: { bronze: 1, silver: 10, gold: 25, platinum: 50 },
-      quick_responder: { bronze: 1, silver: 5, gold: 15, platinum: 30 },
-      verified_rescuer: { bronze: 1, silver: 1, gold: 1, platinum: 1 },
-    };
 
     for (const tier of tiers) {
-      const req = requirements[type][tier];
+      const req = TIER_REQUIREMENTS[type][tier];
       if (req > 0 && current < req) return tier;
     }
     return undefined;

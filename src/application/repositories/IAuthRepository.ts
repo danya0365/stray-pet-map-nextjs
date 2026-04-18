@@ -9,6 +9,10 @@ export interface AuthProfile {
   bio: string | null;
   role: "user" | "moderator" | "admin";
   createdAt?: string; // For consistent sorting
+  // Gamification fields
+  level?: number;
+  totalPoints?: number;
+  experiencePoints?: number;
 }
 
 export interface IAuthRepository {
