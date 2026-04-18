@@ -34,6 +34,10 @@ export class ApiPetPostRepository implements IPetPostRepository {
 
     if (params.filters) {
       const f = params.filters;
+      if (f.purpose) {
+        const purposes = Array.isArray(f.purpose) ? f.purpose : [f.purpose];
+        searchParams.set("purpose", purposes.join(","));
+      }
       if (f.status) {
         const statuses = Array.isArray(f.status) ? f.status : [f.status];
         searchParams.set("status", statuses.join(","));

@@ -40,6 +40,11 @@ export class SupabasePetPostRepository implements IPetPostRepository {
   // ============================================================
 
   async query(params: PetPostQuery): Promise<PetPostQueryResult> {
+    console.log(
+      "[SupabasePetPostRepository.query] params:",
+      JSON.stringify(params, null, 2),
+    );
+
     let q = this.supabase
       .from("pet_posts")
       .select("*, pet_types(*), profiles(id, full_name, avatar_url)", {
@@ -49,6 +54,7 @@ export class SupabasePetPostRepository implements IPetPostRepository {
 
     // ── Filters ──
     q = this.applyFilters(q, params.filters);
+    console.log("[SupabasePetPostRepository.query] filters applied");
 
     // ── Search ──
     if (params.search) {
@@ -84,7 +90,18 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     }
 
     const { data, error, count } = await q;
-    if (error) throw error;
+    if (error) {
+      console.error("[SupabasePetPostRepository.query] Supabase error:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      throw error;
+    }
+    console.log(
+      `[SupabasePetPostRepository.query] Success: ${data?.length ?? 0} rows, total: ${count ?? 0}`,
+    );
 
     let posts = (
       data as Array<
