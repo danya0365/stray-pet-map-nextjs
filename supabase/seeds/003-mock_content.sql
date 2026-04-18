@@ -36,7 +36,7 @@ INSERT INTO public.pet_posts (
     'ส้มธรรมดา', 'ส้ม', 'male', 'ประมาณ 3 ปี',
     NULL, TRUE,
     13.7999, 100.5500, 'ตลาดจตุจักร', 'กรุงเทพมหานคร',
-    'available', 'https://placekitten.com/400/300'
+    'available', 'https://placecats.com/louie/400/300'
   ),
   -- 3) ลูกหมา 3 ตัว ถูกทิ้งหน้าวัด
   (
@@ -60,7 +60,7 @@ INSERT INTO public.pet_posts (
     'เปอร์เซีย ผสม', 'ดำ', 'female', 'ประมาณ 1 ปี',
     TRUE, TRUE,
     13.8180, 100.5614, 'ลาดพร้าว 71', 'กรุงเทพมหานคร',
-    'missing', 'https://placekitten.com/401/300'
+    'missing', 'https://placecats.com/poppy/400/300'
   ),
   -- 5) บีเกิล สวนรถไฟ
   (

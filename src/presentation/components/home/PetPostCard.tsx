@@ -68,7 +68,7 @@ export function PetPostCard({ post, className }: PetPostCardProps) {
         {/* Pet type badge */}
         <div className="absolute right-3 top-3 flex items-center gap-1">
           {post.petType && (
-            <span className="rounded-full bg-black/40 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
+            <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs text-foreground backdrop-blur-sm">
               {post.petType.icon} {post.petType.name}
             </span>
           )}
@@ -79,7 +79,7 @@ export function PetPostCard({ post, className }: PetPostCardProps) {
           <FavoriteButton
             petPostId={post.id}
             size="sm"
-            className="bg-black/30 text-white backdrop-blur-sm hover:bg-black/50"
+            className="bg-background/50 text-foreground backdrop-blur-sm hover:bg-primary hover:text-primary-foreground"
           />
         </div>
       </Link>

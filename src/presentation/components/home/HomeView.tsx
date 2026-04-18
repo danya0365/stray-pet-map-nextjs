@@ -71,7 +71,7 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/map"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <MapPin className="h-4 w-4" />
               เปิดแผนที่
@@ -132,7 +132,7 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
           )}
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-center text-sm text-destructive">
               {error}
             </div>
           )}
