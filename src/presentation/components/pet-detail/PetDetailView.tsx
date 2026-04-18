@@ -4,6 +4,7 @@ import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
 import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
+import { CommentSection } from "@/presentation/components/comments";
 import { PetFundingProgress } from "@/presentation/components/donation/PetFundingProgress";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { ReportModal } from "@/presentation/components/report/ReportModal";
@@ -446,6 +447,11 @@ export function PetDetailView({
         petPostId={post.id}
         petTitle={post.title}
       />
+
+      {/* Comments Section */}
+      <div className="lg:col-span-5">
+        <CommentSection petPostId={post.id} />
+      </div>
 
       {/* Coming Soon Modal */}
       {isComingSoonModalOpen && (
