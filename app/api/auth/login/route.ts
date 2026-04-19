@@ -7,14 +7,14 @@
  * ✅ Session cookies set server-side
  */
 
-import { createServerAuthOperationsPresenter } from "@/presentation/presenters/auth/AuthOperationsPresenterServerFactory";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    const presenter = await createServerAuthOperationsPresenter();
+    const presenter = await createServerAuthPresenter();
     const result = await presenter.signIn(email, password);
 
     if (!result.success) {

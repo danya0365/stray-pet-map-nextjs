@@ -95,7 +95,9 @@ export function useAuthPresenter(
       setIsSuccess(false);
 
       try {
-        const result = await presenter.signUp(email, password, fullName);
+        const result = await presenter.signUp(email, password, {
+          full_name: fullName,
+        });
 
         if (isMountedRef.current) {
           if (result.success) {

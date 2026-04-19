@@ -7,12 +7,12 @@
  * ✅ Session cookies cleared server-side
  */
 
-import { createServerAuthOperationsPresenter } from "@/presentation/presenters/auth/AuthOperationsPresenterServerFactory";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    const presenter = await createServerAuthOperationsPresenter();
+    const presenter = await createServerAuthPresenter();
     const result = await presenter.signOut();
 
     if (!result.success) {

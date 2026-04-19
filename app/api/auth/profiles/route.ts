@@ -6,12 +6,12 @@
  * ✅ No direct Supabase queries in API route
  */
 
-import { createServerAuthOperationsPresenter } from "@/presentation/presenters/auth/AuthOperationsPresenterServerFactory";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const presenter = await createServerAuthOperationsPresenter();
+    const presenter = await createServerAuthPresenter();
     const result = await presenter.getProfiles();
 
     if (!result.success) {

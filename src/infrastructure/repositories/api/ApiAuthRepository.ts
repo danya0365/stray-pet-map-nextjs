@@ -13,10 +13,17 @@ import type {
   AuthProfile,
   IAuthRepository,
 } from "@/application/repositories/IAuthRepository";
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 export class ApiAuthRepository implements IAuthRepository {
   private baseUrl = "/api/auth";
+
+  async getSession(): Promise<Session | null> {
+    const res = await fetch(`${this.baseUrl}/session`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.session ?? null;
+  }
 
   async getUser(): Promise<User | null> {
     const res = await fetch(`${this.baseUrl}/me`);

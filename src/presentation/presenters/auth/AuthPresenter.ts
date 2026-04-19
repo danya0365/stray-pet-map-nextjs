@@ -2,22 +2,70 @@
  * AuthPresenter
  * Handles business logic for authentication
  * Receives repository via dependency injection
+ * Following Clean Architecture pattern
  */
 
 import type {
   AuthProfile,
   IAuthRepository,
 } from "@/application/repositories/IAuthRepository";
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 // ============================================================
-// VIEW MODEL
+// VIEW MODEL (For UI Components)
 // ============================================================
 
 export interface AuthViewModel {
   user: User | null;
   profile: AuthProfile | null;
   isAuthenticated: boolean;
+}
+
+// ============================================================
+// RESULT TYPES (For API Routes)
+// ============================================================
+
+export interface LoginResult {
+  success: boolean;
+  user?: User | null;
+  accessToken?: string;
+  error?: string;
+}
+
+export interface RegisterResult {
+  success: boolean;
+  user?: User | null;
+  error?: string;
+}
+
+export interface LogoutResult {
+  success: boolean;
+  error?: string;
+}
+
+export interface SessionResult {
+  success: boolean;
+  session?: Session | null;
+  error?: string;
+}
+
+export interface MeResult {
+  success: boolean;
+  user?: User | null;
+  profile?: AuthProfile | null;
+  error?: string;
+}
+
+export interface GetProfilesResult {
+  success: boolean;
+  profiles?: AuthProfile[];
+  error?: string;
+}
+
+export interface SwitchProfileResult {
+  success: boolean;
+  profile?: AuthProfile | null;
+  error?: string;
 }
 
 // ============================================================
@@ -47,61 +95,186 @@ export class AuthPresenter {
     }
   }
 
-  // ── Auth Actions ─────────────────────────────────────────
+  // ============================================================
+  // AUTH ACTIONS (Unified for UI & API)
+  // ============================================================
 
-  async signIn(
-    email: string,
-    password: string,
-  ): Promise<{ success: boolean; error?: string }> {
+  /**
+   * Sign in with email and password
+   * Used by /api/auth/login POST route and UI components
+   */
+  async signIn(email: string, password: string): Promise<LoginResult> {
     try {
+      if (!email || !password) {
+        return { success: false, error: "กรุณากรอกอีเมลและรหัสผ่าน" };
+      }
+
       const { user, error } = await this.authRepository.signInWithPassword(
         email,
         password,
       );
 
-      if (error || !user) {
-        return { success: false, error: error || "เข้าสู่ระบบไม่สำเร็จ" };
+      if (error) {
+        const message =
+          error === "Invalid login credentials"
+            ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+            : error;
+        return { success: false, error: message };
       }
 
-      return { success: true };
+      // Get session for access token
+      const session = await this.authRepository.getSession();
+
+      return {
+        success: true,
+        user,
+        accessToken: session?.access_token,
+      };
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "เข้าสู่ระบบไม่สำเร็จ";
-      return { success: false, error: message };
+      console.error("Error signing in:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
     }
   }
 
+  /**
+   * Sign up with email and password
+   * Used by /api/auth/register POST route and UI components
+   */
   async signUp(
     email: string,
     password: string,
-    fullName: string,
-  ): Promise<{ success: boolean; error?: string }> {
+    metadata?: { full_name?: string; username?: string },
+  ): Promise<RegisterResult> {
     try {
-      const username = email.split("@")[0];
+      if (!email || !password) {
+        return { success: false, error: "กรุณากรอกอีเมลและรหัสผ่าน" };
+      }
+
       const { user, error } = await this.authRepository.signUp(
         email,
         password,
-        { full_name: fullName, username },
+        metadata,
       );
 
       if (error) {
-        return { success: false, error };
+        const message =
+          error === "User already registered" ? "อีเมลนี้ถูกใช้งานแล้ว" : error;
+        return { success: false, error: message };
       }
 
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "สมัครสมาชิกไม่สำเร็จ";
-      return { success: false, error: message };
+      console.error("Error signing up:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
     }
   }
 
-  async signOut(): Promise<void> {
+  /**
+   * Sign out
+   * Used by /api/auth/logout POST route and UI components
+   */
+  async signOut(): Promise<LogoutResult> {
     try {
       await this.authRepository.signOut();
+      return { success: true };
     } catch (error) {
       console.error("Error signing out:", error);
-      throw error;
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get current session
+   * Used by /api/auth/session GET route
+   */
+  async getSession(): Promise<SessionResult> {
+    try {
+      const session = await this.authRepository.getSession();
+      return { success: true, session };
+    } catch (error) {
+      console.error("Error getting session:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get current user and profile
+   * Used by /api/auth/me GET route
+   */
+  async getCurrentUser(): Promise<MeResult> {
+    try {
+      const user = await this.authRepository.getUser();
+
+      if (!user) {
+        return { success: true, user: null, profile: null };
+      }
+
+      const profile = await this.authRepository.getProfile();
+
+      return { success: true, user, profile };
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get all profiles for current user
+   * Used by /api/auth/profiles GET route
+   */
+  async getProfiles(): Promise<GetProfilesResult> {
+    try {
+      const profiles = await this.authRepository.getProfiles();
+      return { success: true, profiles };
+    } catch (error) {
+      console.error("Error getting profiles:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Switch to a different profile
+   * Used by /api/auth/switch-profile POST route
+   */
+  async switchProfile(profileId: string): Promise<SwitchProfileResult> {
+    try {
+      // Check if user is authenticated
+      const user = await this.authRepository.getUser();
+      if (!user) {
+        return { success: false, error: "Unauthorized" };
+      }
+
+      if (!profileId) {
+        return { success: false, error: "Profile ID is required" };
+      }
+
+      const profile = await this.authRepository.switchProfile(profileId);
+
+      if (!profile) {
+        return {
+          success: false,
+          error: "Profile not found or access denied",
+        };
+      }
+
+      return { success: true, profile };
+    } catch (error) {
+      console.error("Error switching profile:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+      return { success: false, error: errorMessage };
     }
   }
 
