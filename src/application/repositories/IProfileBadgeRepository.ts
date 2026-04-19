@@ -46,4 +46,9 @@ export interface IProfileBadgeRepository {
    * Calculate and update badge progress for current profile
    */
   calculateProgress(): Promise<BadgeProgress[]>;
+
+  /**
+   * Check and award badges automatically for current profile
+   */
+  checkAndAwardBadges(): Promise<{ badge_name: string; badge_tier: string }[]>;
 }

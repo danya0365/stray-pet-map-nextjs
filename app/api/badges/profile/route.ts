@@ -1,45 +1,35 @@
-import { SupabaseAuthRepository } from "@/infrastructure/repositories/supabase/SupabaseAuthRepository";
-import { SupabaseProfileBadgeRepository } from "@/infrastructure/repositories/supabase/SupabaseProfileBadgeRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerBadgePresenter } from "@/presentation/presenters/badge/BadgePresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // GET /api/badges/profile/me - ดึง badges ของผู้ใช้ปัจจุบัน (ใช้ active profile)
 export async function GET(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
 
-    // ตรวจสอบ authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    if (!authViewModel.isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ดึง active profile จาก auth repository
-    const authRepo = new SupabaseAuthRepository(supabase);
-    const profile = await authRepo.getProfile();
+    const presenter = await createServerBadgePresenter();
+    const result = await presenter.getMyBadges();
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    if (!result.success) {
+      if (result.error === "Profile not found") {
+        return NextResponse.json({ error: result.error }, { status: 404 });
+      }
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
-
-    const badgeRepo = new SupabaseProfileBadgeRepository(supabase);
-
-    // ดึง badges และ progress จาก active profile
-    const [badges, progress] = await Promise.all([
-      badgeRepo.getBadges(),
-      badgeRepo.getProgress(),
-    ]);
 
     return NextResponse.json({
       success: true,
-      profileId: profile.id,
-      displayName: profile.fullName,
-      badges,
-      totalBadges: badges.length,
-      progress,
+      profileId: result.profileId,
+      displayName: result.displayName,
+      badges: result.badges,
+      totalBadges: result.totalBadges,
+      progress: result.progress,
     });
   } catch (error) {
     console.error("Error fetching profile badges:", error);
@@ -53,43 +43,27 @@ export async function GET(request: Request) {
 // POST /api/badges/profile/me - คำนวณและอัปเดต badges อัตโนมัติ (ใช้ active profile)
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
 
-    // ตรวจสอบ authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    if (!authViewModel.isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ดึง active profile จาก auth repository
-    const authRepo = new SupabaseAuthRepository(supabase);
-    const profile = await authRepo.getProfile();
+    const presenter = await createServerBadgePresenter();
+    const result = await presenter.checkAndAwardBadges();
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
-
-    // ใช้ badge repository แทนการเรียก RPC ตรงๆ
-    const badgeRepo = new SupabaseProfileBadgeRepository(supabase);
-
-    // ตรวจสอบและมอบ badges อัตโนมัติ
-    const newlyAwarded = await badgeRepo.checkAndAwardBadges();
-
-    // ดึง badges และ progress ล่าสุด
-    const [badges, progress] = await Promise.all([
-      badgeRepo.getBadges(),
-      badgeRepo.getProgress(),
-    ]);
 
     return NextResponse.json({
       success: true,
-      newlyAwarded: newlyAwarded || [],
-      totalBadges: badges.length,
-      badges,
-      progress,
+      newlyAwarded: result.newlyAwarded || [],
+      totalBadges: result.totalBadges,
+      badges: result.badges,
+      progress: result.progress,
     });
   } catch (error) {
     console.error("Error updating badges:", error);
