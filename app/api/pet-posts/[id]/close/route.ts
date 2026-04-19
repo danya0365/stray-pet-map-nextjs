@@ -1,6 +1,4 @@
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 
@@ -16,57 +14,56 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
     const { id: postId } = await params;
 
-    // Check auth
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
 
-    if (authError || !user) {
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Validate body
     const body = await request.json();
-    const result = closePostSchema.safeParse(body);
+    const validation = closePostSchema.safeParse(body);
 
-    if (!result.success) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
+        { error: "Invalid input", details: validation.error.format() },
         { status: 400 },
       );
     }
 
-    const { outcome } = result.data;
+    const { outcome } = validation.data;
 
     // Get post to verify ownership
-    const repo = new SupabasePetPostRepository(supabase);
-    const post = await repo.getById(postId);
+    const presenter = createServerPetPostPresenter();
+    const getResult = await presenter.getById(postId);
 
-    if (!post) {
+    if (!getResult.success || !getResult.data) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     // Verify owner
-    if (post.profileId !== user.id) {
+    if (getResult.data.profileId !== authViewModel.profile.id) {
       return NextResponse.json(
         { error: "Forbidden - not post owner" },
         { status: 403 },
       );
     }
 
-    // Update post with outcome and archive
-    const updated = await repo.update(postId, {
-      outcome: outcome as PetPostOutcome,
-      resolvedAt: new Date().toISOString(),
-      isArchived: true,
-      isActive: false,
-    });
+    // Close post via presenter
+    const closeResult = await presenter.close(
+      postId,
+      outcome as PetPostOutcome,
+    );
 
-    return NextResponse.json({ success: true, post: updated });
+    if (!closeResult.success) {
+      return NextResponse.json({ error: closeResult.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, post: closeResult.data });
   } catch (error) {
     console.error("Close post error:", error);
     return NextResponse.json(

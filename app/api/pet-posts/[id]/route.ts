@@ -2,13 +2,14 @@
  * /api/pet-posts/[id]
  * API Route for single pet post operations
  *
+ * ✅ Uses PetPostPresenter (Clean Architecture)
  * ✅ GET = getById (public)
  * ✅ PUT = update (auth required)
  * ✅ DELETE = soft delete (auth required)
  */
 
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // GET /api/pet-posts/[id] — get single pet post (public)
@@ -18,18 +19,18 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetPostRepository(supabase);
+    const presenter = createServerPetPostPresenter();
 
-    const post = await repo.getById(id);
-    if (!post) {
+    const result = await presenter.getById(id);
+
+    if (!result.success) {
       return NextResponse.json(
-        { error: "ไม่พบโพสต์ที่ต้องการ" },
+        { error: result.error || "ไม่พบโพสต์ที่ต้องการ" },
         { status: 404 },
       );
     }
 
-    return NextResponse.json(post);
+    return NextResponse.json(result.data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ไม่สามารถโหลดข้อมูลได้";
@@ -44,23 +45,24 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบ" },
-        { status: 401 },
-      );
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated) {
+      return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
     }
 
     const body = await request.json();
-    const repo = new SupabasePetPostRepository(supabase);
-    const updated = await repo.update(id, body);
+    const presenter = createServerPetPostPresenter();
+    const result = await presenter.update(id, body);
 
-    return NextResponse.json(updated);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ไม่สามารถอัปเดตโพสต์ได้";
@@ -75,20 +77,21 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabaseClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบ" },
-        { status: 401 },
-      );
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated) {
+      return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
     }
 
-    const repo = new SupabasePetPostRepository(supabase);
-    await repo.delete(id);
+    const presenter = createServerPetPostPresenter();
+    const result = await presenter.delete(id);
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

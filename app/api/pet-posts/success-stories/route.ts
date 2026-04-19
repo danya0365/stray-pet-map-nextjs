@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // GET /api/pet-posts/success-stories - ดึงเรื่องราวความสำเร็จ
@@ -8,21 +7,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "6", 10);
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetPostRepository(supabase);
+    const presenter = createServerPetPostPresenter();
+    const result = await presenter.getSuccessStories(limit);
 
-    const stories = await repo.getSuccessStories(limit);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
-      stories,
-      total: stories.length,
+      stories: result.data,
+      total: result.data?.length ?? 0,
     });
   } catch (error) {
     console.error("Error fetching success stories:", error);
     return NextResponse.json(
       { error: "Failed to fetch success stories" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
