@@ -29,6 +29,28 @@ import type {
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Types from Supabase schema
+type CommentRow = Database["public"]["Tables"]["comments"]["Row"];
+type UserCommentStatsRow =
+  Database["public"]["Tables"]["user_comment_stats"]["Row"];
+type CommentLeaderboardRow =
+  Database["public"]["Views"]["comment_leaderboard_alltime"]["Row"];
+type CommentReactionCountRow =
+  Database["public"]["Views"]["comment_reaction_counts"]["Row"];
+
+// Profile data from joined query (profiles table uses full_name not display_name)
+type ProfileJoinData = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  level: number;
+};
+
+// Comment with joined profile data
+type CommentWithProfile = CommentRow & {
+  profiles?: ProfileJoinData | null;
+};
+
 export class SupabaseCommentRepository implements ICommentRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
 
@@ -52,7 +74,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .select(
         `
         *,
-        profiles:profile_id (id, display_name, avatar_url, level)
+        profiles:profile_id (id, full_name, avatar_url, level)
       `,
       )
       .single();
@@ -71,7 +93,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .select(
         `
         *,
-        profiles:profile_id (id, display_name, avatar_url, level)
+        profiles:profile_id (id, full_name, avatar_url, level)
       `,
       )
       .eq("id", id)
@@ -92,7 +114,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .select(
         `
         *,
-        profiles:profile_id (id, display_name, avatar_url, level)
+        profiles:profile_id (id, full_name, avatar_url, level)
       `,
         { count: "exact" },
       )
@@ -109,7 +131,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
       query = query.order("like_count", { ascending: false });
     }
 
-    let comments: unknown[] = [];
+    let comments: CommentWithProfile[] = [];
     let hasMore = false;
     let nextCursor: string | undefined;
     let total = 0;
@@ -156,21 +178,18 @@ export class SupabaseCommentRepository implements ICommentRepository {
       hasMore = (data || []).length > limit;
       nextCursor =
         hasMore && comments.length > 0
-          ? this.encodeCursor(
-              (comments[comments.length - 1] as { created_at: string })
-                .created_at,
-            )
+          ? this.encodeCursor(comments[comments.length - 1].created_at)
           : undefined;
       total = count || 0;
     }
 
     // Fetch reactions for these comments
-    const commentIds = comments.map((c: unknown) => (c as { id: string }).id);
+    const commentIds = comments.map((c) => c.id);
     const reactions = await this.fetchReactionsForComments(commentIds);
 
     // Map comments with author info and reactions
-    const mappedComments = comments.map((c: unknown) => {
-      const comment = this.mapToComment(c as Record<string, unknown>);
+    const mappedComments = comments.map((c) => {
+      const comment = this.mapToComment(c);
       comment.reactionCounts =
         reactions.get(comment.id) || defaultReactionCounts;
       return comment;
@@ -203,7 +222,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .select(
         `
         *,
-        profiles:profile_id (id, display_name, avatar_url, level)
+        profiles:profile_id (id, full_name, avatar_url, level)
       `,
       )
       .single();
@@ -259,14 +278,14 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .select(
         `
         *,
-        profiles:profile_id (id, display_name, avatar_url, level)
+        profiles:profile_id (id, full_name, avatar_url, level)
       `,
       )
       .eq("parent_comment_id", parentCommentId)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
 
-    let comments: unknown[] = [];
+    let comments: CommentWithProfile[] = [];
     let hasMore = false;
     let nextCursor: string | undefined;
 
@@ -304,17 +323,12 @@ export class SupabaseCommentRepository implements ICommentRepository {
       hasMore = (data || []).length > limit;
       nextCursor =
         hasMore && comments.length > 0
-          ? this.encodeCursor(
-              (comments[comments.length - 1] as { created_at: string })
-                .created_at,
-            )
+          ? this.encodeCursor(comments[comments.length - 1].created_at)
           : undefined;
     }
 
     return {
-      replies: comments.map((c) =>
-        this.mapToComment(c as Record<string, unknown>),
-      ),
+      replies: comments.map((c) => this.mapToComment(c)),
       hasMore,
       nextCursor,
     };
@@ -330,7 +344,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .select(
         `
         *,
-        profiles:profile_id (id, display_name, avatar_url, level)
+        profiles:profile_id (id, full_name, avatar_url, level)
       `,
       )
       .eq("id", commentId)
@@ -508,8 +522,8 @@ export class SupabaseCommentRepository implements ICommentRepository {
       return [];
     }
 
-    return (data || []).map((entry: unknown, index: number) =>
-      this.mapToLeaderboardEntry(entry as Record<string, unknown>, index + 1),
+    return (data || []).map((entry, index) =>
+      this.mapToLeaderboardEntry(entry as CommentLeaderboardRow, index + 1),
     );
   }
 
@@ -543,12 +557,9 @@ export class SupabaseCommentRepository implements ICommentRepository {
     }
 
     // Calculate points earned
-    const relevantLogs = (logData || []).filter(
-      (log: { action: string }) => log.action === action,
-    );
+    const relevantLogs = (logData || []).filter((log) => log.action === action);
     const pointsEarned = relevantLogs.reduce(
-      (sum: number, log: { points_awarded: number }) =>
-        sum + log.points_awarded,
+      (sum, log) => sum + log.points_awarded,
       0,
     );
 
@@ -625,73 +636,69 @@ export class SupabaseCommentRepository implements ICommentRepository {
   // Private Helpers
   // ============================================================================
 
-  private mapToComment(data: Record<string, unknown>): Comment {
-    const profile = data.profiles as Record<string, unknown> | undefined;
+  private mapToComment(data: CommentWithProfile): Comment {
+    const profile = data.profiles;
 
     return {
-      id: data.id as string,
-      petPostId: data.pet_post_id as string,
-      profileId: data.profile_id as string,
+      id: data.id,
+      petPostId: data.pet_post_id,
+      profileId: data.profile_id,
       author: {
-        profileId: (profile?.id as string) || (data.profile_id as string),
-        displayName: (profile?.display_name as string) || "ผู้ใช้",
-        avatarUrl: profile?.avatar_url as string | undefined,
-        level: (profile?.level as number) || 1,
+        profileId: profile?.id ?? data.profile_id,
+        displayName: profile?.full_name ?? "ผู้ใช้",
+        avatarUrl: profile?.avatar_url ?? undefined,
+        level: profile?.level ?? 1,
         primaryBadge: undefined, // Will be populated separately if needed
       },
-      parentCommentId: data.parent_comment_id as string | undefined,
+      parentCommentId: data.parent_comment_id ?? undefined,
       depth: 0, // Will be calculated for nested comments
       path: [], // Will be populated for nested comments
-      content: data.content as string,
-      isEdited: data.is_edited as boolean,
-      editedAt: data.edited_at as string | undefined,
-      isDeleted: data.is_deleted as boolean,
-      deletedAt: data.deleted_at as string | undefined,
-      deletedReason: data.deleted_reason as
-        | "self"
-        | "moderator"
-        | "system"
-        | undefined,
-      replyCount: data.reply_count as number,
-      likeCount: data.like_count as number,
+      content: data.content,
+      isEdited: data.is_edited,
+      editedAt: data.edited_at ?? undefined,
+      isDeleted: data.is_deleted,
+      deletedAt: data.deleted_at ?? undefined,
+      deletedReason:
+        (data.deleted_reason as "self" | "moderator" | "system" | undefined) ??
+        undefined,
+      replyCount: data.reply_count,
+      likeCount: data.like_count,
       reactionCounts: defaultReactionCounts,
-      createdAt: data.created_at as string,
-      updatedAt: data.updated_at as string,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
     };
   }
 
-  private mapToUserCommentStats(
-    data: Record<string, unknown>,
-  ): UserCommentStats {
+  private mapToUserCommentStats(data: UserCommentStatsRow): UserCommentStats {
     return {
-      profileId: data.profile_id as string,
-      totalComments: data.total_comments as number,
-      totalReplies: data.total_replies as number,
-      totalReceivedReplies: data.total_received_replies as number,
-      totalLikesReceived: data.total_likes_received as number,
-      totalLikesGiven: data.total_likes_given as number,
-      totalHelpfulReceived: data.total_helpful_received as number,
-      avgReplyDepth: parseFloat(data.avg_reply_depth as string) || 0,
-      helpfulComments: data.helpful_comments as number,
-      currentCommentStreak: data.current_comment_streak as number,
-      longestCommentStreak: data.longest_comment_streak as number,
-      lastCommentDate: data.last_comment_date as string | undefined,
-      updatedAt: data.updated_at as string,
+      profileId: data.profile_id,
+      totalComments: data.total_comments,
+      totalReplies: data.total_replies,
+      totalReceivedReplies: data.total_received_replies,
+      totalLikesReceived: data.total_likes_received,
+      totalLikesGiven: data.total_likes_given,
+      totalHelpfulReceived: data.total_helpful_received,
+      avgReplyDepth: data.avg_reply_depth,
+      helpfulComments: data.helpful_comments,
+      currentCommentStreak: data.current_comment_streak,
+      longestCommentStreak: data.longest_comment_streak,
+      lastCommentDate: data.last_comment_date ?? undefined,
+      updatedAt: data.updated_at,
     };
   }
 
   private mapToLeaderboardEntry(
-    data: Record<string, unknown>,
+    data: CommentLeaderboardRow,
     rank: number,
   ): CommentLeaderboardEntry {
     return {
-      profileId: data.profile_id as string,
-      displayName: data.display_name as string,
-      avatarUrl: data.avatar_url as string | undefined,
-      level: (data.level as number) || 1,
-      commentsCount: data.comments_count as number,
-      likesReceived: data.likes_received as number,
-      repliesReceived: data.replies_received as number,
+      profileId: data.profile_id!,
+      displayName: data.full_name ?? "ผู้ใช้",
+      avatarUrl: data.avatar_url ?? undefined,
+      level: data.profile_level ?? 1,
+      commentsCount: data.comments_count ?? 0,
+      likesReceived: data.likes_received ?? 0,
+      repliesReceived: data.replies_received ?? 0,
       rank,
     };
   }
@@ -721,15 +728,11 @@ export class SupabaseCommentRepository implements ICommentRepository {
     });
 
     // Populate actual counts
-    (data || []).forEach((row: unknown) => {
-      const typedRow = row as {
-        comment_id: string;
-        reaction_type: CommentReactionType;
-        count: number;
-      };
-      const counts = reactionMap.get(typedRow.comment_id);
-      if (counts) {
-        counts[typedRow.reaction_type] = typedRow.count;
+    (data || []).forEach((row) => {
+      const typedRow = row as CommentReactionCountRow;
+      const counts = reactionMap.get(typedRow.comment_id!);
+      if (counts && typedRow.reaction_type) {
+        counts[typedRow.reaction_type] = typedRow.count ?? 0;
       }
     });
 
@@ -737,27 +740,28 @@ export class SupabaseCommentRepository implements ICommentRepository {
   }
 
   private buildCommentTree(
-    root: Record<string, unknown>,
-    children: Record<string, unknown>[],
+    root: CommentWithProfile,
+    children: CommentWithProfile[],
   ): Comment {
     const commentMap = new Map<string, Comment>();
 
     // Map all comments
     const allComments = [root, ...children];
     allComments.forEach((c) => {
-      const comment = this.mapToComment(c as Record<string, unknown>);
+      const comment = this.mapToComment(c);
       comment.replies = [];
       commentMap.set(comment.id, comment);
     });
 
     // Build parent-child relationships
-    const rootComment = commentMap.get(root.id as string)!;
+    const rootComment = commentMap.get(root.id)!;
 
     children.forEach((c) => {
-      const comment = commentMap.get(c.id as string)!;
-      const parentId = c.parent_comment_id as string;
-      const parent = commentMap.get(parentId);
+      const comment = commentMap.get(c.id)!;
+      const parentId = c.parent_comment_id;
+      if (!parentId) return;
 
+      const parent = commentMap.get(parentId);
       if (parent) {
         parent.replies!.push(comment);
         comment.depth = parent.depth + 1;
