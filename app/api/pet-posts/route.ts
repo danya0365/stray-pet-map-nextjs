@@ -20,7 +20,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
 
     const search = searchParams.get("search") || undefined;
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       JSON.stringify(body, null, 2),
     );
 
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const result = await presenter.create(body);
 
     if (!result.success) {

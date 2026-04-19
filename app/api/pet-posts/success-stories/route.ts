@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "6", 10);
 
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const result = await presenter.getSuccessStories(limit);
 
     if (!result.success) {

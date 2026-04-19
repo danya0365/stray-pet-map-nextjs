@@ -4,24 +4,20 @@
  * ✅ Injects the appropriate repository (Mock or Real)
  */
 
+import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { PetPostPresenter } from "./PetPostPresenter";
-import { MockPetPostRepository } from "@/infrastructure/repositories/mock/MockPetPostRepository";
 // import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
 // import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 
 export class PetPostPresenterServerFactory {
-  static create(): PetPostPresenter {
-    // ✅ Use Mock Repository for development
-    const repository = new MockPetPostRepository();
-
-    // ⏳ TODO: Switch to Supabase Repository when backend is ready
-    // const supabase = createServerSupabaseClient();
-    // const repository = new SupabasePetPostRepository(supabase);
-
+  static async create(): Promise<PetPostPresenter> {
+    const supabase = await createServerSupabaseClient();
+    const repository = new SupabasePetPostRepository(supabase);
     return new PetPostPresenter(repository);
   }
 }
 
-export function createServerPetPostPresenter(): PetPostPresenter {
+export async function createServerPetPostPresenter(): Promise<PetPostPresenter> {
   return PetPostPresenterServerFactory.create();
 }

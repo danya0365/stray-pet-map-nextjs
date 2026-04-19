@@ -1,3 +1,4 @@
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // POST /api/pet-posts/auto-archive - ปิดโพสต์ที่หมดอายุอัตโนมัติ
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const EXPIRY_DAYS = 90;
 
     // Auto-archive via presenter
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const EXPIRY_DAYS = 90;
     const WARNING_DAYS = 7;
 

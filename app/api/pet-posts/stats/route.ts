@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
 
     const statusParam = searchParams.get("status");
     const status = statusParam

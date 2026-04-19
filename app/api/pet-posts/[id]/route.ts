@@ -19,7 +19,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
 
     const result = await presenter.getById(id);
 
@@ -55,7 +55,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const result = await presenter.update(id, body);
 
     if (!result.success) {
@@ -86,7 +86,7 @@ export async function DELETE(
       return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
     }
 
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const result = await presenter.delete(id);
 
     if (!result.success) {

@@ -1,4 +1,6 @@
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 
@@ -38,7 +40,7 @@ export async function POST(
     const { outcome } = validation.data;
 
     // Get post to verify ownership
-    const presenter = createServerPetPostPresenter();
+    const presenter = await createServerPetPostPresenter();
     const getResult = await presenter.getById(postId);
 
     if (!getResult.success || !getResult.data) {
