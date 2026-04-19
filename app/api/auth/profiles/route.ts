@@ -2,22 +2,23 @@
  * GET /api/auth/profiles
  * Get all profiles for the current user
  *
- * ✅ Uses SupabaseAuthRepository — no direct Supabase queries in API route
- * ✅ Clean Architecture pattern
+ * ✅ Uses AuthOperationsPresenter (Clean Architecture)
+ * ✅ No direct Supabase queries in API route
  */
 
-import { SupabaseAuthRepository } from "@/infrastructure/repositories/supabase/SupabaseAuthRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAuthOperationsPresenter } from "@/presentation/presenters/auth/AuthOperationsPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const authRepo = new SupabaseAuthRepository(supabase);
+    const presenter = await createServerAuthOperationsPresenter();
+    const result = await presenter.getProfiles();
 
-    const profiles = await authRepo.getProfiles();
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
 
-    return NextResponse.json({ profiles });
+    return NextResponse.json({ profiles: result.profiles });
   } catch (error) {
     const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 export interface AuthProfile {
   id: string;
@@ -17,6 +17,7 @@ export interface AuthProfile {
 
 export interface IAuthRepository {
   getUser(): Promise<User | null>;
+  getSession(): Promise<Session | null>;
   getProfile(): Promise<AuthProfile | null>;
   getProfiles(): Promise<AuthProfile[]>;
   switchProfile(profileId: string): Promise<AuthProfile | null>;

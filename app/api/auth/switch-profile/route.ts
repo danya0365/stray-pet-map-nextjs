@@ -2,45 +2,31 @@
  * POST /api/auth/switch-profile
  * Switch to a different profile
  *
- * ✅ Uses SupabaseAuthRepository — no direct Supabase queries in API route
- * ✅ Clean Architecture pattern
+ * ✅ Uses AuthOperationsPresenter (Clean Architecture)
+ * ✅ No direct Supabase queries in API route
  */
 
-import { SupabaseAuthRepository } from "@/infrastructure/repositories/supabase/SupabaseAuthRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAuthOperationsPresenter } from "@/presentation/presenters/auth/AuthOperationsPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const authRepo = new SupabaseAuthRepository(supabase);
-
-    // Check if user is authenticated
-    const user = await authRepo.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { profileId } = await request.json();
 
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Profile ID is required" },
-        { status: 400 },
-      );
+    const presenter = await createServerAuthOperationsPresenter();
+    const result = await presenter.switchProfile(profileId);
+
+    if (!result.success) {
+      if (result.error === "Unauthorized") {
+        return NextResponse.json({ error: result.error }, { status: 401 });
+      }
+      if (result.error === "Profile ID is required") {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      return NextResponse.json({ error: result.error }, { status: 404 });
     }
 
-    // Switch profile via repository
-    const profile = await authRepo.switchProfile(profileId);
-
-    if (!profile) {
-      return NextResponse.json(
-        { error: "Profile not found or access denied" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ profile });
+    return NextResponse.json({ profile: result.profile });
   } catch (error) {
     const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -3,7 +3,7 @@ import type {
   IAuthRepository,
 } from "@/application/repositories/IAuthRepository";
 import type { Database } from "@/domain/types/supabase";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 
 export class SupabaseAuthRepository implements IAuthRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
@@ -13,6 +13,13 @@ export class SupabaseAuthRepository implements IAuthRepository {
       data: { user },
     } = await this.supabase.auth.getUser();
     return user;
+  }
+
+  async getSession(): Promise<Session | null> {
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+    return session;
   }
 
   async getProfile(): Promise<AuthProfile | null> {
