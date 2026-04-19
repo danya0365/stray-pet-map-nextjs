@@ -4,7 +4,8 @@
  * POST: Create a reply to this comment
  */
 
-import { SupabaseCommentRepository } from "@/infrastructure/repositories/supabase/SupabaseCommentRepository";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerCommentPresenter } from "@/presentation/presenters/comment/CommentPresenterServerFactory";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -12,45 +13,6 @@ import { z } from "zod";
 const createReplySchema = z.object({
   content: z.string().min(1).max(2000),
 });
-
-// Initialize repository
-const getRepository = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return new SupabaseCommentRepository(supabaseUrl, supabaseKey);
-};
-
-// Helper to get user from token
-const getUserFromToken = async (request: Request) => {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-  const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", data.user.id)
-    .single();
-
-  return profile?.id || null;
-};
 
 // GET /api/comments/[id]/replies - Get replies
 export async function GET(
@@ -64,12 +26,19 @@ export async function GET(
     const cursor = searchParams.get("cursor") || undefined;
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    const repo = getRepository();
-    const replies = await repo.findReplies(parentCommentId, { cursor, limit });
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.getReplies(parentCommentId, {
+      cursor,
+      limit,
+    });
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
 
     return NextResponse.json({
-      replies,
-      count: replies.length,
+      replies: result.data,
+      count: result.data?.length || 0,
     });
   } catch (error) {
     console.error("Error fetching replies:", error);
@@ -88,9 +57,11 @@ export async function POST(
   try {
     const { id: parentCommentId } = await params;
 
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
+    // Authenticate using server session
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -108,48 +79,34 @@ export async function POST(
     const { content } = validation.data;
 
     // Get parent comment to find petPostId
-    const repo = getRepository();
-    const parent = await repo.findById(parentCommentId);
+    const presenter = await createServerCommentPresenter();
+    const parentResult = await presenter.getComment(parentCommentId);
 
-    if (!parent) {
+    if (!parentResult.success || !parentResult.data) {
       return NextResponse.json(
         { error: "Parent comment not found" },
         { status: 404 },
       );
     }
 
-    // Check depth limit
-    const depth = await repo.getCommentDepth(parentCommentId);
-    if (depth >= 10) {
-      return NextResponse.json(
-        { error: "Maximum nesting depth reached" },
-        { status: 400 },
-      );
-    }
-
-    // Create reply
-    const comment = await repo.create(
+    // Create reply (depth limit handled by presenter)
+    const result = await presenter.createComment(
       {
-        petPostId: parent.petPostId,
+        petPostId: parentResult.data.petPostId,
         content,
         parentCommentId,
       },
-      profileId,
+      authViewModel.profile.id,
     );
 
-    // Get gamification info
-    const gamificationInfo = await repo.getGamificationInfo(
-      profileId,
-      "reply_created",
-    );
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.error?.includes("depth") ? 400 : 500 },
+      );
+    }
 
-    return NextResponse.json(
-      {
-        comment,
-        gamification: gamificationInfo,
-      },
-      { status: 201 },
-    );
+    return NextResponse.json(result.data, { status: 201 });
   } catch (error) {
     console.error("Error creating reply:", error);
     return NextResponse.json(

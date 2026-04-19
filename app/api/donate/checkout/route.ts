@@ -1,4 +1,5 @@
-import { StripeRepository } from "@/infrastructure/repositories/stripe/StripeRepository";
+import type { DonationTargetType } from "@/domain/entities/donation";
+import { createServerDonationPresenter } from "@/presentation/presenters/donation/DonationPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // POST /api/donate/checkout - สร้าง Stripe checkout session สำหรับ donation
@@ -42,22 +43,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create checkout session
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
-      return NextResponse.json(
-        { error: "Stripe is not configured" },
-        { status: 500 },
-      );
-    }
-
-    const repo = new StripeRepository(stripeSecretKey);
-    const result = await repo.createCheckoutSession({
+    // Create checkout session via presenter
+    const presenter = createServerDonationPresenter();
+    const result = await presenter.createCheckoutSession({
       amount,
       message,
       successUrl,
       cancelUrl,
-      targetType,
+      targetType: targetType as DonationTargetType,
       petPostId,
       donorName,
       donorEmail,
@@ -65,7 +58,17 @@ export async function POST(request: Request) {
       showOnLeaderboard,
     });
 
-    return NextResponse.json(result);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || "Failed to create checkout session" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      url: result.sessionUrl,
+      sessionId: result.sessionId,
+    });
   } catch (error) {
     console.error("Error creating donation checkout:", error);
     return NextResponse.json(

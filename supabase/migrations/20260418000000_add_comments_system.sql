@@ -836,6 +836,108 @@ COMMENT ON COLUMN public.profiles.experience_points IS 'Experience points for po
 COMMENT ON COLUMN public.profiles.last_points_update IS 'Last time gamification data was synced';
 
 -- ============================================================================
+-- UTILITY RPC FUNCTIONS
+-- ============================================================================
+
+-- Function: Get comment depth (how many levels deep in the thread)
+CREATE OR REPLACE FUNCTION public.get_comment_depth(p_comment_id UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_depth INTEGER := 0;
+  v_current_id UUID := p_comment_id;
+  v_parent_id UUID;
+BEGIN
+  WHILE v_current_id IS NOT NULL LOOP
+    SELECT parent_comment_id INTO v_parent_id
+    FROM public.comments
+    WHERE id = v_current_id;
+    
+    IF v_parent_id IS NULL THEN
+      EXIT;
+    END IF;
+    
+    v_depth := v_depth + 1;
+    v_current_id := v_parent_id;
+  END LOOP;
+  
+  RETURN v_depth;
+END;
+$$;
+
+-- Function: Get full comment thread for a pet post
+CREATE OR REPLACE FUNCTION public.get_comment_thread(
+  p_pet_post_id UUID,
+  p_max_depth INTEGER DEFAULT 10
+)
+RETURNS TABLE (
+  id UUID,
+  pet_post_id UUID,
+  profile_id UUID,
+  parent_comment_id UUID,
+  content TEXT,
+  is_edited BOOLEAN,
+  edited_at TIMESTAMP WITH TIME ZONE,
+  is_deleted BOOLEAN,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_reason TEXT,
+  reply_count INTEGER,
+  like_count INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  depth INTEGER
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH RECURSIVE comment_tree AS (
+    -- Base case: top-level comments
+    SELECT 
+      c.*,
+      0 as depth
+    FROM public.comments c
+    WHERE c.pet_post_id = p_pet_post_id
+      AND c.parent_comment_id IS NULL
+      AND NOT c.is_deleted
+    
+    UNION ALL
+    
+    -- Recursive case: replies
+    SELECT 
+      c.*,
+      ct.depth + 1
+    FROM public.comments c
+    INNER JOIN comment_tree ct ON c.parent_comment_id = ct.id
+    WHERE c.pet_post_id = p_pet_post_id
+      AND NOT c.is_deleted
+      AND ct.depth < p_max_depth
+  )
+  SELECT 
+    ct.id,
+    ct.pet_post_id,
+    ct.profile_id,
+    ct.parent_comment_id,
+    ct.content,
+    ct.is_edited,
+    ct.edited_at,
+    ct.is_deleted,
+    ct.deleted_at,
+    ct.deleted_reason,
+    ct.reply_count,
+    ct.like_count,
+    ct.created_at,
+    ct.updated_at,
+    ct.depth
+  FROM comment_tree ct
+  ORDER BY ct.depth, ct.created_at;
+END;
+$$;
+
+-- ============================================================================
 -- NOTES
 -- ============================================================================
 

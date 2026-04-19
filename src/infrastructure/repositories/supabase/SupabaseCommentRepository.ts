@@ -24,14 +24,11 @@ import type {
   CommentLeaderboardPeriod,
   UserCommentStats,
 } from "@/domain/entities/comment-stats";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/domain/types/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export class SupabaseCommentRepository implements ICommentRepository {
-  private supabase: SupabaseClient;
-
-  constructor(supabaseUrl: string, supabaseKey: string) {
-    this.supabase = createClient(supabaseUrl, supabaseKey);
-  }
+  constructor(private readonly supabase: SupabaseClient<Database>) {}
 
   // ============================================================================
   // Core CRUD Operations
@@ -279,7 +276,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
     // Build tree using recursive query via RPC
     const { data: treeData, error: treeError } = await this.supabase.rpc(
       "get_comment_thread",
-      { root_comment_id: commentId, max_depth: maxDepth },
+      { p_pet_post_id: commentId, p_max_depth: maxDepth },
     );
 
     if (treeError) {
@@ -548,7 +545,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
   async getCommentDepth(commentId: string): Promise<number> {
     const { data, error } = await this.supabase.rpc("get_comment_depth", {
-      comment_id: commentId,
+      p_comment_id: commentId,
     });
 
     if (error) {

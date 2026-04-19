@@ -4,49 +4,11 @@
  * DELETE: Unlike a comment
  */
 
-import { SupabaseCommentRepository } from "@/infrastructure/repositories/supabase/SupabaseCommentRepository";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerCommentPresenter } from "@/presentation/presenters/comment/CommentPresenterServerFactory";
 import { NextResponse } from "next/server";
 
-// Initialize repository
-const getRepository = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return new SupabaseCommentRepository(supabaseUrl, supabaseKey);
-};
-
-// Helper to get user from token
-const getUserFromToken = async (request: Request) => {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-  const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", data.user.id)
-    .single();
-
-  return profile?.id || null;
-};
-
-// POST /api/comments/[id]/like - Like comment
+// POST /api/comments/[id]/like - Toggle like comment
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -54,64 +16,29 @@ export async function POST(
   try {
     const { id: commentId } = await params;
 
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    // Authenticate using server session
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const repo = getRepository();
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.toggleLike(
+      commentId,
+      authViewModel.profile.id,
+    );
 
-    // Check if already liked
-    const alreadyLiked = await repo.hasLiked(commentId, profileId);
-    if (alreadyLiked) {
-      return NextResponse.json({
-        liked: true,
-        message: "Already liked",
-      });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    // Add like
-    await repo.addLike(commentId, profileId);
-
-    return NextResponse.json({ liked: true });
+    return NextResponse.json(result.data);
   } catch (error) {
     console.error("Error liking comment:", error);
     return NextResponse.json(
       { error: "Failed to like comment" },
-      { status: 500 },
-    );
-  }
-}
-
-// DELETE /api/comments/[id]/like - Unlike comment
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id: commentId } = await params;
-
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const repo = getRepository();
-    await repo.removeLike(commentId, profileId);
-
-    return NextResponse.json({ liked: false });
-  } catch (error) {
-    console.error("Error unliking comment:", error);
-    return NextResponse.json(
-      { error: "Failed to unlike comment" },
       { status: 500 },
     );
   }

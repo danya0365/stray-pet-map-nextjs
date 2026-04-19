@@ -5,7 +5,8 @@
  * DELETE: Soft delete comment
  */
 
-import { SupabaseCommentRepository } from "@/infrastructure/repositories/supabase/SupabaseCommentRepository";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerCommentPresenter } from "@/presentation/presenters/comment/CommentPresenterServerFactory";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -13,46 +14,6 @@ import { z } from "zod";
 const updateCommentSchema = z.object({
   content: z.string().min(1).max(2000),
 });
-
-// Initialize repository
-const getRepository = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return new SupabaseCommentRepository(supabaseUrl, supabaseKey);
-};
-
-// Helper to get user from token
-const getUserFromToken = async (request: Request) => {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-  const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
-
-  // Get profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", data.user.id)
-    .single();
-
-  return profile?.id || null;
-};
 
 // GET /api/comments/[id] - Get single comment with thread
 export async function GET(
@@ -64,17 +25,14 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const depth = parseInt(searchParams.get("depth") || "3", 10);
 
-    const repo = getRepository();
-    const comment = await repo.getThreadTree(commentId, depth);
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.getComment(commentId, depth);
 
-    if (!comment) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 },
-      );
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 404 });
     }
 
-    return NextResponse.json(comment);
+    return NextResponse.json(result.data);
   } catch (error) {
     console.error("Error fetching comment:", error);
     return NextResponse.json(
@@ -92,13 +50,12 @@ export async function PATCH(
   try {
     const { id: commentId } = await params;
 
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    // Authenticate using server session
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse body
@@ -115,18 +72,23 @@ export async function PATCH(
     const { content } = validation.data;
 
     // Update comment
-    const repo = getRepository();
-    const updated = await repo.update(commentId, { content }, profileId);
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.updateComment(
+      commentId,
+      { content },
+      authViewModel.profile.id,
+    );
 
-    return NextResponse.json(updated);
-  } catch (error) {
-    console.error("Error updating comment:", error);
-    if (error instanceof Error && error.message.includes("not found")) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 404 },
+        { error: result.error },
+        { status: result.error?.includes("not found") ? 404 : 400 },
       );
     }
+
+    return NextResponse.json(result.data);
+  } catch (error) {
+    console.error("Error updating comment:", error);
     return NextResponse.json(
       { error: "Failed to update comment" },
       { status: 500 },
@@ -142,18 +104,24 @@ export async function DELETE(
   try {
     const { id: commentId } = await params;
 
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    // Authenticate using server session
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Soft delete
-    const repo = getRepository();
-    await repo.softDelete(commentId, profileId, "self");
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.deleteComment(
+      commentId,
+      authViewModel.profile.id,
+    );
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

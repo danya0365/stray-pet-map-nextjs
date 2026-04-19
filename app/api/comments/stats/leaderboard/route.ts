@@ -3,23 +3,17 @@
  * GET: Get comment leaderboard (week/month/all)
  */
 
-import { SupabaseCommentRepository } from "@/infrastructure/repositories/supabase/SupabaseCommentRepository";
 import type { CommentLeaderboardPeriod } from "@/domain/entities/comment-stats";
+import { createServerCommentPresenter } from "@/presentation/presenters/comment/CommentPresenterServerFactory";
 import { NextResponse } from "next/server";
-
-// Initialize repository
-const getRepository = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return new SupabaseCommentRepository(supabaseUrl, supabaseKey);
-};
 
 // GET /api/comments/stats/leaderboard
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const period = (searchParams.get("period") as CommentLeaderboardPeriod) || "week";
+    const period =
+      (searchParams.get("period") as CommentLeaderboardPeriod) || "week";
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
     // Validate period
@@ -30,9 +24,14 @@ export async function GET(request: Request) {
       );
     }
 
-    const repo = getRepository();
-    const leaderboard = await repo.getLeaderboard(period, limit);
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.getLeaderboard(period, limit);
 
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    const leaderboard = result.data || [];
     return NextResponse.json({
       period,
       leaderboard,

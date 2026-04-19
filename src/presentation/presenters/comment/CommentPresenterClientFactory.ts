@@ -1,17 +1,17 @@
 /**
  * CommentPresenterClientFactory
- * ✅ Uses MockCommentRepository for development
- * ✅ Client → Repository → Data
+ * ✅ Uses ApiCommentRepository for production
+ * ✅ Client → API Routes → Supabase
  */
 
 "use client";
 
-import { MockCommentRepository } from "@/infrastructure/repositories/mock/MockCommentRepository";
+import { ApiCommentRepository } from "@/infrastructure/repositories/api/ApiCommentRepository";
 import { CommentPresenter } from "./CommentPresenter";
 
 export class CommentPresenterClientFactory {
   static create(): CommentPresenter {
-    const repository = new MockCommentRepository();
+    const repository = new ApiCommentRepository();
     return new CommentPresenter(repository);
   }
 }

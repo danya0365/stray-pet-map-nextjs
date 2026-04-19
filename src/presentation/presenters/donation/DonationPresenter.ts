@@ -6,11 +6,13 @@
  */
 
 import type { IDonationRepository } from "@/application/repositories/IDonationRepository";
+import type { IStripeRepository } from "@/application/repositories/IStripeRepository";
 import type {
   CreateDonationParams,
   Donation,
   DonationLeaderboardEntry,
   DonationStats,
+  DonationTargetType,
   PetFundingGoal,
   RecentDonation,
 } from "@/domain/entities/donation";
@@ -35,13 +37,112 @@ export interface StatsResult {
   error?: string;
 }
 
+export interface CheckoutResult {
+  success: boolean;
+  sessionUrl?: string;
+  sessionId?: string;
+  error?: string;
+}
+
+export interface WebhookVerificationResult {
+  success: boolean;
+  event?: Stripe.Event;
+  error?: string;
+}
+
 /**
  * Presenter for donation operations
  * ✅ Receives repositories via constructor injection
  * ✅ Handles all business logic for webhook processing
  */
 export class DonationPresenter {
-  constructor(private readonly donationRepo: IDonationRepository) {}
+  constructor(
+    private readonly donationRepo: IDonationRepository,
+    private readonly stripeRepo?: IStripeRepository,
+  ) {}
+
+  // ============================================================
+  // CHECKOUT CREATION (For API Routes)
+  // ============================================================
+
+  /**
+   * Create Stripe checkout session
+   * Used by /api/donate/checkout route
+   */
+  async createCheckoutSession(params: {
+    amount: number;
+    message?: string;
+    successUrl: string;
+    cancelUrl: string;
+    targetType: DonationTargetType;
+    petPostId?: string;
+    donorName?: string;
+    donorEmail?: string;
+    isAnonymous?: boolean;
+    showOnLeaderboard?: boolean;
+  }): Promise<CheckoutResult> {
+    if (!this.stripeRepo) {
+      return { success: false, error: "Stripe repository not available" };
+    }
+
+    try {
+      const result = await this.stripeRepo.createCheckoutSession({
+        amount: params.amount,
+        message: params.message,
+        successUrl: params.successUrl,
+        cancelUrl: params.cancelUrl,
+        targetType: params.targetType,
+        petPostId: params.petPostId,
+        donorName: params.donorName,
+        donorEmail: params.donorEmail,
+        isAnonymous: params.isAnonymous,
+        showOnLeaderboard: params.showOnLeaderboard,
+      });
+
+      return {
+        success: true,
+        sessionUrl: result.url,
+        sessionId: result.sessionId,
+      };
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create checkout session",
+      };
+    }
+  }
+
+  /**
+   * Verify Stripe webhook event signature
+   * Used by /api/webhook/stripe route
+   */
+  async verifyWebhookEvent(
+    payload: string,
+    signature: string,
+    webhookSecret: string,
+  ): Promise<WebhookVerificationResult> {
+    if (!this.stripeRepo) {
+      return { success: false, error: "Stripe repository not available" };
+    }
+
+    try {
+      const event = await this.stripeRepo.constructEvent(
+        payload,
+        signature,
+        webhookSecret,
+      );
+      return { success: true, event };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown signature error";
+      console.error("Webhook signature verification failed:", errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
 
   // ============================================================
   // WEBHOOK PROCESSING (For API Routes)

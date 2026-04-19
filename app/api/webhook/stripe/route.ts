@@ -1,7 +1,7 @@
-import { StripeRepository } from "@/infrastructure/repositories/stripe/StripeRepository";
 import { createServerDonationPresenter } from "@/presentation/presenters/donation/DonationPresenterServerFactory";
+import { createServerStripePresenter } from "@/presentation/presenters/stripe/StripePresenterServerFactory";
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -29,45 +29,37 @@ export async function POST(request: Request) {
     const payload = await request.text();
     const signature = request.headers.get("stripe-signature") as string;
 
-    let event: Stripe.Event;
+    // ✅ StripePresenter ทำหน้าที่ verify webhook เท่านั้น
+    const stripePresenter = createServerStripePresenter();
 
-    try {
-      // Use StripeRepository pattern (like live-learning-nextjs)
-      const stripeRepo = new StripeRepository(
-        process.env.STRIPE_SECRET_KEY || "",
-      );
-      event = await stripeRepo.constructEvent(
-        payload,
-        signature,
-        webhookSecret,
-      );
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Unknown signature error";
-      console.error("Webhook signature verification failed:", errorMessage);
+    const verifyResult = await stripePresenter.verifyAndParseWebhook(
+      payload,
+      signature,
+      webhookSecret,
+    );
+
+    if (!verifyResult.success) {
       return NextResponse.json(
-        { error: `Invalid signature: ${errorMessage}` },
+        { error: `Invalid signature: ${verifyResult.error}` },
         { status: 400 },
       );
     }
 
-    // Handle successful payment
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+    // ✅ API Route เป็นคนตัดสินใจว่า event นี้ควรไปไหน (No presenter calling presenter)
+    if (stripePresenter.isDonationCheckoutCompleted(verifyResult)) {
+      const session = verifyResult.event.data.object as Stripe.Checkout.Session;
+      const donationPresenter = createServerDonationPresenter();
 
-      // Check if this is a donation
-      if (session.metadata?.type === "donation") {
-        // ✅ Use Presenter for business logic (Clean Architecture)
-        const presenter = createServerDonationPresenter();
-        const result = await presenter.processCheckoutCompleted(session);
+      const result = await donationPresenter.processCheckoutCompleted(session);
 
-        if (!result.success) {
-          console.error("Failed to process donation:", result.error);
-          // Still return 200 to Stripe to prevent retries
-          // Error is logged for investigation
-        }
+      if (!result.success) {
+        console.error("Failed to process donation:", result.error);
+        // Still return 200 to Stripe to prevent retries
+        // Error is logged for investigation
       }
     }
+    // ⏳ TODO: Add other event handlers here (e.g., subscription, refund)
+    // else if (verifyResult.type === 'invoice.payment_succeeded') { ... }
 
     return NextResponse.json({ received: true });
   } catch (error) {

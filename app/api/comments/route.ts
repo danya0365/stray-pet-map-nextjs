@@ -1,30 +1,23 @@
-/**
- * Comments API Routes for Pet Posts
- * GET: List top-level comments with pagination
- * POST: Create a new comment or reply
- */
-
 import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { createServerCommentPresenter } from "@/presentation/presenters/comment/CommentPresenterServerFactory";
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
 
-// Validation schema
-const createCommentSchema = z.object({
-  content: z.string().min(1).max(2000),
-  parentCommentId: z.string().uuid().optional(),
-});
-
-// GET /api/pet-posts/[id]/comments - List comments
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+/**
+ * GET /api/comments?petPostId=xxx&cursor=xxx&limit=xxx
+ * Get comments for a pet post
+ */
+export async function GET(request: NextRequest) {
   try {
-    const { id: petPostId } = await params;
     const { searchParams } = new URL(request.url);
+    const petPostId = searchParams.get("petPostId");
 
-    // Parse options
+    if (!petPostId) {
+      return NextResponse.json(
+        { error: "petPostId is required" },
+        { status: 400 },
+      );
+    }
+
     const cursor = searchParams.get("cursor") || undefined;
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const sortBy =
@@ -52,13 +45,21 @@ export async function GET(
   }
 }
 
-// POST /api/pet-posts/[id]/comments - Create comment
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+/**
+ * POST /api/comments
+ * Create a new comment
+ */
+export async function POST(request: NextRequest) {
   try {
-    const { id: petPostId } = await params;
+    const body = await request.json();
+    const { petPostId, content, parentCommentId } = body;
+
+    if (!petPostId || !content) {
+      return NextResponse.json(
+        { error: "petPostId and content are required" },
+        { status: 400 },
+      );
+    }
 
     // Get profile from session
     const authPresenter = await createServerAuthPresenter();
@@ -68,20 +69,6 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Parse body
-    const body = await request.json();
-    const validation = createCommentSchema.safeParse(body);
-
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: validation.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const { content, parentCommentId } = validation.data;
-
-    // Create comment
     const presenter = await createServerCommentPresenter();
     const result = await presenter.createComment(
       {
@@ -93,15 +80,14 @@ export async function POST(
     );
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
     return NextResponse.json(result.data, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);
-    return NextResponse.json(
-      { error: "Failed to create comment" },
-      { status: 500 },
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to create comment";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

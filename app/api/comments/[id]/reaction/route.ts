@@ -4,9 +4,10 @@
  * DELETE: Remove reaction
  */
 
-import { SupabaseCommentRepository } from "@/infrastructure/repositories/supabase/SupabaseCommentRepository";
-import { COMMENT_REACTION_TYPES } from "@/domain/entities/comment";
 import type { CommentReactionType } from "@/domain/entities/comment";
+import { COMMENT_REACTION_TYPES } from "@/domain/entities/comment";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
+import { createServerCommentPresenter } from "@/presentation/presenters/comment/CommentPresenterServerFactory";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -14,45 +15,6 @@ import { z } from "zod";
 const reactionSchema = z.object({
   type: z.enum(["like", "helpful", "insightful", "heart"] as const),
 });
-
-// Initialize repository
-const getRepository = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return new SupabaseCommentRepository(supabaseUrl, supabaseKey);
-};
-
-// Helper to get user from token
-const getUserFromToken = async (request: Request) => {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-  const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", data.user.id)
-    .single();
-
-  return profile?.id || null;
-};
 
 // POST /api/comments/[id]/reaction - Add/update reaction
 export async function POST(
@@ -62,13 +24,12 @@ export async function POST(
   try {
     const { id: commentId } = await params;
 
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    // Authenticate using server session
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse body
@@ -84,13 +45,18 @@ export async function POST(
 
     const { type } = validation.data;
 
-    const repo = getRepository();
-    await repo.addReaction(commentId, profileId, type as CommentReactionType);
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.addReaction(
+      commentId,
+      authViewModel.profile.id,
+      type as CommentReactionType,
+    );
 
-    return NextResponse.json({
-      reaction: type,
-      success: true,
-    });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     console.error("Error adding reaction:", error);
     return NextResponse.json(
@@ -108,19 +74,25 @@ export async function DELETE(
   try {
     const { id: commentId } = await params;
 
-    // Authenticate
-    const profileId = await getUserFromToken(request);
-    if (!profileId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+    // Authenticate using server session
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
+    if (!authViewModel.isAuthenticated || !authViewModel.profile) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const repo = getRepository();
-    await repo.removeReaction(commentId, profileId);
+    const presenter = await createServerCommentPresenter();
+    const result = await presenter.removeReaction(
+      commentId,
+      authViewModel.profile.id,
+    );
 
-    return NextResponse.json({ reaction: null, success: true });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error removing reaction:", error);
     return NextResponse.json(

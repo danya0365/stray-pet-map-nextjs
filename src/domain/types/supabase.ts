@@ -1209,6 +1209,27 @@ export type Database = {
         Returns: Database["public"]["Enums"]["profile_role"]
       }
       get_auth_user_by_id: { Args: { p_id: string }; Returns: Json }
+      get_comment_depth: { Args: { p_comment_id: string }; Returns: number }
+      get_comment_thread: {
+        Args: { p_max_depth?: number; p_pet_post_id: string }
+        Returns: {
+          content: string
+          created_at: string
+          deleted_at: string
+          deleted_reason: string
+          depth: number
+          edited_at: string
+          id: string
+          is_deleted: boolean
+          is_edited: boolean
+          like_count: number
+          parent_comment_id: string
+          pet_post_id: string
+          profile_id: string
+          reply_count: number
+          updated_at: string
+        }[]
+      }
       get_paginated_users: {
         Args: { p_limit?: number; p_page?: number }
         Returns: Json
