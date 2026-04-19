@@ -1,5 +1,4 @@
-import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import { NextResponse } from "next/server";
 
 interface RouteParams {
@@ -21,23 +20,21 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePublicProfileRepository(supabase);
+    const presenter = await createServerPublicProfilePresenter();
+    const result = await presenter.getPosts(profileId, page, perPage);
 
-    // ตรวจสอบว่า profile มีอยู่จริง
-    const exists = await repo.exists(profileId);
-    if (!exists) {
-      return NextResponse.json(
-        { error: "Profile not found" },
-        { status: 404 },
-      );
+    if (!result.success) {
+      if (result.error === "Profile not found") {
+        return NextResponse.json({ error: result.error }, { status: 404 });
+      }
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
-
-    const result = await repo.getPosts(profileId, page, perPage);
 
     return NextResponse.json({
       success: true,
-      ...result,
+      posts: result.posts,
+      total: result.total,
+      hasMore: result.hasMore,
     });
   } catch (error) {
     console.error("Error fetching profile posts:", error);

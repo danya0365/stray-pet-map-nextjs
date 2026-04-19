@@ -1,5 +1,4 @@
-import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import { NextResponse } from "next/server";
 
 interface RouteParams {
@@ -18,21 +17,19 @@ export async function GET(_request: Request, { params }: RouteParams) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePublicProfileRepository(supabase);
+    const presenter = await createServerPublicProfilePresenter();
+    const result = await presenter.getById(profileId);
 
-    const profile = await repo.getById(profileId);
-
-    if (!profile) {
-      return NextResponse.json(
-        { error: "Profile not found" },
-        { status: 404 },
-      );
+    if (!result.success) {
+      if (result.error === "Profile not found") {
+        return NextResponse.json({ error: result.error }, { status: 404 });
+      }
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      profile,
+      profile: result.profile,
     });
   } catch (error) {
     console.error("Error fetching public profile:", error);
