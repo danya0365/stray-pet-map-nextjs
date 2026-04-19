@@ -11,6 +11,11 @@ import {
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Types from Supabase schema
+type ProfileBadgeRow = Database["public"]["Tables"]["profile_badges"]["Row"];
+type ProfilePostStatsRow =
+  Database["public"]["Views"]["profile_post_stats"]["Row"];
+
 /**
  * SupabaseProfileBadgeRepository
  * Server-side implementation for fetching current user's badges
@@ -171,12 +176,10 @@ export class SupabaseProfileBadgeRepository implements IProfileBadgeRepository {
 
   private getCurrentValue(
     type: BadgeType,
-    stats: {
-      total_posts?: number | null;
-      successful_adoptions?: number | null;
-      found_owners?: number | null;
-      community_cats?: number | null;
-    } | null,
+    stats: Pick<
+      ProfilePostStatsRow,
+      "total_posts" | "successful_adoptions" | "found_owners" | "community_cats"
+    > | null,
   ): number {
     if (!stats) return 0;
     switch (type) {
@@ -214,18 +217,7 @@ export class SupabaseProfileBadgeRepository implements IProfileBadgeRepository {
     return undefined;
   }
 
-  private mapToDomain(row: {
-    id: string;
-    profile_id: string;
-    type: string;
-    tier: string;
-    name: string;
-    description: string;
-    icon: string;
-    color: string;
-    awarded_at: string;
-    earned_value: number | null;
-  }): Badge {
+  private mapToDomain(row: ProfileBadgeRow): Badge {
     return {
       id: row.id,
       profileId: row.profile_id,
