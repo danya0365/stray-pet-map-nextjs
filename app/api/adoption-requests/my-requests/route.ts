@@ -2,33 +2,32 @@
  * /api/adoption-requests/my-requests
  * API Route for getting current user's adoption requests
  *
- * ✅ Uses SupabaseAdoptionRequestRepository (server-side)
+ * ✅ Uses AdoptionRequestPresenter (Clean Architecture)
  * ✅ Returns list of adoption requests made by the current user
  */
 
-import { SupabaseAdoptionRequestRepository } from "@/infrastructure/repositories/supabase/SupabaseAdoptionRequestRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAdoptionRequestPresenter } from "@/presentation/presenters/adoption-request/AdoptionRequestPresenterServerFactory";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
 
-    // Check auth
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบ" },
-        { status: 401 },
-      );
+    if (!authViewModel.isAuthenticated) {
+      return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
     }
 
-    const repo = new SupabaseAdoptionRequestRepository(supabase);
-    const requests = await repo.getMyRequests();
+    const presenter = await createServerAdoptionRequestPresenter();
+    const result = await presenter.getMyRequests();
 
-    return NextResponse.json(requests);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ไม่สามารถโหลดข้อมูลได้";
