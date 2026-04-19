@@ -9,11 +9,9 @@ import type {
   FavoriteQueryResult,
   IFavoriteRepository,
 } from "@/application/repositories/IFavoriteRepository";
-import type {
-  IPetPostRepository,
-  PaginationMode,
-} from "@/application/repositories/IPetPostRepository";
+import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
 import type { PetPost } from "@/domain/entities/pet-post";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export interface FavoriteIdsResult {
   success: boolean;

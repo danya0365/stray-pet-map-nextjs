@@ -11,7 +11,7 @@ import type {
   CommentLeaderboardPeriod,
   UserCommentStats,
 } from "@/domain/entities/comment-stats";
-import type { PaginationMode } from "./IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 // ============================================================================
 // QUERY OPTIONS

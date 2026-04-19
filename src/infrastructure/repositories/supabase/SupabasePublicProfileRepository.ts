@@ -1,4 +1,3 @@
-import { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type {
   IPublicProfileRepository,
   ProfilePostsQueryResult,
@@ -16,6 +15,7 @@ import type {
   PublicProfileSummary,
   PublicProfileWithPosts,
 } from "@/domain/entities/public-profile";
+import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 

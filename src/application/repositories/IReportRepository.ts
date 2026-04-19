@@ -4,8 +4,8 @@
  * Following Clean Architecture - Application layer
  */
 
+import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
-import type { PaginationMode } from "./IPetPostRepository";
 
 export type ReportReason = Database["public"]["Enums"]["report_reason"];
 export type ReportStatus = Database["public"]["Enums"]["report_status"];

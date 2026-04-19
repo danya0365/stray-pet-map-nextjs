@@ -9,7 +9,7 @@
  */
 
 import type { PetPost } from "@/domain/entities/pet-post";
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PublicProfilePresenter } from "./PublicProfilePresenter";
 import { createClientPublicProfilePresenter } from "./PublicProfilePresenterClientFactory";
@@ -105,9 +105,7 @@ export function usePublicProfilePresenter(
         }
       } catch (err) {
         if (isMountedRef.current) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load posts",
-          );
+          setError(err instanceof Error ? err.message : "Failed to load posts");
         }
       } finally {
         if (isMountedRef.current) {
@@ -126,14 +124,11 @@ export function usePublicProfilePresenter(
     setLoadingMore(true);
 
     try {
-      const result = await presenter.getPosts(
-        currentProfileIdRef.current,
-        {
-          type: "cursor",
-          cursor: nextCursor,
-          limit: 20,
-        },
-      );
+      const result = await presenter.getPosts(currentProfileIdRef.current, {
+        type: "cursor",
+        cursor: nextCursor,
+        limit: 20,
+      });
 
       if (isMountedRef.current) {
         if (result.success && result.data) {

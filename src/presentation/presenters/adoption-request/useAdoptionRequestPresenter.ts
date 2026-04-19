@@ -9,7 +9,7 @@
  */
 
 import type { AdoptionRequest } from "@/application/repositories/IAdoptionRequestRepository";
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdoptionRequestPresenter } from "./AdoptionRequestPresenter";
 import { createClientAdoptionRequestPresenter } from "./AdoptionRequestPresenterClientFactory";
@@ -142,14 +142,11 @@ export function useAdoptionRequestPresenter(
     setLoadingMore(true);
 
     try {
-      const result = await presenter.getByPostId(
-        currentPetPostIdRef.current,
-        {
-          type: "cursor",
-          cursor: nextCursor,
-          limit: 20,
-        },
-      );
+      const result = await presenter.getByPostId(currentPetPostIdRef.current, {
+        type: "cursor",
+        cursor: nextCursor,
+        limit: 20,
+      });
 
       if (isMountedRef.current) {
         if (result.success && result.data) {

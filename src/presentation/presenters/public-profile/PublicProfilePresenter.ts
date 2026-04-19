@@ -5,7 +5,6 @@
  * Following Clean Architecture pattern
  */
 
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type {
   IPublicProfileRepository,
   ProfilePostsQueryResult,
@@ -14,6 +13,7 @@ import type {
   PublicProfile,
   PublicProfileWithPosts,
 } from "@/domain/entities/public-profile";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export interface ProfileResult {
   success: boolean;

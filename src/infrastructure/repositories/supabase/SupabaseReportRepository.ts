@@ -4,13 +4,13 @@
  * Following Clean Architecture - Infrastructure layer
  */
 
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type {
   CreateReportParams,
   IReportRepository,
   Report,
   ReportQueryResult,
 } from "@/application/repositories/IReportRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 

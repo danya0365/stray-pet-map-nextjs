@@ -13,7 +13,7 @@ import type {
   FavoriteQueryResult,
   IFavoriteRepository,
 } from "@/application/repositories/IFavoriteRepository";
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export class ApiFavoriteRepository implements IFavoriteRepository {
   private baseUrl = "/api/favorites";

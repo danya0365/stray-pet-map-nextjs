@@ -11,7 +11,7 @@ import type {
   CreateAdoptionRequestPayload,
   IAdoptionRequestRepository,
 } from "@/application/repositories/IAdoptionRequestRepository";
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export interface CreateResult {
   success: boolean;

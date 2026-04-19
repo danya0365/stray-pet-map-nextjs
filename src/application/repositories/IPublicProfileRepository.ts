@@ -4,7 +4,7 @@ import type {
   PublicProfileSummary,
   PublicProfileWithPosts,
 } from "@/domain/entities/public-profile";
-import type { PaginationMode } from "./IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 // ============================================================================
 // QUERY RESULTS

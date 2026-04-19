@@ -1,4 +1,4 @@
-import type { PaginationMode } from "./IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 // ============================================================================
 // QUERY RESULTS

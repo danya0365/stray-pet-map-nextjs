@@ -1,4 +1,4 @@
-import type { PaginationMode } from "./IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export type AdoptionRequestStatus = "pending" | "approved" | "rejected";
 

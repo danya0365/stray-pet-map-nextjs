@@ -8,8 +8,8 @@
  * ✅ Follows Clean Architecture pattern
  */
 
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type { PetPost } from "@/domain/entities/pet-post";
+import type { PaginationMode } from "@/domain/types/pagination";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FavoritePresenter } from "./FavoritePresenter";
 import { createClientFavoritePresenter } from "./FavoritePresenterClientFactory";

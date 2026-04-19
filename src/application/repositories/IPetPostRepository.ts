@@ -8,24 +8,7 @@ import type {
   PetPostStatus,
   UpdatePetPostData,
 } from "@/domain/entities/pet-post";
-
-// ============================================================
-// PAGINATION
-// ============================================================
-
-export type OffsetPagination = {
-  type: "offset";
-  page: number;
-  perPage: number;
-};
-
-export type CursorPagination = {
-  type: "cursor";
-  cursor?: string;
-  limit: number;
-};
-
-export type PaginationMode = OffsetPagination | CursorPagination;
+import type { PaginationMode } from "@/domain/types/pagination";
 
 // ============================================================
 // QUERY PARAMS

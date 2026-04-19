@@ -2,7 +2,7 @@ import type {
   FavoriteQueryResult,
   IFavoriteRepository,
 } from "@/application/repositories/IFavoriteRepository";
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export class MockFavoriteRepository implements IFavoriteRepository {
   private favorites: Map<string, Set<string>> = new Map(); // profileId -> Set of petPostIds

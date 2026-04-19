@@ -8,8 +8,8 @@
  * ✅ Follows Clean Architecture pattern
  */
 
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type { Report } from "@/application/repositories/IReportRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReportPresenter } from "./ReportPresenter";
 import { createClientReportPresenter } from "./ReportPresenterClientFactory";

@@ -15,7 +15,7 @@ import type {
   Report,
   ReportQueryResult,
 } from "@/application/repositories/IReportRepository";
-import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export class ApiReportRepository implements IReportRepository {
   private baseUrl = "/api/reports";
@@ -35,9 +35,7 @@ export class ApiReportRepository implements IReportRepository {
     return res.json();
   }
 
-  async getMyReports(
-    pagination?: PaginationMode,
-  ): Promise<ReportQueryResult> {
+  async getMyReports(pagination?: PaginationMode): Promise<ReportQueryResult> {
     const params = new URLSearchParams();
 
     if (pagination) {
