@@ -1,5 +1,7 @@
+import type { IDonationRepository } from "@/application/repositories/IDonationRepository";
 import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
 import { createPetMetadata } from "@/config/metadata";
+import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPost, PetPostOutcome } from "@/domain/entities/pet-post";
 import type { Metadata } from "next";
 
@@ -8,7 +10,10 @@ export interface PetDetailViewModel {
 }
 
 export class PetDetailPresenter {
-  constructor(private readonly repository: IPetPostRepository) {}
+  constructor(
+    private readonly repository: IPetPostRepository,
+    private readonly donationRepository: IDonationRepository,
+  ) {}
 
   async getViewModel(id: string): Promise<PetDetailViewModel | null> {
     try {
@@ -47,5 +52,12 @@ export class PetDetailPresenter {
 
   async close(id: string, outcome: PetPostOutcome): Promise<PetPost> {
     return this.repository.close(id, outcome);
+  }
+
+  /**
+   * Fetch funding goal for a pet post
+   */
+  async fetchFundingGoal(petPostId: string): Promise<PetFundingGoal | null> {
+    return this.donationRepository.getPetFundingGoal(petPostId);
   }
 }

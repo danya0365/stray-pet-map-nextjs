@@ -7,6 +7,7 @@
  * ✅ Follows Clean Architecture pattern
  */
 
+import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,8 @@ export interface PetDetailPresenterState {
   isAdoptionModalOpen: boolean;
   isCloseModalOpen: boolean;
   isClosingPost: boolean;
+  fundingGoal: PetFundingGoal | null;
+  isLoadingFundingGoal: boolean;
 }
 
 // ── Actions ──────────────────────────────────────────────
@@ -41,6 +44,7 @@ export interface PetDetailPresenterActions {
   closeCloseModal: () => void;
   handleAdoptClick: () => void;
   handleClosePost: (outcome: PetPostOutcome) => Promise<void>;
+  fetchFundingGoal: (petPostId: string) => Promise<void>;
 }
 
 // ── Hook ─────────────────────────────────────────────────
@@ -74,6 +78,8 @@ export function usePetDetailPresenter(
   const [isAdoptionModalOpen, setIsAdoptionModalOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [isClosingPost, setIsClosingPost] = useState(false);
+  const [fundingGoal, setFundingGoal] = useState<PetFundingGoal | null>(null);
+  const [isLoadingFundingGoal, setIsLoadingFundingGoal] = useState(false);
 
   // Computed states
   const isOwner = useMemo(() => {
@@ -169,6 +175,31 @@ export function usePetDetailPresenter(
     [viewModel?.post.id, isOwner, presenter, closeCloseModal, router],
   );
 
+  /**
+   * Fetch funding goal for a pet post
+   */
+  const fetchFundingGoal = useCallback(
+    async (petPostId: string) => {
+      setIsLoadingFundingGoal(true);
+      try {
+        const goal = await presenter.fetchFundingGoal(petPostId);
+        if (isMountedRef.current) {
+          setFundingGoal(goal);
+        }
+      } catch (error) {
+        console.error("Error fetching funding goal:", error);
+        if (isMountedRef.current) {
+          setFundingGoal(null);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsLoadingFundingGoal(false);
+        }
+      }
+    },
+    [presenter],
+  );
+
   // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true;
@@ -187,6 +218,8 @@ export function usePetDetailPresenter(
       isAdoptionModalOpen,
       isCloseModalOpen,
       isClosingPost,
+      fundingGoal,
+      isLoadingFundingGoal,
     },
     {
       loadPet,
@@ -197,6 +230,7 @@ export function usePetDetailPresenter(
       closeCloseModal,
       handleAdoptClick,
       handleClosePost,
+      fetchFundingGoal,
     },
   ];
 }

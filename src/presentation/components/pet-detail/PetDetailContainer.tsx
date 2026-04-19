@@ -1,10 +1,8 @@
 "use client";
 
-import type { PetFundingGoal } from "@/domain/entities/donation";
 import { useDonationContext } from "@/presentation/components/donation";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
 import { usePetDetailPresenter } from "@/presentation/presenters/pet-detail/usePetDetailPresenter";
-import { createBrowserClient } from "@supabase/ssr";
 import { useEffect, useState } from "react";
 import { PetDetailView } from "./PetDetailView";
 
@@ -50,6 +48,7 @@ export function PetDetailContainer({
     isAdoptionModalOpen,
     isCloseModalOpen,
     isClosingPost,
+    fundingGoal,
   } = state;
 
   const {
@@ -59,10 +58,8 @@ export function PetDetailContainer({
     closeCloseModal,
     handleAdoptClick,
     handleClosePost,
+    fetchFundingGoal,
   } = actions;
-
-  // Fetch funding goal
-  const [fundingGoal, setFundingGoal] = useState<PetFundingGoal | null>(null);
 
   // Report modal state
   const reportModal = useModalState(false);
@@ -70,45 +67,11 @@ export function PetDetailContainer({
   // Coming Soon modal state
   const comingSoonModal = useComingSoonModal();
 
+  // Fetch funding goal via presenter action
   useEffect(() => {
-    if (!viewModel) return;
-
-    const fetchFundingGoal = async () => {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
-
-      const { data } = await supabase
-        .from("pet_post_funding_goals")
-        .select("*")
-        .eq("pet_post_id", viewModel.post.id)
-        .eq("is_active", true)
-        .single();
-
-      if (data) {
-        setFundingGoal({
-          id: data.id,
-          petPostId: data.pet_post_id,
-          goalType: data.goal_type as
-            | "medical"
-            | "food"
-            | "shelter"
-            | "transport"
-            | "other",
-          targetAmount: Number(data.target_amount),
-          currentAmount: Number(data.current_amount),
-          description: data.description || undefined,
-          deadline: data.deadline ? new Date(data.deadline) : undefined,
-          isActive: data.is_active,
-          createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at),
-        });
-      }
-    };
-
-    fetchFundingGoal();
-  }, [viewModel]);
+    if (!viewModel?.post.id) return;
+    fetchFundingGoal(viewModel.post.id);
+  }, [viewModel?.post.id, fetchFundingGoal]);
 
   // Donation handling
   const { openForPet } = useDonationContext();

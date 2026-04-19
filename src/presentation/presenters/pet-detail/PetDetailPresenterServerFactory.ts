@@ -1,3 +1,4 @@
+import { SupabaseDonationRepository } from "@/infrastructure/repositories/supabase/SupabaseDonationRepository";
 import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
 import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { PetDetailPresenter } from "./PetDetailPresenter";
@@ -6,7 +7,8 @@ export class PetDetailPresenterServerFactory {
   static async create(): Promise<PetDetailPresenter> {
     const supabase = await createServerSupabaseClient();
     const repository = new SupabasePetPostRepository(supabase);
-    return new PetDetailPresenter(repository);
+    const donationRepository = new SupabaseDonationRepository(supabase);
+    return new PetDetailPresenter(repository, donationRepository);
   }
 }
 
