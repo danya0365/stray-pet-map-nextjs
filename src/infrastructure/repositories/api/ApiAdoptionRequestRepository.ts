@@ -11,14 +11,18 @@
 
 import type {
   AdoptionRequest,
+  AdoptionRequestQueryResult,
   CreateAdoptionRequestPayload,
   IAdoptionRequestRepository,
 } from "@/application/repositories/IAdoptionRequestRepository";
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 
 export class ApiAdoptionRequestRepository implements IAdoptionRequestRepository {
   private baseUrl = "/api/adoption-requests";
 
-  async create(payload: CreateAdoptionRequestPayload): Promise<AdoptionRequest> {
+  async create(
+    payload: CreateAdoptionRequestPayload,
+  ): Promise<AdoptionRequest> {
     const res = await fetch(this.baseUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -33,8 +37,26 @@ export class ApiAdoptionRequestRepository implements IAdoptionRequestRepository 
     return res.json();
   }
 
-  async getByPostId(petPostId: string): Promise<AdoptionRequest[]> {
-    const res = await fetch(`${this.baseUrl}?petPostId=${petPostId}`);
+  async getByPostId(
+    petPostId: string,
+    pagination: PaginationMode,
+  ): Promise<AdoptionRequestQueryResult> {
+    const params = new URLSearchParams({ petPostId });
+
+    // Add pagination params
+    if (pagination.type === "offset") {
+      params.set("paginationType", "offset");
+      params.set("page", pagination.page.toString());
+      params.set("perPage", pagination.perPage.toString());
+    } else {
+      params.set("paginationType", "cursor");
+      if (pagination.cursor) {
+        params.set("cursor", pagination.cursor);
+      }
+      params.set("limit", pagination.limit.toString());
+    }
+
+    const res = await fetch(`${this.baseUrl}?${params}`);
 
     if (!res.ok) {
       const error = await res.json();
@@ -44,8 +66,25 @@ export class ApiAdoptionRequestRepository implements IAdoptionRequestRepository 
     return res.json();
   }
 
-  async getMyRequests(): Promise<AdoptionRequest[]> {
-    const res = await fetch(`${this.baseUrl}/my-requests`);
+  async getMyRequests(
+    pagination: PaginationMode,
+  ): Promise<AdoptionRequestQueryResult> {
+    const params = new URLSearchParams();
+
+    // Add pagination params
+    if (pagination.type === "offset") {
+      params.set("paginationType", "offset");
+      params.set("page", pagination.page.toString());
+      params.set("perPage", pagination.perPage.toString());
+    } else {
+      params.set("paginationType", "cursor");
+      if (pagination.cursor) {
+        params.set("cursor", pagination.cursor);
+      }
+      params.set("limit", pagination.limit.toString());
+    }
+
+    const res = await fetch(`${this.baseUrl}/my-requests?${params}`);
 
     if (!res.ok) {
       const error = await res.json();
@@ -56,7 +95,9 @@ export class ApiAdoptionRequestRepository implements IAdoptionRequestRepository 
   }
 
   async hasRequested(petPostId: string): Promise<boolean> {
-    const res = await fetch(`${this.baseUrl}/has-requested?petPostId=${petPostId}`);
+    const res = await fetch(
+      `${this.baseUrl}/has-requested?petPostId=${petPostId}`,
+    );
 
     if (!res.ok) {
       const error = await res.json();

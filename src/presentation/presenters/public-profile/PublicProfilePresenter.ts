@@ -5,12 +5,15 @@
  * Following Clean Architecture pattern
  */
 
-import type { IPublicProfileRepository } from "@/application/repositories/IPublicProfileRepository";
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type {
+  IPublicProfileRepository,
+  ProfilePostsQueryResult,
+} from "@/application/repositories/IPublicProfileRepository";
 import type {
   PublicProfile,
   PublicProfileWithPosts,
 } from "@/domain/entities/public-profile";
-import type { PetPost } from "@/domain/entities/pet-post";
 
 export interface ProfileResult {
   success: boolean;
@@ -26,9 +29,7 @@ export interface ExistsResult {
 
 export interface PostsResult {
   success: boolean;
-  posts?: PetPost[];
-  total?: number;
-  hasMore?: boolean;
+  data?: ProfilePostsQueryResult;
   error?: string;
 }
 
@@ -87,8 +88,7 @@ export class PublicProfilePresenter {
    */
   async getPosts(
     profileId: string,
-    page = 1,
-    perPage = 10
+    pagination: PaginationMode,
   ): Promise<PostsResult> {
     try {
       // Verify profile exists first
@@ -97,12 +97,10 @@ export class PublicProfilePresenter {
         return { success: false, error: "Profile not found" };
       }
 
-      const result = await this.repository.getPosts(profileId, page, perPage);
+      const result = await this.repository.getPosts(profileId, pagination);
       return {
         success: true,
-        posts: result.posts,
-        total: result.total,
-        hasMore: result.hasMore,
+        data: result,
       };
     } catch (error) {
       console.error("Error fetching profile posts:", error);

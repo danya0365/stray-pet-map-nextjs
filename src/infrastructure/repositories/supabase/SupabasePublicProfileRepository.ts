@@ -1,4 +1,8 @@
-import type { IPublicProfileRepository } from "@/application/repositories/IPublicProfileRepository";
+import { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type {
+  IPublicProfileRepository,
+  ProfilePostsQueryResult,
+} from "@/application/repositories/IPublicProfileRepository";
 import {
   TIER_REQUIREMENTS,
   type Badge,
@@ -67,7 +71,7 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
   ): Promise<PublicProfileWithPosts | null> {
     const [profile, postsResult] = await Promise.all([
       this.getById(profileId),
-      this.getPosts(profileId, 1, 100), // ดึง posts แรก 100 โพสต์
+      this.getPosts(profileId, { type: "cursor", limit: 100 }), // ดึง posts แรก 100 โพสต์
     ]);
 
     if (!profile) return null;
@@ -80,21 +84,10 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
 
   async getPosts(
     profileId: string,
-    page: number = 1,
-    perPage: number = 10,
-  ): Promise<{
-    posts: PetPost[];
-    total: number;
-    hasMore: boolean;
-  }> {
-    const offset = (page - 1) * perPage;
-
-    // ดึงโพสต์ที่ public เท่านั้น (ไม่ดึง archived)
-    const {
-      data: posts,
-      error,
-      count,
-    } = await this.supabase
+    pagination: PaginationMode,
+  ): Promise<ProfilePostsQueryResult> {
+    // Base query
+    let query = this.supabase
       .from("pet_posts")
       .select(
         `*,
@@ -104,55 +97,133 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
       )
       .eq("profile_id", profileId)
       .eq("is_archived", false)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + perPage - 1);
+      .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching public posts:", error);
-      return { posts: [], total: 0, hasMore: false };
+    let posts: unknown[] = [];
+    let total = 0;
+    let hasMore = false;
+    let nextCursor: string | null = null;
+
+    if (pagination.type === "offset") {
+      // Offset pagination (for admin)
+      const { page, perPage } = pagination;
+      const offset = (page - 1) * perPage;
+
+      const { data, error, count } = await query.range(
+        offset,
+        offset + perPage - 1,
+      );
+
+      if (error) {
+        console.error("Error fetching public posts:", error);
+        return { posts: [], total: 0, hasMore: false, page, perPage };
+      }
+
+      posts = data || [];
+      total = count ?? 0;
+      hasMore = offset + posts.length < total;
+
+      return {
+        posts: this.mapPosts(posts),
+        total,
+        hasMore,
+        page,
+        perPage,
+      };
+    } else {
+      // Cursor pagination (for frontend load more)
+      const { cursor, limit = 20 } = pagination;
+
+      if (cursor) {
+        const decodedCursor = this.decodeCursor(cursor);
+        query = query.lt("created_at", decodedCursor);
+      }
+
+      // Fetch one extra to determine hasMore
+      const { data, error, count } = await query.limit(limit + 1);
+
+      if (error) {
+        console.error("Error fetching public posts:", error);
+        return { posts: [], total: 0, hasMore: false, nextCursor: null };
+      }
+
+      posts = (data || []).slice(0, limit);
+      total = count ?? 0;
+      hasMore = (data || []).length > limit;
+
+      if (hasMore && posts.length > 0) {
+        nextCursor = this.encodeCursor(
+          (posts[posts.length - 1] as { created_at: string }).created_at,
+        );
+      }
+
+      return {
+        posts: this.mapPosts(posts),
+        total,
+        hasMore,
+        nextCursor,
+      };
     }
+  }
 
-    const mappedPosts: PetPost[] = (posts || []).map((post) => ({
-      id: post.id,
-      profileId: post.profile_id,
-      petTypeId: post.pet_type_id,
-      petType: post.pet_types
+  // Helper: Map raw posts to PetPost entities
+  private mapPosts(posts: unknown[]): PetPost[] {
+    return posts.map((post) => ({
+      id: (post as { id: string }).id,
+      profileId: (post as { profile_id: string }).profile_id,
+      petTypeId: (post as { pet_type_id: string }).pet_type_id,
+      petType: (post as { pet_types: unknown }).pet_types
         ? {
-            id: (post.pet_types as { id: string }).id,
-            name: (post.pet_types as { name: string }).name,
-            slug: (post.pet_types as { slug: string }).slug,
-            icon: (post.pet_types as { icon: string | null }).icon ?? "Paw",
-            sortOrder: (post.pet_types as { sort_order: number }).sort_order,
-            isActive: (post.pet_types as { is_active: boolean }).is_active,
+            id: (post as { pet_types: { id: string } }).pet_types.id,
+            name: (post as { pet_types: { name: string } }).pet_types.name,
+            slug: (post as { pet_types: { slug: string } }).pet_types.slug,
+            icon:
+              (post as { pet_types: { icon: string | null } }).pet_types.icon ??
+              "Paw",
+            sortOrder: (post as { pet_types: { sort_order: number } }).pet_types
+              .sort_order,
+            isActive: (post as { pet_types: { is_active: boolean } }).pet_types
+              .is_active,
           }
         : undefined,
-      title: post.title ?? "",
-      description: post.description ?? "",
-      breed: post.breed ?? "",
-      color: post.color ?? "",
-      gender: post.gender as PetPost["gender"],
-      estimatedAge: post.estimated_age ?? "",
-      isVaccinated: post.is_vaccinated,
-      isNeutered: post.is_neutered,
-      latitude: post.latitude,
-      longitude: post.longitude,
-      address: post.address ?? "",
-      province: post.province ?? "",
-      purpose: post.purpose as PetPost["purpose"],
-      status: post.status as PetPost["status"],
-      outcome: post.outcome as PetPost["outcome"] | null,
-      resolvedAt: post.resolved_at,
-      thumbnailUrl: post.thumbnail_url ?? "",
-      isActive: post.is_active,
-      isArchived: post.is_archived,
-      createdAt: post.created_at ?? new Date().toISOString(),
-      updatedAt: post.updated_at ?? new Date().toISOString(),
+      title: (post as { title: string | null }).title ?? "",
+      description: (post as { description: string | null }).description ?? "",
+      breed: (post as { breed: string | null }).breed ?? "",
+      color: (post as { color: string | null }).color ?? "",
+      gender: (post as { gender: string }).gender as PetPost["gender"],
+      estimatedAge:
+        (post as { estimated_age: string | null }).estimated_age ?? "",
+      isVaccinated: (post as { is_vaccinated: boolean }).is_vaccinated,
+      isNeutered: (post as { is_neutered: boolean }).is_neutered,
+      latitude: (post as { latitude: number | null }).latitude ?? 0,
+      longitude: (post as { longitude: number | null }).longitude ?? 0,
+      address: (post as { address: string | null }).address ?? "",
+      province: (post as { province: string | null }).province ?? "",
+      purpose: (post as { purpose: string }).purpose as PetPost["purpose"],
+      status: (post as { status: string }).status as PetPost["status"],
+      outcome: (post as { outcome: string | null }).outcome as
+        | PetPost["outcome"]
+        | null,
+      resolvedAt: (post as { resolved_at: string | null }).resolved_at,
+      thumbnailUrl:
+        (post as { thumbnail_url: string | null }).thumbnail_url ?? "",
+      isActive: (post as { is_active: boolean }).is_active,
+      isArchived: (post as { is_archived: boolean }).is_archived,
+      createdAt:
+        (post as { created_at: string }).created_at ?? new Date().toISOString(),
+      updatedAt:
+        (post as { updated_at: string }).updated_at ?? new Date().toISOString(),
     }));
+  }
 
-    const total = count ?? 0;
-    const hasMore = offset + mappedPosts.length < total;
+  // Helper: Encode cursor
+  private encodeCursor(createdAt: string): string {
+    return Buffer.from(createdAt).toString("base64url");
+  }
 
-    return { posts: mappedPosts, total, hasMore };
+  // Helper: Decode cursor
+  private decodeCursor(cursor: string): string {
+    return Buffer.from(cursor, "base64url").toString("utf-8");
   }
 
   async getTopProfiles(limit: number = 10): Promise<PublicProfileSummary[]> {

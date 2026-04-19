@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 }
 
 // ============================================================
-// GET - Get adoption requests by post ID
+// GET - Get adoption requests by post ID (supports both cursor and offset pagination)
 // ============================================================
 
 export async function GET(request: Request) {
@@ -66,8 +66,24 @@ export async function GET(request: Request) {
       );
     }
 
+    const paginationType = searchParams.get("paginationType") || "cursor";
+
+    // Build pagination based on type
+    let pagination;
+    if (paginationType === "offset") {
+      // Offset pagination (for admin)
+      const page = parseInt(searchParams.get("page") || "1", 10);
+      const perPage = parseInt(searchParams.get("perPage") || "20", 10);
+      pagination = { type: "offset" as const, page, perPage };
+    } else {
+      // Cursor pagination (for frontend load more)
+      const cursor = searchParams.get("cursor") || undefined;
+      const limit = parseInt(searchParams.get("limit") || "20", 10);
+      pagination = { type: "cursor" as const, cursor, limit };
+    }
+
     const presenter = await createServerAdoptionRequestPresenter();
-    const result = await presenter.getByPostId(petPostId);
+    const result = await presenter.getByPostId(petPostId, pagination);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });

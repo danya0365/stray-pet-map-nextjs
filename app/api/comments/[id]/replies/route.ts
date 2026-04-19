@@ -14,7 +14,7 @@ const createReplySchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
-// GET /api/comments/[id]/replies - Get replies
+// GET /api/comments/[id]/replies - Get replies (supports both cursor and offset pagination)
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -23,13 +23,25 @@ export async function GET(
     const { id: parentCommentId } = await params;
     const { searchParams } = new URL(request.url);
 
-    const cursor = searchParams.get("cursor") || undefined;
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const paginationType = searchParams.get("paginationType") || "cursor";
+
+    // Build pagination based on type
+    let pagination;
+    if (paginationType === "offset") {
+      // Offset pagination (for admin)
+      const page = parseInt(searchParams.get("page") || "1", 10);
+      const perPage = parseInt(searchParams.get("perPage") || "10", 10);
+      pagination = { type: "offset" as const, page, perPage };
+    } else {
+      // Cursor pagination (for frontend load more)
+      const cursor = searchParams.get("cursor") || undefined;
+      const limit = parseInt(searchParams.get("limit") || "10", 10);
+      pagination = { type: "cursor" as const, cursor, limit };
+    }
 
     const presenter = await createServerCommentPresenter();
     const result = await presenter.getReplies(parentCommentId, {
-      cursor,
-      limit,
+      pagination,
     });
 
     if (!result.success) {
@@ -37,8 +49,10 @@ export async function GET(
     }
 
     return NextResponse.json({
-      replies: result.data,
-      count: result.data?.length || 0,
+      replies: result.data?.replies || [],
+      hasMore: result.data?.hasMore || false,
+      nextCursor: result.data?.nextCursor,
+      count: result.data?.replies?.length || 0,
     });
   } catch (error) {
     console.error("Error fetching replies:", error);

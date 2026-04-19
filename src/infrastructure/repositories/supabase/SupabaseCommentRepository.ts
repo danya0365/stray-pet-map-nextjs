@@ -4,13 +4,15 @@
  * Following Clean Architecture - Infrastructure layer
  */
 
-import type { ICommentRepository } from "@/application/repositories/ICommentRepository";
+import type {
+  CommentListOptions,
+  CommentReplyOptions,
+  ICommentRepository,
+} from "@/application/repositories/ICommentRepository";
 import type {
   Comment,
   CommentGamificationInfo,
-  CommentListOptions,
   CommentReactionType,
-  CommentReplyOptions,
   CommentThread,
   CreateCommentData,
   UpdateCommentData,
@@ -81,13 +83,9 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
   async findByPetPostId(
     petPostId: string,
-    options: CommentListOptions = {},
+    options: CommentListOptions,
   ): Promise<CommentThread> {
-    const {
-      cursor,
-      limit = COMMENT_CONSTRAINTS.PAGE_SIZE.TOP_LEVEL,
-      sortBy = "newest",
-    } = options;
+    const { pagination, sortBy = "newest" } = options;
 
     let query = this.supabase
       .from("comments")
@@ -111,31 +109,60 @@ export class SupabaseCommentRepository implements ICommentRepository {
       query = query.order("like_count", { ascending: false });
     }
 
-    // Pagination
-    if (cursor) {
-      const decodedCursor = this.decodeCursor(cursor);
-      if (sortBy === "newest") {
-        query = query.lt("created_at", decodedCursor);
-      } else if (sortBy === "oldest") {
-        query = query.gt("created_at", decodedCursor);
+    let comments: unknown[] = [];
+    let hasMore = false;
+    let nextCursor: string | undefined;
+    let total = 0;
+
+    // Handle pagination based on type
+    if (pagination.type === "offset") {
+      // Offset pagination (for admin)
+      const offset = (pagination.page - 1) * pagination.perPage;
+      query = query.range(offset, offset + pagination.perPage - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error fetching comments:", error);
+        throw new Error(`Failed to fetch comments: ${error.message}`);
       }
+
+      comments = data || [];
+      total = count || 0;
+      hasMore = offset + comments.length < total;
+    } else {
+      // Cursor pagination (for frontend load more)
+      const limit = pagination.limit ?? COMMENT_CONSTRAINTS.PAGE_SIZE.TOP_LEVEL;
+
+      if (pagination.cursor) {
+        const decodedCursor = this.decodeCursor(pagination.cursor);
+        if (sortBy === "newest") {
+          query = query.lt("created_at", decodedCursor);
+        } else if (sortBy === "oldest") {
+          query = query.gt("created_at", decodedCursor);
+        }
+      }
+
+      query = query.limit(limit + 1); // Fetch one extra to check hasMore
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error fetching comments:", error);
+        throw new Error(`Failed to fetch comments: ${error.message}`);
+      }
+
+      comments = (data || []).slice(0, limit);
+      hasMore = (data || []).length > limit;
+      nextCursor =
+        hasMore && comments.length > 0
+          ? this.encodeCursor(
+              (comments[comments.length - 1] as { created_at: string })
+                .created_at,
+            )
+          : undefined;
+      total = count || 0;
     }
-
-    query = query.limit(limit + 1); // Fetch one extra to check hasMore
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error("Error fetching comments:", error);
-      throw new Error(`Failed to fetch comments: ${error.message}`);
-    }
-
-    const comments = (data || []).slice(0, limit);
-    const hasMore = (data || []).length > limit;
-    const nextCursor =
-      hasMore && comments.length > 0
-        ? this.encodeCursor(comments[comments.length - 1].created_at)
-        : undefined;
 
     // Fetch reactions for these comments
     const commentIds = comments.map((c: unknown) => (c as { id: string }).id);
@@ -151,7 +178,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
     return {
       petPostId,
-      totalComments: count || 0,
+      totalComments: total,
       topLevelComments: mappedComments,
       hasMore,
       nextCursor,
@@ -223,9 +250,9 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
   async findReplies(
     parentCommentId: string,
-    options: CommentReplyOptions = {},
-  ): Promise<Comment[]> {
-    const { cursor, limit = COMMENT_CONSTRAINTS.PAGE_SIZE.REPLIES } = options;
+    options: CommentReplyOptions,
+  ): Promise<{ replies: Comment[]; hasMore: boolean; nextCursor?: string }> {
+    const { pagination } = options;
 
     let query = this.supabase
       .from("comments")
@@ -239,20 +266,58 @@ export class SupabaseCommentRepository implements ICommentRepository {
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
 
-    if (cursor) {
-      query = query.gt("created_at", this.decodeCursor(cursor));
+    let comments: unknown[] = [];
+    let hasMore = false;
+    let nextCursor: string | undefined;
+
+    if (pagination.type === "offset") {
+      // Offset pagination (for admin)
+      const offset = (pagination.page - 1) * pagination.perPage;
+      query = query.range(offset, offset + pagination.perPage - 1);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching replies:", error);
+        throw new Error(`Failed to fetch replies: ${error.message}`);
+      }
+
+      comments = data || [];
+    } else {
+      // Cursor pagination (for frontend load more)
+      const limit = pagination.limit ?? COMMENT_CONSTRAINTS.PAGE_SIZE.REPLIES;
+
+      if (pagination.cursor) {
+        query = query.gt("created_at", this.decodeCursor(pagination.cursor));
+      }
+
+      query = query.limit(limit + 1); // Fetch one extra to check hasMore
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching replies:", error);
+        throw new Error(`Failed to fetch replies: ${error.message}`);
+      }
+
+      comments = (data || []).slice(0, limit);
+      hasMore = (data || []).length > limit;
+      nextCursor =
+        hasMore && comments.length > 0
+          ? this.encodeCursor(
+              (comments[comments.length - 1] as { created_at: string })
+                .created_at,
+            )
+          : undefined;
     }
 
-    query = query.limit(limit);
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching replies:", error);
-      throw new Error(`Failed to fetch replies: ${error.message}`);
-    }
-
-    return (data || []).map(this.mapToComment);
+    return {
+      replies: comments.map((c) =>
+        this.mapToComment(c as Record<string, unknown>),
+      ),
+      hasMore,
+      nextCursor,
+    };
   }
 
   async getThreadTree(

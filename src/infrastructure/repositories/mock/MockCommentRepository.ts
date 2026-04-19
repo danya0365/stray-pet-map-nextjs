@@ -1,11 +1,14 @@
-import type { ICommentRepository } from "@/application/repositories/ICommentRepository";
+import type {
+  CommentListOptions,
+  CommentReplyOptions,
+  CommentReplyResult,
+  ICommentRepository,
+} from "@/application/repositories/ICommentRepository";
 import type {
   Comment,
   CommentAuthor,
   CommentGamificationInfo,
-  CommentListOptions,
   CommentReactionType,
-  CommentReplyOptions,
   CommentThread,
   CreateCommentData,
   UpdateCommentData,
@@ -315,12 +318,34 @@ export class MockCommentRepository implements ICommentRepository {
 
   async findByPetPostId(
     petPostId: string,
-    options: CommentListOptions = {},
+    options: CommentListOptions,
   ): Promise<CommentThread> {
     const allComments = this.comments.get(petPostId) || [];
-    const topLevelComments = allComments.filter(
+    let topLevelComments = allComments.filter(
       (c) => c.depth === 0 && !c.isDeleted,
     );
+
+    // Apply pagination
+    const { pagination } = options;
+    let hasMore = false;
+    let nextCursor: string | undefined;
+
+    if (pagination.type === "offset") {
+      const offset = (pagination.page - 1) * pagination.perPage;
+      const total = topLevelComments.length;
+      topLevelComments = topLevelComments.slice(
+        offset,
+        offset + pagination.perPage,
+      );
+      hasMore = offset + topLevelComments.length < total;
+    } else {
+      const limit = pagination.limit;
+      if (topLevelComments.length > limit) {
+        hasMore = true;
+        nextCursor = "mock-cursor-" + Date.now();
+      }
+      topLevelComments = topLevelComments.slice(0, limit);
+    }
 
     // Apply user interaction state
     const enrichedComments = topLevelComments.map((c) =>
@@ -331,7 +356,8 @@ export class MockCommentRepository implements ICommentRepository {
       petPostId,
       totalComments: allComments.filter((c) => !c.isDeleted).length,
       topLevelComments: enrichedComments,
-      hasMore: false,
+      hasMore,
+      nextCursor,
     };
   }
 
@@ -372,9 +398,9 @@ export class MockCommentRepository implements ICommentRepository {
 
   async findReplies(
     parentCommentId: string,
-    options: CommentReplyOptions = {},
-  ): Promise<Comment[]> {
-    const replies: Comment[] = [];
+    options: CommentReplyOptions,
+  ): Promise<CommentReplyResult> {
+    let replies: Comment[] = [];
     for (const comments of this.comments.values()) {
       for (const comment of this.flattenComments(comments)) {
         if (comment.parentCommentId === parentCommentId && !comment.isDeleted) {
@@ -382,7 +408,31 @@ export class MockCommentRepository implements ICommentRepository {
         }
       }
     }
-    return replies;
+
+    // Apply pagination
+    const { pagination } = options;
+    let hasMore = false;
+    let nextCursor: string | undefined;
+
+    if (pagination.type === "offset") {
+      const offset = (pagination.page - 1) * pagination.perPage;
+      const total = replies.length;
+      replies = replies.slice(offset, offset + pagination.perPage);
+      hasMore = offset + replies.length < total;
+    } else {
+      const limit = pagination.limit;
+      if (replies.length > limit) {
+        hasMore = true;
+        nextCursor = "mock-cursor-" + Date.now();
+      }
+      replies = replies.slice(0, limit);
+    }
+
+    return {
+      replies,
+      hasMore,
+      nextCursor,
+    };
   }
 
   async getThreadTree(
@@ -394,8 +444,10 @@ export class MockCommentRepository implements ICommentRepository {
 
     // Load replies up to maxDepth
     if (comment.depth < maxDepth) {
-      const replies = await this.findReplies(commentId);
-      comment.replies = replies;
+      const result = await this.findReplies(commentId, {
+        pagination: { type: "cursor", limit: 100 }, // Load all for tree view
+      });
+      comment.replies = result.replies;
     }
 
     return this.enrichWithUserState(comment, this.currentUserId);

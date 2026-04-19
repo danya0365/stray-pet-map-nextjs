@@ -12,6 +12,7 @@ import { createServerFavoritePresenter } from "@/presentation/presenters/favorit
 import { NextResponse } from "next/server";
 
 // GET /api/favorites — get favorite post IDs or full posts
+// Supports both offset and cursor pagination
 export async function GET(request: Request) {
   try {
     // Check auth via AuthPresenter
@@ -24,19 +25,35 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const expand = searchParams.get("expand") === "posts";
+    const paginationType = searchParams.get("paginationType") || "cursor";
+
+    // Build pagination based on type
+    let pagination;
+    if (paginationType === "offset") {
+      // Offset pagination (for admin)
+      const page = parseInt(searchParams.get("page") ?? "1", 10);
+      const perPage = parseInt(searchParams.get("perPage") ?? "20", 10);
+      pagination = { type: "offset" as const, page, perPage };
+    } else {
+      // Cursor pagination (for frontend load more)
+      const cursor = searchParams.get("cursor") || undefined;
+      const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+      pagination = { type: "cursor" as const, cursor, limit };
+    }
 
     const presenter = await createServerFavoritePresenter();
 
     if (!expand) {
-      const result = await presenter.getFavoritePostIds();
+      const result = await presenter.getFavoritePostIds(pagination);
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 500 });
       }
-      return NextResponse.json({ postIds: result.postIds });
+      // Return the FavoriteQueryResult directly
+      return NextResponse.json(result.data);
     }
 
     // Expand to full posts
-    const result = await presenter.getFavoritePosts();
+    const result = await presenter.getFavoritePosts(pagination);
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }

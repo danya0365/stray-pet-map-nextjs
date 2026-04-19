@@ -1,12 +1,15 @@
 "use client";
 
-import type { ICommentRepository } from "@/application/repositories/ICommentRepository";
+import type {
+  CommentListOptions,
+  CommentReplyOptions,
+  CommentReplyResult,
+  ICommentRepository,
+} from "@/application/repositories/ICommentRepository";
 import type {
   Comment,
   CommentGamificationInfo,
-  CommentListOptions,
   CommentReactionType,
-  CommentReplyOptions,
   CommentThread,
   CreateCommentData,
   UpdateCommentData,
@@ -60,11 +63,23 @@ export class ApiCommentRepository implements ICommentRepository {
 
   async findByPetPostId(
     petPostId: string,
-    options: CommentListOptions = {},
+    options: CommentListOptions,
   ): Promise<CommentThread> {
     const params = new URLSearchParams({ petPostId });
-    if (options.cursor) params.set("cursor", options.cursor);
-    if (options.limit) params.set("limit", options.limit.toString());
+
+    // Add pagination params
+    if (options.pagination.type === "offset") {
+      params.set("paginationType", "offset");
+      params.set("page", options.pagination.page.toString());
+      params.set("perPage", options.pagination.perPage.toString());
+    } else {
+      params.set("paginationType", "cursor");
+      if (options.pagination.cursor) {
+        params.set("cursor", options.pagination.cursor);
+      }
+      params.set("limit", options.pagination.limit.toString());
+    }
+
     if (options.sortBy) params.set("sortBy", options.sortBy);
 
     const res = await fetch(`${this.baseUrl}?${params}`);
@@ -117,21 +132,39 @@ export class ApiCommentRepository implements ICommentRepository {
 
   async findReplies(
     parentCommentId: string,
-    options: CommentReplyOptions = {},
-  ): Promise<Comment[]> {
-    // For now, fetch the parent comment with its replies included
-    const res = await fetch(`${this.baseUrl}/${parentCommentId}?depth=3`);
+    options: CommentReplyOptions,
+  ): Promise<CommentReplyResult> {
+    const params = new URLSearchParams();
+
+    // Add pagination params
+    if (options.pagination.type === "offset") {
+      params.set("paginationType", "offset");
+      params.set("page", options.pagination.page.toString());
+      params.set("perPage", options.pagination.perPage.toString());
+    } else {
+      params.set("paginationType", "cursor");
+      if (options.pagination.cursor) {
+        params.set("cursor", options.pagination.cursor);
+      }
+      params.set("limit", options.pagination.limit.toString());
+    }
+
+    const res = await fetch(
+      `${this.baseUrl}/${parentCommentId}/replies?${params}`,
+    );
 
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || "ไม่สามารถโหลดการตอบกลับได้");
     }
 
-    const comment = await res.json();
-    return comment.replies || [];
+    return res.json();
   }
 
-  async getThreadTree(commentId: string, maxDepth = 5): Promise<Comment | null> {
+  async getThreadTree(
+    commentId: string,
+    maxDepth = 5,
+  ): Promise<Comment | null> {
     const res = await fetch(`${this.baseUrl}/${commentId}?depth=${maxDepth}`);
 
     if (res.status === 404) return null;
@@ -240,7 +273,9 @@ export class ApiCommentRepository implements ICommentRepository {
   // ============================================================================
 
   async countByPetPostId(petPostId: string): Promise<number> {
-    const thread = await this.findByPetPostId(petPostId, { limit: 1 });
+    const thread = await this.findByPetPostId(petPostId, {
+      pagination: { type: "cursor", limit: 1 },
+    });
     return thread.totalComments || 0;
   }
 

@@ -1,20 +1,23 @@
 "use client";
 
 import type { Comment, CommentReactionType } from "@/domain/entities/comment";
+import { ChevronDown, Loader2, MessageSquare } from "lucide-react";
 import { CommentItem } from "./CommentItem";
-import { MessageSquare } from "lucide-react";
 
 interface CommentListProps {
   comments: Comment[];
   totalCount: number;
   currentUserId?: string;
   loading?: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
   onReply: (parentId: string, content: string) => void;
   onEdit: (commentId: string, content: string) => void;
   onDelete: (commentId: string) => void;
   onToggleLike: (commentId: string) => void;
   onAddReaction: (commentId: string, type: CommentReactionType) => void;
   onRemoveReaction: (commentId: string) => void;
+  onLoadMore?: () => void;
   isSubmitting?: boolean;
 }
 
@@ -23,12 +26,15 @@ export function CommentList({
   totalCount,
   currentUserId,
   loading = false,
+  loadingMore = false,
+  hasMore = false,
   onReply,
   onEdit,
   onDelete,
   onToggleLike,
   onAddReaction,
   onRemoveReaction,
+  onLoadMore,
   isSubmitting = false,
 }: CommentListProps) {
   if (loading) {
@@ -54,9 +60,7 @@ export function CommentList({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
           <MessageSquare className="h-6 w-6 text-foreground/40" />
         </div>
-        <p className="text-sm text-foreground/60">
-          ยังไม่มีความคิดเห็น
-        </p>
+        <p className="text-sm text-foreground/60">ยังไม่มีความคิดเห็น</p>
         <p className="mt-1 text-xs text-foreground/40">
           เป็นคนแรกที่แสดงความคิดเห็น!
         </p>
@@ -89,6 +93,29 @@ export function CommentList({
           />
         ))}
       </div>
+
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="pt-4">
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>กำลังโหลด...</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                <span>โหลดเพิ่ม ({totalCount - comments.length} รายการ)</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,10 +1,13 @@
-import type { IPublicProfileRepository } from "@/application/repositories/IPublicProfileRepository";
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
+import type {
+  IPublicProfileRepository,
+  ProfilePostsQueryResult,
+} from "@/application/repositories/IPublicProfileRepository";
 import type {
   PublicProfile,
-  PublicProfileWithPosts,
   PublicProfileSummary,
+  PublicProfileWithPosts,
 } from "@/domain/entities/public-profile";
-import type { PetPost } from "@/domain/entities/pet-post";
 
 /**
  * ApiPublicProfileRepository
@@ -52,15 +55,24 @@ export class ApiPublicProfileRepository implements IPublicProfileRepository {
 
   async getPosts(
     profileId: string,
-    page: number = 1,
-    perPage: number = 10,
-  ): Promise<{
-    posts: PetPost[];
-    total: number;
-    hasMore: boolean;
-  }> {
+    pagination: PaginationMode,
+  ): Promise<ProfilePostsQueryResult> {
+    const params = new URLSearchParams();
+
+    if (pagination.type === "offset") {
+      params.set("paginationType", "offset");
+      params.set("page", String(pagination.page));
+      params.set("perPage", String(pagination.perPage));
+    } else {
+      params.set("paginationType", "cursor");
+      if (pagination.cursor) {
+        params.set("cursor", pagination.cursor);
+      }
+      params.set("limit", String(pagination.limit ?? 20));
+    }
+
     const res = await fetch(
-      `/api/profiles/${profileId}/posts?page=${page}&perPage=${perPage}`,
+      `/api/profiles/${profileId}/posts?${params.toString()}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -72,11 +84,7 @@ export class ApiPublicProfileRepository implements IPublicProfileRepository {
     }
 
     const data = await res.json();
-    return {
-      posts: data.posts || [],
-      total: data.total || 0,
-      hasMore: data.hasMore || false,
-    };
+    return data as ProfilePostsQueryResult;
   }
 
   async getTopProfiles(limit: number = 10): Promise<PublicProfileSummary[]> {

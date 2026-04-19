@@ -7,9 +7,11 @@
 
 import type {
   AdoptionRequest,
+  AdoptionRequestQueryResult,
   CreateAdoptionRequestPayload,
   IAdoptionRequestRepository,
 } from "@/application/repositories/IAdoptionRequestRepository";
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 
 export interface CreateResult {
   success: boolean;
@@ -20,7 +22,7 @@ export interface CreateResult {
 
 export interface RequestsResult {
   success: boolean;
-  data?: AdoptionRequest[];
+  data?: AdoptionRequestQueryResult;
   error?: string;
 }
 
@@ -54,14 +56,15 @@ export class AdoptionRequestPresenter {
       console.error("Error creating adoption request:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Failed to create request";
-      
+
       // Check for duplicate request
-      const isDuplicate = errorMessage.includes("ส่งคำขอ") && errorMessage.includes("แล้ว");
-      
-      return { 
-        success: false, 
+      const isDuplicate =
+        errorMessage.includes("ส่งคำขอ") && errorMessage.includes("แล้ว");
+
+      return {
+        success: false,
         error: errorMessage,
-        isDuplicate 
+        isDuplicate,
       };
     }
   }
@@ -74,9 +77,12 @@ export class AdoptionRequestPresenter {
    * Get adoption requests by post ID
    * Used by /api/adoption-requests GET route
    */
-  async getByPostId(petPostId: string): Promise<RequestsResult> {
+  async getByPostId(
+    petPostId: string,
+    pagination: PaginationMode,
+  ): Promise<RequestsResult> {
     try {
-      const requests = await this.repository.getByPostId(petPostId);
+      const requests = await this.repository.getByPostId(petPostId, pagination);
       return { success: true, data: requests };
     } catch (error) {
       console.error("Error getting adoption requests:", error);
@@ -90,9 +96,9 @@ export class AdoptionRequestPresenter {
    * Get current user's adoption requests
    * Used by /api/adoption-requests/my-requests GET route
    */
-  async getMyRequests(): Promise<RequestsResult> {
+  async getMyRequests(pagination: PaginationMode): Promise<RequestsResult> {
     try {
-      const requests = await this.repository.getMyRequests();
+      const requests = await this.repository.getMyRequests(pagination);
       return { success: true, data: requests };
     } catch (error) {
       console.error("Error getting my adoption requests:", error);

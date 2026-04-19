@@ -7,9 +7,9 @@
  * ✅ Follows Clean Architecture pattern
  */
 
+import type { CommentListOptions } from "@/application/repositories/ICommentRepository";
 import type {
   Comment,
-  CommentListOptions,
   CommentReactionType,
   CreateCommentData,
   UpdateCommentData,
@@ -28,6 +28,7 @@ export interface CommentThreadState {
   totalCount: number;
   hasMore: boolean;
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
 }
 
@@ -50,6 +51,7 @@ export interface CommentPresenterActions {
     petPostId: string,
     options?: CommentListOptions,
   ) => Promise<void>;
+  loadMore: () => Promise<void>;
   refreshComments: () => Promise<void>;
   createComment: (content: string) => Promise<void>;
   createReply: (parentCommentId: string, content: string) => Promise<void>;
@@ -94,7 +96,9 @@ export function useCommentPresenter(
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [totalCount, setTotalCount] = useState(initialComments.length);
   const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [threadError, setThreadError] = useState<string | null>(null);
 
   // Form state
@@ -119,22 +123,27 @@ export function useCommentPresenter(
   // ============================================================================
 
   const loadComments = useCallback(
-    async (targetPetPostId: string, options: CommentListOptions = {}) => {
+    async (targetPetPostId: string, options?: CommentListOptions) => {
       setLoading(true);
       setThreadError(null);
 
       try {
-        const result = await presenter.getThread(targetPetPostId, {
-          limit: 20,
+        const paginationOptions: CommentListOptions = options ?? {
+          pagination: { type: "cursor", limit: 20 },
           sortBy: "newest",
-          ...options,
-        });
+        };
+
+        const result = await presenter.getThread(
+          targetPetPostId,
+          paginationOptions,
+        );
 
         if (isMountedRef.current) {
           if (result.success && result.data) {
             setComments(result.data.topLevelComments);
             setTotalCount(result.data.totalComments);
             setHasMore(result.data.hasMore);
+            setNextCursor(result.data.nextCursor);
           } else {
             setThreadError(result.error || "Failed to load comments");
           }
@@ -153,6 +162,34 @@ export function useCommentPresenter(
     },
     [presenter],
   );
+
+  // Load more comments using cursor pagination
+  const loadMore = useCallback(async () => {
+    if (!hasMore || !nextCursor || loadingMore) return;
+
+    setLoadingMore(true);
+
+    try {
+      const result = await presenter.getThread(currentPetPostIdRef.current, {
+        pagination: { type: "cursor", cursor: nextCursor, limit: 20 },
+        sortBy: "newest",
+      });
+
+      if (isMountedRef.current) {
+        if (result.success && result.data) {
+          setComments((prev) => [...prev, ...result.data!.topLevelComments]);
+          setHasMore(result.data.hasMore);
+          setNextCursor(result.data.nextCursor);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading more comments:", err);
+    } finally {
+      if (isMountedRef.current) {
+        setLoadingMore(false);
+      }
+    }
+  }, [hasMore, nextCursor, loadingMore, presenter]);
 
   const refreshComments = useCallback(async () => {
     await loadComments(currentPetPostIdRef.current);
@@ -647,6 +684,7 @@ export function useCommentPresenter(
         totalCount,
         hasMore,
         loading,
+        loadingMore,
         error: threadError,
       },
       form: {
@@ -660,6 +698,7 @@ export function useCommentPresenter(
     },
     {
       loadComments,
+      loadMore,
       refreshComments,
       createComment,
       createReply,

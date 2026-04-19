@@ -54,7 +54,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   const [profile, postsResult] = await Promise.all([
     repo.getById(profileId),
-    repo.getPosts(profileId, 1, 12),
+    repo.getPosts(profileId, { type: "offset", page: 1, perPage: 12 }),
   ]);
 
   if (!profile) {

@@ -5,10 +5,12 @@
  * Following Clean Architecture pattern
  */
 
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type {
   CreateReportParams,
   IReportRepository,
   Report,
+  ReportQueryResult,
 } from "@/application/repositories/IReportRepository";
 
 export interface CreateReportResult {
@@ -20,7 +22,7 @@ export interface CreateReportResult {
 
 export interface GetReportsResult {
   success: boolean;
-  data?: Report[];
+  data?: ReportQueryResult;
   error?: string;
 }
 
@@ -76,10 +78,10 @@ export class ReportPresenter {
    * Get current user's reports
    * Used by /api/reports GET route
    */
-  async getMyReports(): Promise<GetReportsResult> {
+  async getMyReports(pagination?: PaginationMode): Promise<GetReportsResult> {
     try {
-      const reports = await this.repository.getMyReports();
-      return { success: true, data: reports };
+      const result = await this.repository.getMyReports(pagination);
+      return { success: true, data: result };
     } catch (error) {
       console.error("Error getting reports:", error);
       const errorMessage =

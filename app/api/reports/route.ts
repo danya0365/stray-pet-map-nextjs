@@ -70,7 +70,8 @@ export async function POST(request: Request) {
 }
 
 // GET /api/reports - Get current user's reports
-export async function GET() {
+// Supports both offset and cursor pagination
+export async function GET(request: Request) {
   try {
     // Check auth via AuthPresenter
     const authPresenter = await createServerAuthPresenter();
@@ -80,14 +81,32 @@ export async function GET() {
       return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const paginationType = searchParams.get("paginationType") || "cursor";
+
+    // Build pagination based on type
+    let pagination;
+    if (paginationType === "offset") {
+      // Offset pagination (for admin)
+      const page = parseInt(searchParams.get("page") ?? "1", 10);
+      const perPage = parseInt(searchParams.get("perPage") ?? "20", 10);
+      pagination = { type: "offset" as const, page, perPage };
+    } else {
+      // Cursor pagination (for frontend load more)
+      const cursor = searchParams.get("cursor") || undefined;
+      const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+      pagination = { type: "cursor" as const, cursor, limit };
+    }
+
     const presenter = await createServerReportPresenter();
-    const result = await presenter.getMyReports();
+    const result = await presenter.getMyReports(pagination);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    return NextResponse.json({ reports: result.data });
+    // Return the ReportQueryResult directly
+    return NextResponse.json(result.data);
   } catch (error) {
     console.error("Error fetching reports:", error);
     const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";

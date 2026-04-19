@@ -3,13 +3,15 @@
  * Presentation layer for comment operations following Clean Architecture
  */
 
-import type { ICommentRepository } from "@/application/repositories/ICommentRepository";
+import type {
+  CommentListOptions,
+  CommentReplyOptions,
+  ICommentRepository,
+} from "@/application/repositories/ICommentRepository";
 import type {
   Comment,
   CommentGamificationInfo,
-  CommentListOptions,
   CommentReactionType,
-  CommentReplyOptions,
   CommentThread,
   CreateCommentData,
   UpdateCommentData,
@@ -91,7 +93,7 @@ export class CommentPresenter {
 
   async getThread(
     petPostId: string,
-    options: CommentListOptions = {},
+    options: CommentListOptions,
   ): Promise<CommentPresenterResult<CommentThread>> {
     try {
       const thread = await this.repository.findByPetPostId(petPostId, options);
@@ -178,14 +180,20 @@ export class CommentPresenter {
 
   async getReplies(
     parentCommentId: string,
-    options: CommentReplyOptions = {},
-  ): Promise<CommentPresenterResult<Comment[]>> {
+    options: CommentReplyOptions,
+  ): Promise<
+    CommentPresenterResult<{
+      replies: Comment[];
+      hasMore: boolean;
+      nextCursor?: string;
+    }>
+  > {
     try {
-      const replies = await this.repository.findReplies(
+      const result = await this.repository.findReplies(
         parentCommentId,
         options,
       );
-      return { success: true, data: replies };
+      return { success: true, data: result };
     } catch (error) {
       console.error("Error fetching replies:", error);
       return {

@@ -1,9 +1,7 @@
 import type {
   Comment,
   CommentGamificationInfo,
-  CommentListOptions,
   CommentReactionType,
-  CommentReplyOptions,
   CommentThread,
   CreateCommentData,
   UpdateCommentData,
@@ -13,6 +11,30 @@ import type {
   CommentLeaderboardPeriod,
   UserCommentStats,
 } from "@/domain/entities/comment-stats";
+import type { PaginationMode } from "./IPetPostRepository";
+
+// ============================================================================
+// QUERY OPTIONS
+// ============================================================================
+
+export interface CommentListBaseOptions {
+  depth?: number;
+  sortBy?: "newest" | "oldest" | "popular";
+}
+
+export type CommentListOptions = CommentListBaseOptions & {
+  pagination: PaginationMode;
+};
+
+export type CommentReplyOptions = {
+  pagination: PaginationMode;
+};
+
+export interface CommentReplyResult {
+  replies: Comment[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
 
 /**
  * ICommentRepository
@@ -71,12 +93,12 @@ export interface ICommentRepository {
 
   /**
    * Find replies to a specific comment
-   * @returns Paginated list of reply comments
+   * @returns Paginated list of reply comments with pagination info
    */
   findReplies(
     parentCommentId: string,
     options: CommentReplyOptions,
-  ): Promise<Comment[]>;
+  ): Promise<CommentReplyResult>;
 
   /**
    * Get the full thread tree for a comment (all nested replies)

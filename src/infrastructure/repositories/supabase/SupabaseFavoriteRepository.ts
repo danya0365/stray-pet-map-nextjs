@@ -1,6 +1,10 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  FavoriteQueryResult,
+  IFavoriteRepository,
+} from "@/application/repositories/IFavoriteRepository";
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 import type { Database } from "@/domain/types/supabase";
-import type { IFavoriteRepository } from "@/application/repositories/IFavoriteRepository";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export class SupabaseFavoriteRepository implements IFavoriteRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
@@ -25,16 +29,95 @@ export class SupabaseFavoriteRepository implements IFavoriteRepository {
     return (count ?? 0) > 0;
   }
 
-  async getFavoritePostIds(): Promise<string[]> {
+  async getFavoritePostIds(
+    pagination?: PaginationMode,
+  ): Promise<FavoriteQueryResult> {
     const profileId = await this.getProfileId();
 
-    const { data } = await this.supabase
+    // Base query
+    let query = this.supabase
       .from("favorites")
-      .select("pet_post_id")
+      .select("pet_post_id, created_at", { count: "exact" })
       .eq("profile_id", profileId)
       .order("created_at", { ascending: false });
 
-    return (data ?? []).map((f) => f.pet_post_id);
+    const isPaginated = pagination && pagination.type;
+
+    if (isPaginated && pagination.type === "offset") {
+      // Offset pagination (for admin)
+      const { page, perPage } = pagination;
+      const offset = (page - 1) * perPage;
+
+      const { data, error, count } = await query.range(
+        offset,
+        offset + perPage - 1,
+      );
+
+      if (error) {
+        console.error("Error fetching favorites:", error);
+        return { postIds: [], total: 0, hasMore: false, page, perPage };
+      }
+
+      const postIds = (data ?? []).map((f) => f.pet_post_id);
+      const total = count ?? 0;
+      const hasMore = offset + postIds.length < total;
+
+      return { postIds, total, hasMore, page, perPage };
+    } else if (isPaginated && pagination.type === "cursor") {
+      // Cursor pagination (for frontend load more)
+      const { cursor, limit = 20 } = pagination;
+
+      if (cursor) {
+        const decodedCursor = this.decodeCursor(cursor);
+        query = query.lt("created_at", decodedCursor);
+      }
+
+      // Fetch one extra to determine hasMore
+      const { data, error, count } = await query.limit(limit + 1);
+
+      if (error) {
+        console.error("Error fetching favorites:", error);
+        return { postIds: [], total: 0, hasMore: false, nextCursor: null };
+      }
+
+      const slicedData = (data ?? []).slice(0, limit);
+      const postIds = slicedData.map((f) => f.pet_post_id);
+      const total = count ?? 0;
+      const hasMore = (data ?? []).length > limit;
+
+      let nextCursor: string | null = null;
+      if (hasMore && slicedData.length > 0) {
+        const lastCreatedAt = slicedData[slicedData.length - 1].created_at;
+        if (lastCreatedAt) {
+          nextCursor = this.encodeCursor(lastCreatedAt);
+        }
+      }
+
+      return { postIds, total, hasMore, nextCursor };
+    } else {
+      // No pagination - fetch all (backward compatibility)
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error fetching favorites:", error);
+        return { postIds: [], total: 0, hasMore: false };
+      }
+
+      const postIds = (data ?? []).map((f) => f.pet_post_id);
+      const total = count ?? 0;
+
+      return { postIds, total, hasMore: false };
+    }
+  }
+
+  // Helper: Encode cursor
+  private encodeCursor(createdAt: string): string {
+    return Buffer.from(createdAt).toString("base64url");
+  }
+
+  // Helper: Decode cursor
+  private decodeCursor(cursor: string): string {
+    return Buffer.from(cursor, "base64url").toString("utf-8");
   }
 
   async addFavorite(petPostId: string): Promise<void> {

@@ -1,4 +1,8 @@
-import type { IFavoriteRepository } from "@/application/repositories/IFavoriteRepository";
+import type {
+  FavoriteQueryResult,
+  IFavoriteRepository,
+} from "@/application/repositories/IFavoriteRepository";
+import type { PaginationMode } from "@/application/repositories/IPetPostRepository";
 
 export class MockFavoriteRepository implements IFavoriteRepository {
   private favorites: Map<string, Set<string>> = new Map(); // profileId -> Set of petPostIds
@@ -18,10 +22,43 @@ export class MockFavoriteRepository implements IFavoriteRepository {
     return userFavorites.has(petPostId);
   }
 
-  async getFavoritePostIds(): Promise<string[]> {
+  async getFavoritePostIds(
+    pagination?: PaginationMode,
+  ): Promise<FavoriteQueryResult> {
     const profileId = this.getCurrentProfileId();
     const userFavorites = this.favorites.get(profileId) || new Set();
-    return Array.from(userFavorites);
+    const allPostIds = Array.from(userFavorites);
+
+    // Simple mock pagination
+    if (pagination?.type === "offset") {
+      const { page, perPage } = pagination;
+      const offset = (page - 1) * perPage;
+      const paginatedIds = allPostIds.slice(offset, offset + perPage);
+      const hasMore = offset + paginatedIds.length < allPostIds.length;
+
+      return {
+        postIds: paginatedIds,
+        total: allPostIds.length,
+        hasMore,
+        page,
+        perPage,
+      };
+    } else if (pagination?.type === "cursor") {
+      // Mock cursor pagination - just return all for simplicity
+      return {
+        postIds: allPostIds,
+        total: allPostIds.length,
+        hasMore: false,
+        nextCursor: null,
+      };
+    }
+
+    // No pagination - return all
+    return {
+      postIds: allPostIds,
+      total: allPostIds.length,
+      hasMore: false,
+    };
   }
 
   async addFavorite(petPostId: string): Promise<void> {

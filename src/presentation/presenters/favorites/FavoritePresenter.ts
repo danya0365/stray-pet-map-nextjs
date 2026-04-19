@@ -32,9 +32,9 @@ export class FavoritePresenter {
 
   async getViewModel(): Promise<FavoriteViewModel> {
     try {
-      const favoriteIds = await this.favoriteRepository.getFavoritePostIds();
+      const favoriteResult = await this.favoriteRepository.getFavoritePostIds();
 
-      if (favoriteIds.length === 0) {
+      if (favoriteResult.postIds.length === 0) {
         return {
           favoriteIds: [],
           posts: [],
@@ -44,7 +44,7 @@ export class FavoritePresenter {
 
       // Fetch full posts
       const posts = await Promise.all(
-        favoriteIds.map((id) => this.petPostRepository.getById(id)),
+        favoriteResult.postIds.map((id) => this.petPostRepository.getById(id)),
       );
 
       const validPosts = posts.filter((p): p is PetPost => p !== null);
@@ -57,7 +57,7 @@ export class FavoritePresenter {
       );
 
       return {
-        favoriteIds,
+        favoriteIds: favoriteResult.postIds,
         posts: validPosts,
         isFavoritedMap,
       };
@@ -91,7 +91,8 @@ export class FavoritePresenter {
 
   async getFavoritePostIds(): Promise<string[]> {
     try {
-      return await this.favoriteRepository.getFavoritePostIds();
+      const result = await this.favoriteRepository.getFavoritePostIds();
+      return result.postIds;
     } catch (error) {
       console.error("Error getting favorite IDs:", error);
       throw error;

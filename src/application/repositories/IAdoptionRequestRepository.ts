@@ -1,3 +1,5 @@
+import type { PaginationMode } from "./IPetPostRepository";
+
 export type AdoptionRequestStatus = "pending" | "approved" | "rejected";
 
 export interface AdoptionRequest {
@@ -18,9 +20,39 @@ export interface CreateAdoptionRequestPayload {
   contactLineId?: string;
 }
 
+// ============================================================================
+// QUERY RESULTS
+// ============================================================================
+
+export interface AdoptionRequestQueryResult {
+  data: AdoptionRequest[];
+  total: number;
+  page?: number;
+  perPage?: number;
+  nextCursor?: string | null;
+  hasMore: boolean;
+}
+
 export interface IAdoptionRequestRepository {
   create(payload: CreateAdoptionRequestPayload): Promise<AdoptionRequest>;
-  getByPostId(petPostId: string): Promise<AdoptionRequest[]>;
-  getMyRequests(): Promise<AdoptionRequest[]>;
+
+  /**
+   * ดึงคำขอรับเลี้ยงตาม petPostId (รองรับทั้ง offset และ cursor pagination)
+   * @param petPostId - UUID ของโพสต์
+   * @param pagination - รูปแบบ pagination (offset สำหรับ admin, cursor สำหรับ frontend)
+   */
+  getByPostId(
+    petPostId: string,
+    pagination: PaginationMode,
+  ): Promise<AdoptionRequestQueryResult>;
+
+  /**
+   * ดึงคำขอรับเลี้ยงของผู้ใช้ปัจจุบัน (รองรับทั้ง offset และ cursor pagination)
+   * @param pagination - รูปแบบ pagination (offset สำหรับ admin, cursor สำหรับ frontend)
+   */
+  getMyRequests(
+    pagination: PaginationMode,
+  ): Promise<AdoptionRequestQueryResult>;
+
   hasRequested(petPostId: string): Promise<boolean>;
 }
