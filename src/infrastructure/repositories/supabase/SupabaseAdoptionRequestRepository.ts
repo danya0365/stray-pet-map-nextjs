@@ -8,6 +8,10 @@ import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Type from Supabase schema
+type AdoptionRequestRow =
+  Database["public"]["Tables"]["adoption_requests"]["Row"];
+
 export class SupabaseAdoptionRequestRepository implements IAdoptionRequestRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
 
@@ -55,7 +59,7 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
-    let data: unknown[] = [];
+    let data: AdoptionRequestRow[] = [];
     let total = 0;
     let hasMore = false;
     let nextCursor: string | undefined;
@@ -68,7 +72,7 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       query = query.range(offset, offset + pagination.perPage - 1);
 
       const result = await query;
-      data = result.data ?? [];
+      data = (result.data as AdoptionRequestRow[]) ?? [];
       total = result.count ?? 0;
       hasMore = offset + data.length < total;
       page = pagination.page;
@@ -84,14 +88,12 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       query = query.limit(limit + 1); // Fetch one extra to check hasMore
 
       const result = await query;
-      const allData = result.data ?? [];
+      const allData = (result.data as AdoptionRequestRow[]) ?? [];
       data = allData.slice(0, limit);
       hasMore = allData.length > limit;
       nextCursor =
-        hasMore && data.length > 0
-          ? this.encodeCursor(
-              (data[data.length - 1] as { created_at: string }).created_at,
-            )
+        hasMore && data.length > 0 && data[data.length - 1].created_at
+          ? this.encodeCursor(data[data.length - 1].created_at!)
           : undefined;
       total = result.count ?? 0;
     }
@@ -118,7 +120,7 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
-    let data: unknown[] = [];
+    let data: AdoptionRequestRow[] = [];
     let total = 0;
     let hasMore = false;
     let nextCursor: string | undefined;
@@ -131,7 +133,7 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       query = query.range(offset, offset + pagination.perPage - 1);
 
       const result = await query;
-      data = result.data ?? [];
+      data = (result.data as AdoptionRequestRow[]) ?? [];
       total = result.count ?? 0;
       hasMore = offset + data.length < total;
       page = pagination.page;
@@ -147,14 +149,12 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       query = query.limit(limit + 1); // Fetch one extra to check hasMore
 
       const result = await query;
-      const allData = result.data ?? [];
+      const allData = (result.data as AdoptionRequestRow[]) ?? [];
       data = allData.slice(0, limit);
       hasMore = allData.length > limit;
       nextCursor =
-        hasMore && data.length > 0
-          ? this.encodeCursor(
-              (data[data.length - 1] as { created_at: string }).created_at,
-            )
+        hasMore && data.length > 0 && data[data.length - 1].created_at
+          ? this.encodeCursor(data[data.length - 1].created_at!)
           : undefined;
       total = result.count ?? 0;
     }
@@ -190,17 +190,16 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
     return (count ?? 0) > 0;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapToDomain(row: any): AdoptionRequest {
+  private mapToDomain(row: AdoptionRequestRow): AdoptionRequest {
     return {
       id: row.id,
       petPostId: row.pet_post_id,
       requesterProfileId: row.requester_profile_id,
-      message: row.message,
-      contactPhone: row.contact_phone,
-      contactLineId: row.contact_line_id,
-      status: row.status,
-      createdAt: row.created_at,
+      message: row.message ?? "",
+      contactPhone: row.contact_phone ?? "",
+      contactLineId: row.contact_line_id ?? "",
+      status: row.status as "pending" | "approved" | "rejected",
+      createdAt: row.created_at ?? new Date().toISOString(),
     };
   }
 }
