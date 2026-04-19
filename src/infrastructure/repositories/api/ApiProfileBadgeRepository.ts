@@ -80,4 +80,18 @@ export class ApiProfileBadgeRepository implements IProfileBadgeRepository {
     const data = await res.json();
     return data.progress || [];
   }
+
+  async checkAndAwardBadges(): Promise<
+    { badge_name: string; badge_tier: string }[]
+  > {
+    const res = await fetch("/api/badges/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      throw new Error("Failed to check and award badges");
+    }
+    const data = await res.json();
+    return data.newlyAwarded || [];
+  }
 }
