@@ -26,9 +26,14 @@ type QueryBuilder = any;
 
 type PetPostRow = Database["public"]["Tables"]["pet_posts"]["Row"];
 type PetTypeRow = Database["public"]["Tables"]["pet_types"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 type PetPostWithType = PetPostRow & {
   pet_types: PetTypeRow | null;
+};
+
+type PetPostWithOwner = PetPostWithType & {
+  profiles: Pick<ProfileRow, "id" | "full_name" | "avatar_url"> | null;
 };
 
 // ── Repository ─────────────────────────────────────────────
@@ -473,15 +478,7 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     };
   }
 
-  private mapToDomainWithOwner(
-    row: PetPostWithType & {
-      profiles: {
-        id: string;
-        full_name: string | null;
-        avatar_url: string | null;
-      } | null;
-    },
-  ): PetPost {
+  private mapToDomainWithOwner(row: PetPostWithOwner): PetPost {
     const post = this.mapToDomain(row);
 
     // Add owner info if profiles data exists

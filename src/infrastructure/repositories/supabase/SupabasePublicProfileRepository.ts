@@ -19,6 +19,18 @@ import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Types from Supabase schema
+type PetPostRow = Database["public"]["Tables"]["pet_posts"]["Row"];
+type PetTypeRow = Database["public"]["Tables"]["pet_types"]["Row"];
+type ProfilePostStatsRow =
+  Database["public"]["Views"]["profile_post_stats"]["Row"];
+type ProfileBadgeRow = Database["public"]["Tables"]["profile_badges"]["Row"];
+
+// Pet post with joined pet_types
+type PetPostWithType = PetPostRow & {
+  pet_types: PetTypeRow | null;
+};
+
 /**
  * SupabasePublicProfileRepository
  * Server-side implementation สำหรับดึง public profile data
@@ -99,7 +111,7 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
       .eq("is_archived", false)
       .order("created_at", { ascending: false });
 
-    let posts: unknown[] = [];
+    let posts: PetPostWithType[] = [];
     let total = 0;
     let hasMore = false;
     let nextCursor: string | null = null;
@@ -119,7 +131,7 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
         return { posts: [], total: 0, hasMore: false, page, perPage };
       }
 
-      posts = data || [];
+      posts = (data as PetPostWithType[]) || [];
       total = count ?? 0;
       hasMore = offset + posts.length < total;
 
@@ -147,14 +159,12 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
         return { posts: [], total: 0, hasMore: false, nextCursor: null };
       }
 
-      posts = (data || []).slice(0, limit);
+      posts = ((data as PetPostWithType[]) || []).slice(0, limit);
       total = count ?? 0;
       hasMore = (data || []).length > limit;
 
-      if (hasMore && posts.length > 0) {
-        nextCursor = this.encodeCursor(
-          (posts[posts.length - 1] as { created_at: string }).created_at,
-        );
+      if (hasMore && posts.length > 0 && posts[posts.length - 1].created_at) {
+        nextCursor = this.encodeCursor(posts[posts.length - 1].created_at!);
       }
 
       return {
@@ -167,52 +177,42 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
   }
 
   // Helper: Map raw posts to PetPost entities
-  private mapPosts(posts: unknown[]): PetPost[] {
+  private mapPosts(posts: PetPostWithType[]): PetPost[] {
     return posts.map((post) => ({
-      id: (post as { id: string }).id,
-      profileId: (post as { profile_id: string }).profile_id,
-      petTypeId: (post as { pet_type_id: string }).pet_type_id,
-      petType: (post as { pet_types: unknown }).pet_types
+      id: post.id,
+      profileId: post.profile_id,
+      petTypeId: post.pet_type_id,
+      petType: post.pet_types
         ? {
-            id: (post as { pet_types: { id: string } }).pet_types.id,
-            name: (post as { pet_types: { name: string } }).pet_types.name,
-            slug: (post as { pet_types: { slug: string } }).pet_types.slug,
-            icon:
-              (post as { pet_types: { icon: string | null } }).pet_types.icon ??
-              "Paw",
-            sortOrder: (post as { pet_types: { sort_order: number } }).pet_types
-              .sort_order,
-            isActive: (post as { pet_types: { is_active: boolean } }).pet_types
-              .is_active,
+            id: post.pet_types.id,
+            name: post.pet_types.name,
+            slug: post.pet_types.slug,
+            icon: post.pet_types.icon ?? "Paw",
+            sortOrder: post.pet_types.sort_order,
+            isActive: post.pet_types.is_active,
           }
         : undefined,
-      title: (post as { title: string | null }).title ?? "",
-      description: (post as { description: string | null }).description ?? "",
-      breed: (post as { breed: string | null }).breed ?? "",
-      color: (post as { color: string | null }).color ?? "",
-      gender: (post as { gender: string }).gender as PetPost["gender"],
-      estimatedAge:
-        (post as { estimated_age: string | null }).estimated_age ?? "",
-      isVaccinated: (post as { is_vaccinated: boolean }).is_vaccinated,
-      isNeutered: (post as { is_neutered: boolean }).is_neutered,
-      latitude: (post as { latitude: number | null }).latitude ?? 0,
-      longitude: (post as { longitude: number | null }).longitude ?? 0,
-      address: (post as { address: string | null }).address ?? "",
-      province: (post as { province: string | null }).province ?? "",
-      purpose: (post as { purpose: string }).purpose as PetPost["purpose"],
-      status: (post as { status: string }).status as PetPost["status"],
-      outcome: (post as { outcome: string | null }).outcome as
-        | PetPost["outcome"]
-        | null,
-      resolvedAt: (post as { resolved_at: string | null }).resolved_at,
-      thumbnailUrl:
-        (post as { thumbnail_url: string | null }).thumbnail_url ?? "",
-      isActive: (post as { is_active: boolean }).is_active,
-      isArchived: (post as { is_archived: boolean }).is_archived,
-      createdAt:
-        (post as { created_at: string }).created_at ?? new Date().toISOString(),
-      updatedAt:
-        (post as { updated_at: string }).updated_at ?? new Date().toISOString(),
+      title: post.title ?? "",
+      description: post.description ?? "",
+      breed: post.breed ?? "",
+      color: post.color ?? "",
+      gender: post.gender as PetPost["gender"],
+      estimatedAge: post.estimated_age ?? "",
+      isVaccinated: post.is_vaccinated,
+      isNeutered: post.is_neutered,
+      latitude: post.latitude ?? 0,
+      longitude: post.longitude ?? 0,
+      address: post.address ?? "",
+      province: post.province ?? "",
+      purpose: post.purpose as PetPost["purpose"],
+      status: post.status as PetPost["status"],
+      outcome: post.outcome as PetPost["outcome"] | null,
+      resolvedAt: post.resolved_at,
+      thumbnailUrl: post.thumbnail_url ?? "",
+      isActive: post.is_active,
+      isArchived: post.is_archived,
+      createdAt: post.created_at ?? new Date().toISOString(),
+      updatedAt: post.updated_at ?? new Date().toISOString(),
     }));
   }
 
@@ -388,12 +388,10 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
 
   private getCurrentValue(
     type: BadgeType,
-    stats: {
-      total_posts?: number | null;
-      successful_adoptions?: number | null;
-      found_owners?: number | null;
-      community_cats?: number | null;
-    } | null,
+    stats: Pick<
+      ProfilePostStatsRow,
+      "total_posts" | "successful_adoptions" | "found_owners" | "community_cats"
+    > | null,
   ): number {
     if (!stats) return 0;
     switch (type) {
