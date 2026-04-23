@@ -1,6 +1,5 @@
 import { createBaseMetadata } from "@/config/metadata";
-import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import {
   Award,
   BadgeCheck,
@@ -24,16 +23,17 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { profileId } = await params;
-  const supabase = await createServerSupabaseClient();
-  const repo = new SupabasePublicProfileRepository(supabase);
-  const profile = await repo.getById(profileId);
+  const presenter = await createServerPublicProfilePresenter();
+  const result = await presenter.getById(profileId);
 
-  if (!profile) {
+  if (!result.success || !result.profile) {
     return createBaseMetadata(
       "ไม่พบโปรไฟล์ | StrayPetMap",
       "ไม่พบข้อมูลโปรไฟล์ที่ต้องการ",
     );
   }
+
+  const profile = result.profile;
 
   return createBaseMetadata(
     `${profile.displayName} | StrayPetMap`,
@@ -49,17 +49,18 @@ export async function generateMetadata({
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { profileId } = await params;
-  const supabase = await createServerSupabaseClient();
-  const repo = new SupabasePublicProfileRepository(supabase);
+  const presenter = await createServerPublicProfilePresenter();
 
-  const [profile, postsResult] = await Promise.all([
-    repo.getById(profileId),
-    repo.getPosts(profileId, { type: "offset", page: 1, perPage: 12 }),
+  const [profileResult, postsResult] = await Promise.all([
+    presenter.getById(profileId),
+    presenter.getPosts(profileId, { type: "offset", page: 1, perPage: 12 }),
   ]);
 
-  if (!profile) {
+  if (!profileResult.success || !profileResult.profile) {
     notFound();
   }
+
+  const profile = profileResult.profile;
 
   const { stats, badges, badgeProgress } = profile;
 
@@ -200,11 +201,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
               โพสต์ล่าสุด
             </h2>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium text-muted-foreground">
-              {postsResult.total}
+              {postsResult.data?.total ?? 0}
             </span>
           </div>
 
-          {postsResult.posts.length === 0 ? (
+          {!postsResult.data || postsResult.data.posts.length === 0 ? (
             <div className="rounded-2xl border border-border/50 bg-card/50 py-16 text-center">
               <div className="mb-3 flex justify-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -215,7 +216,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {postsResult.posts.map((post) => (
+              {postsResult.data?.posts.map((post) => (
                 <Link
                   key={post.id}
                   href={`/pets/${post.id}`}
@@ -287,7 +288,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           )}
 
           {/* Load More */}
-          {postsResult.hasMore && (
+          {postsResult.data?.hasMore && (
             <div className="mt-8 text-center">
               <button className="group inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5">
                 ดูเพิ่มเติม

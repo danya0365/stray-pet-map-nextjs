@@ -297,4 +297,29 @@ export class AuthPresenter {
       return null;
     }
   }
+
+  // ============================================================
+  // SPECIALIZED METHODS (For specific routes)
+  // ============================================================
+
+  /**
+   * Exchange OAuth code for session
+   * Used by /auth/callback route
+   */
+  async exchangeCodeForSession(
+    code: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await this.authRepository.exchangeCodeForSession(code);
+      if (error) {
+        return { success: false, error };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error("Error exchanging code for session:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to exchange code";
+      return { success: false, error: errorMessage };
+    }
+  }
 }

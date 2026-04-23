@@ -31,4 +31,9 @@ export interface IAuthRepository {
     metadata?: { full_name?: string; username?: string },
   ): Promise<{ user: User | null; error: string | null }>;
   signOut(): Promise<void>;
+  /**
+   * Exchange OAuth code for session
+   * Used by /auth/callback route
+   */
+  exchangeCodeForSession(code: string): Promise<{ error: string | null }>;
 }

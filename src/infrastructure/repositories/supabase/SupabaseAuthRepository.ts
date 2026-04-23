@@ -199,4 +199,11 @@ export class SupabaseAuthRepository implements IAuthRepository {
       experiencePoints: profile.experience_points ?? 0,
     };
   }
+
+  async exchangeCodeForSession(
+    code: string,
+  ): Promise<{ error: string | null }> {
+    const { error } = await this.supabase.auth.exchangeCodeForSession(code);
+    return { error: error?.message ?? null };
+  }
 }

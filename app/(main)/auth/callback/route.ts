@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -7,9 +7,9 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/";
 
   if (code) {
-    const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const presenter = await createServerAuthPresenter();
+    const result = await presenter.exchangeCodeForSession(code);
+    if (result.success) {
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

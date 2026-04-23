@@ -104,4 +104,21 @@ export class ApiAuthRepository implements IAuthRepository {
     const data = await res.json();
     return data.profile ?? null;
   }
+
+  async exchangeCodeForSession(
+    code: string,
+  ): Promise<{ error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/exchange-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { error: data.error || "Exchange code failed" };
+    }
+
+    return { error: null };
+  }
 }

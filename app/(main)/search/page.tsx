@@ -1,6 +1,4 @@
 import { createBaseMetadata } from "@/config/metadata";
-import { SupabasePetTypeRepository } from "@/infrastructure/repositories/supabase/SupabasePetTypeRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { SearchView } from "@/presentation/components/search/SearchView";
 import { createServerSearchPresenter } from "@/presentation/presenters/search/SearchPresenterServerFactory";
 import type { Metadata } from "next";
@@ -18,16 +16,13 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function SearchPage() {
-  const presenter = await createServerSearchPresenter();
-  const supabase = await createServerSupabaseClient();
-  const petTypeRepo = new SupabasePetTypeRepository(supabase);
+  const searchPresenter = await createServerSearchPresenter();
 
   let viewModel = null;
   let fetchError = false;
-  const petTypes = await petTypeRepo.getAll().catch(() => []);
 
   try {
-    viewModel = await presenter.getViewModel();
+    viewModel = await searchPresenter.getViewModel();
   } catch (error) {
     console.error("Error fetching search data:", error);
     fetchError = true;
@@ -52,5 +47,7 @@ export default async function SearchPage() {
     );
   }
 
-  return <SearchView initialViewModel={viewModel} petTypes={petTypes} />;
+  return (
+    <SearchView initialViewModel={viewModel} petTypes={viewModel.petTypes} />
+  );
 }

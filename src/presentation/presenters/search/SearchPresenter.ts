@@ -6,7 +6,8 @@ import type {
   PetPostSortField,
   SortOrder,
 } from "@/application/repositories/IPetPostRepository";
-import type { PetPostStats } from "@/domain/entities/pet-post";
+import type { IPetTypeRepository } from "@/application/repositories/IPetTypeRepository";
+import type { PetPostStats, PetType } from "@/domain/entities/pet-post";
 import type { Metadata } from "next";
 
 export interface SearchViewModel {
@@ -16,6 +17,7 @@ export interface SearchViewModel {
   search: string;
   sortBy: PetPostSortField;
   sortOrder: SortOrder;
+  petTypes: PetType[];
 }
 
 export interface SearchParams {
@@ -31,7 +33,10 @@ export interface SearchParams {
 const DEFAULT_PER_PAGE = 12;
 
 export class SearchPresenter {
-  constructor(private readonly repository: IPetPostRepository) {}
+  constructor(
+    private readonly repository: IPetPostRepository,
+    private readonly petTypeRepository: IPetTypeRepository,
+  ) {}
 
   async getViewModel(params: SearchParams = {}): Promise<SearchViewModel> {
     const {
@@ -45,7 +50,7 @@ export class SearchPresenter {
     } = params;
 
     try {
-      const [result, stats] = await Promise.all([
+      const [result, stats, petTypes] = await Promise.all([
         this.repository.query({
           filters,
           search: search || undefined,
@@ -55,9 +60,10 @@ export class SearchPresenter {
           pagination: { type: "offset", page, perPage },
         }),
         this.repository.getStats(filters),
+        this.petTypeRepository.getAll(),
       ]);
 
-      return { result, stats, filters, search, sortBy, sortOrder };
+      return { result, stats, filters, search, sortBy, sortOrder, petTypes };
     } catch (error) {
       console.error("Error getting search view model:", error);
       throw error;
