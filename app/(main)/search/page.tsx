@@ -47,7 +47,5 @@ export default async function SearchPage() {
     );
   }
 
-  return (
-    <SearchView initialViewModel={viewModel} petTypes={viewModel.petTypes} />
-  );
+  return <SearchView initialViewModel={viewModel} />;
 }
