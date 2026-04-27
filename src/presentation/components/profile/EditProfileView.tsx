@@ -1,6 +1,7 @@
 "use client";
 
 import type { AuthProfile } from "@/application/repositories/IAuthRepository";
+import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import {
   ArrowLeft,
   Camera,
@@ -77,6 +78,8 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const setStoreProfile = useAuthStore((s) => s.setProfile);
+
   // Crop modal state
   const [cropOpen, setCropOpen] = useState(false);
   const [cropImage, setCropImage] = useState<string | null>(null);
@@ -111,6 +114,9 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
           return;
         }
 
+        if (data.profile) {
+          setStoreProfile(data.profile);
+        }
         setSuccess(true);
         setTimeout(() => {
           router.push("/profile");
@@ -121,7 +127,7 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
         setIsSubmitting(false);
       }
     },
-    [fullName, username, bio, avatarUrl, router],
+    [fullName, username, bio, avatarUrl, router, setStoreProfile],
   );
 
   /* ---- avatar selection → open crop modal ---- */
