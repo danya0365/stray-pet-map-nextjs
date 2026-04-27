@@ -207,6 +207,37 @@ export class SupabaseAuthRepository implements IAuthRepository {
     return { error: error?.message ?? null };
   }
 
+  async updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const currentProfile = await this.getProfile();
+    if (!currentProfile) {
+      return { profile: null, error: "Profile not found" };
+    }
+
+    // Update profile
+    const { error: updateError } = await this.supabase
+      .from("profiles")
+      .update({
+        full_name: data.fullName,
+        username: data.username,
+        bio: data.bio,
+        avatar_url: data.avatarUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", currentProfile.id);
+
+    if (updateError) {
+      return { profile: null, error: updateError.message };
+    }
+
+    // Return updated profile
+    return { profile: await this.getProfile(), error: null };
+  }
+
   async signInWithOAuth(
     provider: string,
   ): Promise<{ url: string | null; error: string | null }> {

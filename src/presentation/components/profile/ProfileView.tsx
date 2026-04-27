@@ -34,20 +34,18 @@ const ROLE_LABELS: Record<
 > = {
   admin: {
     label: "ผู้ดูแลระบบ",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor:
-      "bg-amber-50 dark:bg-amber-950/30 ring-amber-200 dark:ring-amber-800",
+    color: "text-warning",
+    bgColor: "bg-warning/10 ring-warning/20",
   },
   moderator: {
     label: "อาสาตรวจสอบ",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30 ring-blue-200 dark:ring-blue-800",
+    color: "text-info",
+    bgColor: "bg-info/10 ring-info/20",
   },
   user: {
     label: "ผู้ใช้ทั่วไป",
-    color: "text-green-600 dark:text-green-400",
-    bgColor:
-      "bg-green-50 dark:bg-green-950/30 ring-green-200 dark:ring-green-800",
+    color: "text-success",
+    bgColor: "bg-success/10 ring-success/20",
   },
 };
 
@@ -153,7 +151,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
   if (error) {
     return (
       <div className="py-20 text-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-destructive">{error}</p>
       </div>
     );
   }
@@ -371,7 +369,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
                       <div
                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg font-semibold ${
                           isCurrent
-                            ? "bg-primary text-white shadow-sm"
+                            ? "bg-primary text-primary-foreground shadow-sm"
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
@@ -399,7 +397,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
                       </div>
 
                       {isCurrent ? (
-                        <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-[10px] font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                        <div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-[10px] font-medium text-success">
                           <Check className="h-3 w-3" />
                           ใช้งานอยู่
                         </div>
@@ -555,7 +553,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
               <div className="mt-4 flex gap-2">
                 <Link
                   href="/posts/create"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   <Award className="h-3.5 w-3.5" />
                   สร้างโพสต์
@@ -617,11 +615,14 @@ function UserPostsSection({
   const statusLabels: Record<string, { label: string; color: string }> = {
     available: {
       label: "รอรับเลี้ยง",
-      color: "bg-emerald-100 text-emerald-700",
+      color: "bg-success/10 text-success",
     },
-    pending: { label: "มีคนสนใจ", color: "bg-amber-100 text-amber-700" },
-    adopted: { label: "มีบ้านแล้ว", color: "bg-blue-100 text-blue-700" },
-    missing: { label: "ตามหาน้อง", color: "bg-red-100 text-red-700" },
+    pending: { label: "มีคนสนใจ", color: "bg-warning/10 text-warning" },
+    adopted: { label: "มีบ้านแล้ว", color: "bg-info/10 text-info" },
+    missing: {
+      label: "ตามหาน้อง",
+      color: "bg-destructive/10 text-destructive",
+    },
   };
 
   const outcomeLabels: Record<string, string> = {
@@ -654,7 +655,7 @@ function UserPostsSection({
         </div>
         <Link
           href="/posts/create"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
         >
           <Plus className="h-4 w-4" />
           สร้างโพสต์
@@ -675,7 +676,7 @@ function UserPostsSection({
           </p>
           <Link
             href="/posts/create"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             สร้างโพสต์
@@ -806,7 +807,7 @@ function UserPostsSection({
           />
           <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
                 <Trash2 className="h-6 w-6" />
               </div>
               <h3 className="mb-2 text-lg font-semibold">ยืนยันการลบ</h3>
@@ -827,7 +828,7 @@ function UserPostsSection({
                   type="button"
                   onClick={() => handleDelete(showDeleteConfirm)}
                   disabled={isDeletingPost !== null}
-                  className="flex-1 rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
                 >
                   {isDeletingPost ? "กำลังลบ..." : "ลบ"}
                 </button>

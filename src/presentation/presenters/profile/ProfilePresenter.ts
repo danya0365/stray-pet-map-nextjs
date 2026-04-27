@@ -220,4 +220,23 @@ export class ProfilePresenter {
       throw error;
     }
   }
+
+  /**
+   * Update current profile
+   */
+  async updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    try {
+      return await this.authRepository.updateProfile(data);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to update profile";
+      return { profile: null, error: message };
+    }
+  }
 }

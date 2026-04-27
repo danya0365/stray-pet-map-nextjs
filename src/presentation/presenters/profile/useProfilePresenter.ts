@@ -21,6 +21,12 @@ export interface ProfilePresenterActions {
   refreshProfiles: () => Promise<void>;
   fetchBadges: (profileId: string) => Promise<void>;
   deletePost: (postId: string) => Promise<boolean>;
+  updateProfile: (data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }) => Promise<{ profile: ProfileViewModel["profile"]; error: string | null }>;
   setError: (error: string | null) => void;
 }
 
@@ -252,6 +258,37 @@ export function useProfilePresenter(
     [presenter],
   );
 
+  /**
+   * Update current profile
+   */
+  const updateProfile = useCallback(
+    async (data: {
+      fullName?: string;
+      username?: string;
+      bio?: string;
+      avatarUrl?: string;
+    }) => {
+      setError(null);
+
+      try {
+        const result = await presenter.updateProfile(data);
+        if (isMountedRef.current && result.profile) {
+          setProfile(result.profile);
+        }
+        return result;
+      } catch (err) {
+        if (isMountedRef.current) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Failed to update profile";
+          setError(errorMessage);
+          console.error("Error updating profile:", err);
+        }
+        return { profile: null, error: "Failed to update profile" };
+      }
+    },
+    [presenter, setProfile],
+  );
+
   // Load data on mount if no user data in store
   useEffect(() => {
     if (!user && !initialViewModel) {
@@ -282,6 +319,7 @@ export function useProfilePresenter(
       refreshProfiles,
       fetchBadges,
       deletePost,
+      updateProfile,
       setError,
     },
   ];

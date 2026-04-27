@@ -122,6 +122,30 @@ export class ApiAuthRepository implements IAuthRepository {
     return { error: null };
   }
 
+  async updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/profile`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      return {
+        profile: null,
+        error: errorData.error || "Failed to update profile",
+      };
+    }
+
+    const result = await res.json();
+    return { profile: result.profile ?? null, error: null };
+  }
+
   async signInWithOAuth(
     provider: string,
   ): Promise<{ url: string | null; error: string | null }> {

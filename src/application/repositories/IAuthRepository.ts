@@ -43,4 +43,13 @@ export interface IAuthRepository {
   signInWithOAuth(
     provider: string,
   ): Promise<{ url: string | null; error: string | null }>;
+  /**
+   * Update current profile
+   */
+  updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }>;
 }
