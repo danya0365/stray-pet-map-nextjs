@@ -1,14 +1,68 @@
 "use client";
 
 import type { AuthProfile } from "@/application/repositories/IAuthRepository";
-import { ArrowLeft, Camera, Loader2, Save, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Camera,
+  Loader2,
+  Save,
+  User,
+  X,
+  ZoomIn,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
+import type { Area } from "react-easy-crop";
+import Cropper from "react-easy-crop";
 
 interface EditProfileViewProps {
   profile: AuthProfile;
+}
+
+/* ============================================================
+   Canvas crop helper — extracts cropped region and resizes
+   ============================================================ */
+function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: Area,
+  targetSize = 512,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.src = imageSrc;
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = targetSize;
+      canvas.height = targetSize;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("canvas error"));
+
+      ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        targetSize,
+        targetSize,
+      );
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("crop failed"));
+        },
+        "image/jpeg",
+        0.92,
+      );
+    };
+    image.onerror = () => reject(new Error("load image failed"));
+  });
 }
 
 export function EditProfileView({ profile }: EditProfileViewProps) {
@@ -22,6 +76,14 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Crop modal state
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -62,8 +124,61 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
     [fullName, username, bio, avatarUrl, router],
   );
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
+  /* ---- avatar selection → open crop modal ---- */
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ""; // allow re-select same file
+  };
+
+  /* ---- crop confirm → upload → set avatarUrl ---- */
+  const handleCropConfirm = async () => {
+    if (!cropImage || !croppedAreaPixels) return;
+    setIsUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const blob = await getCroppedImg(cropImage, croppedAreaPixels);
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/storage/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "อัปโหลดรูปไม่สำเร็จ");
+        return;
+      }
+
+      setAvatarUrl(data.url);
+      setCropOpen(false);
+      if (cropImage) URL.revokeObjectURL(cropImage);
+      setCropImage(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropOpen(false);
+    if (cropImage) URL.revokeObjectURL(cropImage);
+    setCropImage(null);
   };
 
   return (
@@ -88,10 +203,11 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
           <div className="flex flex-col items-center gap-3">
             <button
               type="button"
-              onClick={handleAvatarClick}
+              onClick={() => fileInputRef.current?.click()}
               className="group relative h-24 w-24 overflow-hidden rounded-full ring-2 ring-border transition-all hover:ring-primary/50"
             >
-              {avatarUrl ? (
+              {avatarUrl &&
+              (avatarUrl.startsWith("/") || avatarUrl.startsWith("http")) ? (
                 <Image
                   src={avatarUrl}
                   alt="Avatar"
@@ -112,6 +228,7 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
               type="file"
               accept="image/*"
               className="hidden"
+              onChange={handleFileChange}
             />
             <p className="text-xs text-muted-foreground">
               คลิกเพื่อเปลี่ยนรูปโปรไฟล์
@@ -195,6 +312,68 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
           </div>
         </form>
       </div>
+
+      {/* Crop Modal */}
+      {cropOpen && cropImage && (
+        <div className="fixed inset-0 z-100 flex flex-col bg-black/80">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3">
+            <button
+              type="button"
+              onClick={handleCropCancel}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <span className="text-sm font-medium text-white">
+              ปรับตำแหน่งรูปโปรไฟล์
+            </span>
+            <button
+              type="button"
+              onClick={handleCropConfirm}
+              disabled={isUploadingAvatar}
+              className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "ยืนยัน"
+              )}
+            </button>
+          </div>
+
+          {/* Crop area */}
+          <div className="relative flex-1">
+            <Cropper
+              image={cropImage}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={(_, areaPixels) =>
+                setCroppedAreaPixels(areaPixels)
+              }
+            />
+          </div>
+
+          {/* Zoom slider */}
+          <div className="flex items-center gap-3 px-6 py-4">
+            <ZoomIn className="h-4 w-4 text-white/70" />
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1 accent-primary"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

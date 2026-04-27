@@ -48,4 +48,22 @@ export class StoragePresenter {
       };
     }
   }
+
+  async uploadAvatar(file: File): Promise<UploadFileResult> {
+    try {
+      const result = await this.storageRepo.uploadAvatar(file);
+      return {
+        success: true,
+        url: result.url,
+        path: result.path,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลด";
+      return {
+        success: false,
+        error: message,
+      };
+    }
+  }
 }

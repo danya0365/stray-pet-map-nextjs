@@ -33,4 +33,21 @@ export class ApiStorageRepository implements IStorageRepository {
 
     return res.json();
   }
+
+  async uploadAvatar(file: File): Promise<UploadResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${this.baseUrl}/avatar`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถอัปโหลดรูปภาพได้");
+    }
+
+    return res.json();
+  }
 }

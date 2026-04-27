@@ -64,4 +64,38 @@ export class SupabaseStorageRepository implements IStorageRepository {
 
     return { url: publicUrl, path: filePath };
   }
+
+  async uploadAvatar(file: File): Promise<UploadResult> {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new Error("รองรับเฉพาะไฟล์ภาพ (JPEG, PNG, WebP, GIF)");
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error("ไฟล์ต้องมีขนาดไม่เกิน 5MB");
+    }
+
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
+    if (!user) throw new Error("กรุณาเข้าสู่ระบบก่อนอัปโหลด");
+
+    const ext = file.name.split(".").pop() || "jpg";
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filePath = `${user.id}/${fileName}`;
+
+    const { error } = await this.supabase.storage
+      .from("avatars")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) throw new Error(`อัปโหลดไม่สำเร็จ: ${error.message}`);
+
+    const {
+      data: { publicUrl },
+    } = this.supabase.storage.from("avatars").getPublicUrl(filePath);
+
+    return { url: publicUrl, path: filePath };
+  }
 }
