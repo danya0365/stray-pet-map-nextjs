@@ -22,7 +22,6 @@ import {
   SwitchCamera,
   Trash2,
   Trophy,
-  User,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -256,6 +255,54 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
                     ดูโปรไฟล์สาธารณะ
                   </Link>
                 </div>
+
+                {/* Compact Profile Tabs (multi-profile only) */}
+                {hasMultipleProfiles && (
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/30 pt-4">
+                    <span className="text-xs text-muted-foreground">
+                      สลับโปรไฟล์:
+                    </span>
+                    {profiles.map((p) => {
+                      const isCurrent = profile.id === p.id;
+                      const pRole = ROLE_LABELS[p.role] ?? ROLE_LABELS.user;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() =>
+                            !isCurrent && handleSwitchProfile(p.id)
+                          }
+                          disabled={isCurrent || isSwitchingProfile}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                            isCurrent
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "border border-border/50 bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
+                          } ${isSwitchingProfile && !isCurrent ? "opacity-60" : ""}`}
+                        >
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-current/10 text-[10px] font-bold">
+                            {(p.fullName || p.username || "U")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                          <span className="max-w-[80px] truncate sm:max-w-[120px]">
+                            {p.fullName || p.username || "ผู้ใช้"}
+                          </span>
+                          <span
+                            className={`rounded px-1 py-0.5 text-[9px] ${pRole.bgColor} ${pRole.color}`}
+                          >
+                            {pRole.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setShowAllProfiles(!showAllProfiles)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-foreground"
+                    >
+                      <SwitchCamera className="h-3.5 w-3.5" />
+                      จัดการโปรไฟล์
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -318,124 +365,104 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
           </div>
         </div>
 
-        {/* Profile Management - Accordion Style */}
-        {hasMultipleProfiles && (
+        {/* Expandable Profile Manager */}
+        {hasMultipleProfiles && showAllProfiles && (
           <div className="rounded-2xl border border-border/50 bg-card/50 p-6 shadow-sm">
-            <button
-              onClick={() => setShowAllProfiles(!showAllProfiles)}
-              className="flex w-full items-center justify-between"
-            >
+            <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <SwitchCamera className="h-5 w-5" />
                 </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-foreground">สลับโปรไฟล์</h3>
+                <div>
+                  <h3 className="font-semibold text-foreground">
+                    จัดการโปรไฟล์
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     {profiles.length} โปรไฟล์ในระบบ
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                  {showAllProfiles ? "ซ่อน" : "ดูทั้งหมด"}
-                </span>
-                <ChevronRight
-                  className={`h-5 w-5 text-muted-foreground transition-transform ${showAllProfiles ? "rotate-90" : ""}`}
-                />
-              </div>
-            </button>
+              <button
+                onClick={() => setShowAllProfiles(false)}
+                className="rounded-full px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              >
+                ปิด
+              </button>
+            </div>
 
-            {/* Expandable Profile List */}
-            <div
-              className={`overflow-hidden transition-all ${showAllProfiles ? "mt-4 max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}
-            >
-              <div className="space-y-2 border-t border-border/50 pt-4">
-                {profiles.map((p) => {
-                  const isCurrent = profile.id === p.id;
-                  const pRole = ROLE_LABELS[p.role] ?? ROLE_LABELS.user;
+            <div className="space-y-2">
+              {profiles.map((p) => {
+                const isCurrent = profile.id === p.id;
+                const pRole = ROLE_LABELS[p.role] ?? ROLE_LABELS.user;
 
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => !isCurrent && handleSwitchProfile(p.id)}
-                      disabled={isCurrent || isSwitchingProfile}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => !isCurrent && handleSwitchProfile(p.id)}
+                    disabled={isCurrent || isSwitchingProfile}
+                    className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                      isCurrent
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-border/50 bg-background/50 hover:border-primary/20 hover:bg-muted/30"
+                    } ${isSwitchingProfile && !isCurrent ? "opacity-60" : ""}`}
+                  >
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg font-semibold ${
                         isCurrent
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-border/50 bg-background/50 hover:border-primary/20 hover:bg-muted/30"
-                      } ${isSwitchingProfile && !isCurrent ? "opacity-60" : ""}`}
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground"
+                      }`}
                     >
-                      <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg font-semibold ${
-                          isCurrent
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {isSwitchingProfile && !isCurrent ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          (p.fullName || p.username || "U")
-                            .charAt(0)
-                            .toUpperCase()
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`truncate font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
-                        >
-                          {p.fullName || p.username || "ผู้ใช้"}
-                        </p>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${pRole.bgColor} ${pRole.color}`}
-                        >
-                          <Shield className="h-2.5 w-2.5" />
-                          {pRole.label}
-                        </span>
-                      </div>
-
-                      {isCurrent ? (
-                        <div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-[10px] font-medium text-success">
-                          <Check className="h-3 w-3" />
-                          ใช้งานอยู่
-                        </div>
+                      {isSwitchingProfile && !isCurrent ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
-                        <span className="text-xs text-muted-foreground">
-                          คลิกสลับ
-                        </span>
+                        (p.fullName || p.username || "U")
+                          .charAt(0)
+                          .toUpperCase()
                       )}
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
 
-              {/* Add profile hint */}
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/20 p-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                  <Plus className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  ต้องการเพิ่มโปรไฟล์? ติดต่อผู้ดูแลระบบ
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {p.fullName || p.username || "ผู้ใช้"}
+                      </p>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${pRole.bgColor} ${pRole.color}`}
+                      >
+                        <Shield className="h-2.5 w-2.5" />
+                        {pRole.label}
+                      </span>
+                    </div>
 
-        {/* Single profile state - show upgrade hint */}
-        {!hasMultipleProfiles && (
-          <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <User className="h-6 w-6 text-muted-foreground" />
+                    {isCurrent ? (
+                      <div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-[10px] font-medium text-success">
+                        <Check className="h-3 w-3" />
+                        ใช้งานอยู่
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        คลิกสลับ
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <h3 className="font-medium">โปรไฟล์เดียว</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              คุณมีโปรไฟล์เดียวเท่านั้น
-              <br />
-              ติดต่อผู้ดูแลระบบเพื่อเพิ่มโปรไฟล์อื่น
-            </p>
+
+            {/* Create Profile Placeholder */}
+            <button
+              onClick={() => alert("ฟีเจอร์กำลังพัฒนา")}
+              className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/20 p-3 transition-all hover:border-primary/30 hover:bg-primary/5"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <Plus className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground">
+                สร้างโปรไฟล์ใหม่
+              </p>
+            </button>
           </div>
         )}
 
