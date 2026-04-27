@@ -239,4 +239,23 @@ export class ProfilePresenter {
       return { profile: null, error: message };
     }
   }
+
+  /**
+   * Create a new profile
+   */
+  async createProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    try {
+      return await this.authRepository.createProfile(data);
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to create profile";
+      return { profile: null, error: message };
+    }
+  }
 }

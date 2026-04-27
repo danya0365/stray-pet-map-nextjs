@@ -52,4 +52,10 @@ export interface IAuthRepository {
     bio?: string;
     avatarUrl?: string;
   }): Promise<{ profile: AuthProfile | null; error: string | null }>;
+  createProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }>;
 }

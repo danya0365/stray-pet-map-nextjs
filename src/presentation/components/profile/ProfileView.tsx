@@ -68,9 +68,17 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
   const [state, actions] = useProfilePresenter(initialViewModel);
   const { viewModel, loading, error, isSwitchingProfile, isDeletingPost } =
     state;
-  const { switchProfile, refreshProfiles, deletePost } = actions;
+  const { switchProfile, refreshProfiles, deletePost, createProfile } = actions;
 
   const [showAllProfiles, setShowAllProfiles] = useState(false);
+
+  // Create profile form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createFullName, setCreateFullName] = useState("");
+  const [createUsername, setCreateUsername] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   // Badges state
   const [badgesData, setBadgesData] = useState<{
@@ -89,6 +97,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
     viewModel?.hasMultipleProfiles ||
     initialViewModel?.hasMultipleProfiles ||
     profiles.length > 1;
+  const isAdmin = profile?.role === "admin";
 
   // Fetch badges
   useEffect(() => {
@@ -451,18 +460,134 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
               })}
             </div>
 
-            {/* Create Profile Placeholder */}
-            <button
-              onClick={() => alert("ฟีเจอร์กำลังพัฒนา")}
-              className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/20 p-3 transition-all hover:border-primary/30 hover:bg-primary/5"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                <Plus className="h-4 w-4 text-muted-foreground" />
+            {/* Create Profile */}
+            {!showCreateForm ? (
+              <button
+                onClick={() => {
+                  if (isAdmin) {
+                    setShowCreateForm(true);
+                    setCreateError(null);
+                  } else {
+                    setShowPermissionModal(true);
+                  }
+                }}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/20 p-3 transition-all hover:border-primary/30 hover:bg-primary/5"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  สร้างโปรไฟล์ใหม่
+                </p>
+              </button>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setIsCreating(true);
+                  setCreateError(null);
+                  try {
+                    const result = await createProfile({
+                      fullName: createFullName || undefined,
+                      username: createUsername || undefined,
+                    });
+                    if (result.error) {
+                      setCreateError(result.error);
+                    } else {
+                      setShowCreateForm(false);
+                      setCreateFullName("");
+                      setCreateUsername("");
+                    }
+                  } catch (err) {
+                    setCreateError(
+                      err instanceof Error ? err.message : "เกิดข้อผิดพลาด",
+                    );
+                  } finally {
+                    setIsCreating(false);
+                  }
+                }}
+                className="mt-3 space-y-3 rounded-xl border border-border/50 bg-background/50 p-4"
+              >
+                <p className="text-sm font-medium">สร้างโปรไฟล์ใหม่</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={createFullName}
+                    onChange={(e) => setCreateFullName(e.target.value)}
+                    placeholder="ชื่อที่แสดง"
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <input
+                    type="text"
+                    value={createUsername}
+                    onChange={(e) => setCreateUsername(e.target.value)}
+                    placeholder="ชื่อผู้ใช้"
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                {createError && (
+                  <p className="text-xs text-destructive">{createError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setCreateError(null);
+                      setCreateFullName("");
+                      setCreateUsername("");
+                    }}
+                    className="flex-1 rounded-lg border border-border py-2 text-xs font-medium transition-colors hover:bg-muted"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreating}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {isCreating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5" />
+                    )}
+                    สร้าง
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Permission Error Modal */}
+        {showPermissionModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowPermissionModal(false)}
+            />
+            <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold">
+                  ไม่มีสิทธิ์สร้างโปรไฟล์
+                </h3>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  คุณไม่มีสิทธิ์สร้างโปรไฟล์ใหม่
+                  <br />
+                  เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถสร้างโปรไฟล์เพิ่มได้
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionModal(false)}
+                  className="w-full rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  เข้าใจแล้ว
+                </button>
               </div>
-              <p className="text-xs font-medium text-muted-foreground">
-                สร้างโปรไฟล์ใหม่
-              </p>
-            </button>
+            </div>
           </div>
         )}
 

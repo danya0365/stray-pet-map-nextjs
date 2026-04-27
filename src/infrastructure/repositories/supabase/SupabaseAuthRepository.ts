@@ -238,6 +238,60 @@ export class SupabaseAuthRepository implements IAuthRepository {
     return { profile: await this.getProfile(), error: null };
   }
 
+  async createProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const user = await this.getUser();
+    if (!user) return { profile: null, error: "Not authenticated" };
+
+    const { data: newProfile, error: insertError } = await this.supabase
+      .from("profiles")
+      .insert({
+        auth_id: user.id,
+        full_name: data.fullName,
+        username: data.username,
+        bio: data.bio,
+        avatar_url: data.avatarUrl,
+        is_active: false,
+        level: 1,
+        total_points: 0,
+        experience_points: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select(
+        "id, auth_id, username, full_name, avatar_url, bio, created_at, level, total_points, experience_points",
+      )
+      .single();
+
+    if (insertError || !newProfile) {
+      return {
+        profile: null,
+        error: insertError?.message ?? "Failed to create profile",
+      };
+    }
+
+    return {
+      profile: {
+        id: newProfile.id,
+        authId: newProfile.auth_id,
+        username: newProfile.username,
+        fullName: newProfile.full_name,
+        avatarUrl: newProfile.avatar_url,
+        bio: newProfile.bio,
+        role: "user",
+        createdAt: newProfile.created_at || undefined,
+        level: newProfile.level ?? 1,
+        totalPoints: newProfile.total_points ?? 0,
+        experiencePoints: newProfile.experience_points ?? 0,
+      },
+      error: null,
+    };
+  }
+
   async signInWithOAuth(
     provider: string,
   ): Promise<{ url: string | null; error: string | null }> {
