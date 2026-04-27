@@ -1,7 +1,11 @@
 "use client";
 
 import type { AuthProfile } from "@/application/repositories/IAuthRepository";
-import { useAuthStore } from "@/presentation/stores/useAuthStore";
+import {
+  useEditProfilePresenter,
+  type EditProfileActions,
+  type EditProfileState,
+} from "@/presentation/presenters/edit-profile/useEditProfilePresenter";
 import {
   ArrowLeft,
   Camera,
@@ -13,178 +17,70 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
-import type { Area } from "react-easy-crop";
+import { useRef } from "react";
 import Cropper from "react-easy-crop";
 
 interface EditProfileViewProps {
   profile: AuthProfile;
 }
 
-/* ============================================================
-   Canvas crop helper — extracts cropped region and resizes
-   ============================================================ */
-function getCroppedImg(
-  imageSrc: string,
-  pixelCrop: Area,
-  targetSize = 512,
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const image = new window.Image();
-    image.src = imageSrc;
-    image.crossOrigin = "anonymous";
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = targetSize;
-      canvas.height = targetSize;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("canvas error"));
-
-      ctx.drawImage(
-        image,
-        pixelCrop.x,
-        pixelCrop.y,
-        pixelCrop.width,
-        pixelCrop.height,
-        0,
-        0,
-        targetSize,
-        targetSize,
-      );
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("crop failed"));
-        },
-        "image/jpeg",
-        0.92,
-      );
-    };
-    image.onerror = () => reject(new Error("load image failed"));
-  });
-}
-
 export function EditProfileView({ profile }: EditProfileViewProps) {
-  const router = useRouter();
+  const [state, actions] = useEditProfilePresenter(profile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fullName, setFullName] = useState(profile.fullName ?? "");
-  const [username, setUsername] = useState(profile.username ?? "");
-  const [bio, setBio] = useState(profile.bio ?? "");
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  const setStoreProfile = useAuthStore((s) => s.setProfile);
-
-  // Crop modal state
-  const [cropOpen, setCropOpen] = useState(false);
-  const [cropImage, setCropImage] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsSubmitting(true);
-      setError(null);
-      setSuccess(false);
-
-      try {
-        const res = await fetch("/api/auth/profile", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fullName: fullName || undefined,
-            username: username || undefined,
-            bio: bio || undefined,
-            avatarUrl: avatarUrl || undefined,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error || "บันทึกไม่สำเร็จ");
-          return;
-        }
-
-        if (data.profile) {
-          setStoreProfile(data.profile);
-        }
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/profile");
-        }, 1000);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fullName, username, bio, avatarUrl, router, setStoreProfile],
+  return (
+    <EditProfileForm
+      state={state}
+      actions={actions}
+      fileInputRef={fileInputRef}
+    />
   );
+}
 
-  /* ---- avatar selection → open crop modal ---- */
+/* ============================================================
+   Pure presentational component
+   ============================================================ */
+function EditProfileForm({
+  state,
+  actions,
+  fileInputRef,
+}: {
+  state: EditProfileState;
+  actions: EditProfileActions;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  const {
+    fullName,
+    username,
+    bio,
+    avatarUrl,
+    isSubmitting,
+    error,
+    success,
+    cropOpen,
+    cropImage,
+    crop,
+    zoom,
+    isUploadingAvatar,
+  } = state;
+
+  const {
+    setFullName,
+    setUsername,
+    setBio,
+    submit,
+    handleFileSelect,
+    setCrop,
+    setZoom,
+    setCroppedAreaPixels,
+    confirmCrop,
+    cancelCrop,
+  } = actions;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCropImage(reader.result as string);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCropOpen(true);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = ""; // allow re-select same file
-  };
-
-  /* ---- crop confirm → upload → set avatarUrl ---- */
-  const handleCropConfirm = async () => {
-    if (!cropImage || !croppedAreaPixels) return;
-    setIsUploadingAvatar(true);
-    setError(null);
-
-    try {
-      const blob = await getCroppedImg(cropImage, croppedAreaPixels);
-      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/storage/avatar", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "อัปโหลดรูปไม่สำเร็จ");
-        return;
-      }
-
-      setAvatarUrl(data.url);
-      setCropOpen(false);
-      if (cropImage) URL.revokeObjectURL(cropImage);
-      setCropImage(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
-  const handleCropCancel = () => {
-    setCropOpen(false);
-    if (cropImage) URL.revokeObjectURL(cropImage);
-    setCropImage(null);
+    if (file) handleFileSelect(file);
+    e.target.value = "";
   };
 
   return (
@@ -204,7 +100,13 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
 
       {/* Form */}
       <div className="mx-auto max-w-2xl px-4 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="space-y-6"
+        >
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3">
             <button
@@ -326,7 +228,7 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
           <div className="flex items-center justify-between px-4 py-3">
             <button
               type="button"
-              onClick={handleCropCancel}
+              onClick={cancelCrop}
               className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
             >
               <X className="h-5 w-5" />
@@ -336,7 +238,7 @@ export function EditProfileView({ profile }: EditProfileViewProps) {
             </span>
             <button
               type="button"
-              onClick={handleCropConfirm}
+              onClick={confirmCrop}
               disabled={isUploadingAvatar}
               className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
