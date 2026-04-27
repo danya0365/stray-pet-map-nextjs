@@ -12,7 +12,6 @@ import { cn } from "@/presentation/lib/cn";
 import {
   Calendar,
   Check,
-  ChevronRight,
   Clock,
   Heart,
   Lock,
@@ -20,7 +19,6 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import Link from "next/link";
 
 // ─── Tier color mapping ────────────────────────────────────
 const TIER_STYLE: Record<
@@ -571,20 +569,6 @@ export function RoadMapView({ initialViewModel }: RoadMapViewProps) {
           <span className="font-semibold text-primary">ทันที</span> โดยไม่ต้องรอ
           deadline ❤️
         </p>
-      </div>
-
-      {/* ── CTA ── */}
-      <DonationCTA />
-
-      {/* ── Back to home ── */}
-      <div className="text-center">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
-          ← กลับหน้าหลัก
-          <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-        </Link>
       </div>
     </div>
   );
