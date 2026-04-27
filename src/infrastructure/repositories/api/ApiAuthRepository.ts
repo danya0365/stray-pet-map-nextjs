@@ -121,4 +121,22 @@ export class ApiAuthRepository implements IAuthRepository {
 
     return { error: null };
   }
+
+  async signInWithOAuth(
+    provider: string,
+  ): Promise<{ url: string | null; error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/oauth`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { url: null, error: data.error || "OAuth sign in failed" };
+    }
+
+    const data = await res.json();
+    return { url: data.url ?? null, error: null };
+  }
 }

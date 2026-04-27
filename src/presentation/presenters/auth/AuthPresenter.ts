@@ -322,4 +322,33 @@ export class AuthPresenter {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Sign in with Google OAuth
+   * Returns redirect URL to Google's auth page
+   */
+  async signInWithGoogle(): Promise<{
+    success: boolean;
+    url?: string;
+    error?: string;
+  }> {
+    try {
+      const { url, error } =
+        await this.authRepository.signInWithOAuth("google");
+      if (error) {
+        return { success: false, error };
+      }
+      if (!url) {
+        return { success: false, error: "No redirect URL returned" };
+      }
+      return { success: true, url };
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in with Google";
+      return { success: false, error: errorMessage };
+    }
+  }
 }

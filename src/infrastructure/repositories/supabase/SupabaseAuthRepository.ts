@@ -206,4 +206,20 @@ export class SupabaseAuthRepository implements IAuthRepository {
     const { error } = await this.supabase.auth.exchangeCodeForSession(code);
     return { error: error?.message ?? null };
   }
+
+  async signInWithOAuth(
+    provider: string,
+  ): Promise<{ url: string | null; error: string | null }> {
+    const { data, error } = await this.supabase.auth.signInWithOAuth({
+      provider: provider as "google",
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      },
+    });
+
+    return {
+      url: data?.url ?? null,
+      error: error?.message ?? null,
+    };
+  }
 }

@@ -36,4 +36,11 @@ export interface IAuthRepository {
    * Used by /auth/callback route
    */
   exchangeCodeForSession(code: string): Promise<{ error: string | null }>;
+  /**
+   * Sign in with OAuth provider (Google, etc.)
+   * Returns URL to redirect user to provider's auth page
+   */
+  signInWithOAuth(
+    provider: string,
+  ): Promise<{ url: string | null; error: string | null }>;
 }
