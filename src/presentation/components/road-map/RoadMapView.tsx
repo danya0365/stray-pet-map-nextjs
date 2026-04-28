@@ -19,6 +19,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 
 // ─── Tier color mapping ────────────────────────────────────
 const TIER_STYLE: Record<
@@ -403,8 +404,9 @@ function DonationCTA() {
         {/* Donation amount chips */}
         <div className="mb-6 flex flex-wrap justify-center gap-2">
           {[50, 100, 200, 500, 1000].map((amount) => (
-            <button
+            <Link
               key={amount}
+              href={`/donate?amount=${amount}`}
               id={`donate-amount-${amount}`}
               className={cn(
                 "rounded-full border border-primary/30 px-4 py-2 text-sm font-semibold transition-all",
@@ -413,7 +415,7 @@ function DonationCTA() {
               )}
             >
               ฿{amount}
-            </button>
+            </Link>
           ))}
         </div>
 

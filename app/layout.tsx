@@ -1,4 +1,5 @@
 import { SITE_CONFIG } from "@/config/metadata";
+import { SupportBanner } from "@/presentation/components/banner/SupportBanner";
 import { AuthProvider } from "@/presentation/components/providers/AuthProvider";
 import { ThemeProvider } from "@/presentation/components/providers/ThemeProvider";
 import type { Metadata } from "next";
@@ -110,7 +111,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {children}
+            <SupportBanner />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

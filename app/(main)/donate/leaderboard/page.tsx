@@ -188,7 +188,7 @@ export default function DonationLeaderboardPage() {
             อยากเห็นชื่อตัวเองในกระดานผู้สนับสนุน?
           </p>
           <Link
-            href="/"
+            href="/donate"
             className="inline-flex items-center gap-2 rounded-xl border-2 border-primary px-6 py-3 font-medium text-primary transition-all hover:bg-primary hover:text-white"
           >
             <Heart className="h-4 w-4" />

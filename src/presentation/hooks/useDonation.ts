@@ -109,7 +109,16 @@ export function useDonation(
   // Handle donation - uses presenter
   const handleDonate = useCallback(
     async (params: DonationParams) => {
-      await presenterActions.createDonation(params.amount, params.message);
+      await presenterActions.createDonation({
+        amount: params.amount,
+        message: params.message,
+        targetType: params.targetType,
+        petPostId: params.petPostId,
+        donorName: params.donorName,
+        donorEmail: params.donorEmail,
+        isAnonymous: params.isAnonymous,
+        showOnLeaderboard: params.showOnLeaderboard,
+      });
     },
     [presenterActions],
   );

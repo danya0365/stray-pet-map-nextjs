@@ -6,13 +6,14 @@
  * ✅ Uses presenter pattern with API repository injection
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { DonationPresenter } from "./DonationPresenter";
-import { createClientDonationPresenter } from "./DonationPresenterClientFactory";
 import type {
+  CreateDonationParams,
   DonationLeaderboardEntry,
   DonationStats,
 } from "@/domain/entities/donation";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { DonationPresenter } from "./DonationPresenter";
+import { createClientDonationPresenter } from "./DonationPresenterClientFactory";
 
 // ── State ────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ export interface DonationPresenterState {
 export interface DonationPresenterActions {
   fetchLeaderboard: (type: "weekly" | "alltime") => Promise<void>;
   fetchStats: () => Promise<void>;
-  createDonation: (amount: number, message: string) => Promise<void>;
+  createDonation: (params: CreateDonationParams) => Promise<void>;
   clearError: () => void;
 }
 
@@ -112,23 +113,20 @@ export function useDonationPresenter(
   }, [presenter]);
 
   const createDonation = useCallback(
-    async (amount: number, message: string) => {
+    async (params: CreateDonationParams) => {
       setLoading(true);
       setError(null);
 
       try {
         // This will redirect to Stripe checkout
-        await presenter.create({
-          amount,
-          message,
-          targetType: "fund",
-          isAnonymous: false,
-          showOnLeaderboard: true,
-        });
+        await presenter.create(params);
         // Note: This won't complete due to redirect
       } catch (err) {
         // Redirect error is expected
-        if (err instanceof Error && err.message !== "Redirecting to checkout...") {
+        if (
+          err instanceof Error &&
+          err.message !== "Redirecting to checkout..."
+        ) {
           if (isMountedRef.current) {
             setError(err.message);
           }
