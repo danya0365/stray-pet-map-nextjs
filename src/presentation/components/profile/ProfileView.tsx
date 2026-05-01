@@ -2,6 +2,7 @@
 
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
 import type { PetPost } from "@/domain/entities/pet-post";
+import { Avatar } from "@/presentation/components/ui";
 import type { ProfileViewModel } from "@/presentation/presenters/profile/ProfilePresenter";
 import { useProfilePresenter } from "@/presentation/presenters/profile/useProfilePresenter";
 import {
@@ -190,24 +191,13 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
               {/* Avatar with ring */}
               <div className="relative shrink-0">
-                <div className="relative h-28 w-28 overflow-hidden rounded-full bg-muted ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32">
-                  {profile.avatarUrl &&
-                  (profile.avatarUrl.startsWith("http") ||
-                    profile.avatarUrl.startsWith("/")) ? (
-                    <Image
-                      src={profile.avatarUrl}
-                      alt={profile.fullName || "ผู้ใช้"}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-primary">
-                      {(profile.fullName || profile.username || "U")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                <Avatar
+                  src={profile.avatarUrl}
+                  alt={profile.fullName || "ผู้ใช้"}
+                  name={profile.fullName || profile.username}
+                  className="h-28 w-28 ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32"
+                  fallbackClassName="text-4xl font-bold text-primary"
+                />
                 {/* Active indicator */}
                 <div className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-background shadow-lg">
                   <Check className="h-4 w-4" />

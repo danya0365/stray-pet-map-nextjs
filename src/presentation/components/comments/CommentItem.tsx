@@ -1,17 +1,11 @@
 "use client";
 
 import type { Comment, CommentReactionType } from "@/domain/entities/comment";
+import { Avatar } from "@/presentation/components/ui";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
-import {
-  MessageSquare,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  User,
-} from "lucide-react";
-import NextImage from "next/image";
+import { MessageSquare, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CommentForm } from "./CommentForm";
 import { CommentReactions } from "./CommentReactions";
@@ -72,20 +66,12 @@ export function CommentItem({
     <div className="group">
       <div className="flex gap-3">
         {/* Avatar */}
-        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted">
-          {comment.author.avatarUrl ? (
-            <NextImage
-              src={comment.author.avatarUrl}
-              alt={comment.author.displayName}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
-              <User className="h-4 w-4" />
-            </div>
-          )}
-        </div>
+        <Avatar
+          src={comment.author.avatarUrl}
+          alt={comment.author.displayName}
+          name={comment.author.displayName}
+          className="h-8 w-8 shrink-0"
+        />
 
         {/* Content */}
         <div className="flex-1 min-w-0">

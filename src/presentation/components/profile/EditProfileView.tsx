@@ -1,21 +1,13 @@
 "use client";
 
 import type { AuthProfile } from "@/application/repositories/IAuthRepository";
+import { Avatar } from "@/presentation/components/ui";
 import {
   useEditProfilePresenter,
   type EditProfileActions,
   type EditProfileState,
 } from "@/presentation/presenters/edit-profile/useEditProfilePresenter";
-import {
-  ArrowLeft,
-  Camera,
-  Loader2,
-  Save,
-  User,
-  X,
-  ZoomIn,
-} from "lucide-react";
-import Image from "next/image";
+import { ArrowLeft, Camera, Loader2, Save, X, ZoomIn } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
 import Cropper from "react-easy-crop";
@@ -114,19 +106,12 @@ function EditProfileForm({
               onClick={() => fileInputRef.current?.click()}
               className="group relative h-24 w-24 overflow-hidden rounded-full ring-2 ring-border transition-all hover:ring-primary/50"
             >
-              {avatarUrl &&
-              (avatarUrl.startsWith("/") || avatarUrl.startsWith("http")) ? (
-                <Image
-                  src={avatarUrl}
-                  alt="Avatar"
-                  fill
-                  className="object-cover transition-opacity group-hover:opacity-75"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-muted">
-                  <User className="h-10 w-10 text-muted-foreground" />
-                </div>
-              )}
+              <Avatar
+                src={avatarUrl}
+                alt="Avatar"
+                className="h-full w-full"
+                imageClassName="transition-opacity group-hover:opacity-75"
+              />
               <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
                 <Camera className="h-6 w-6 text-white" />
               </div>

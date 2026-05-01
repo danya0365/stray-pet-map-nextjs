@@ -5,7 +5,10 @@
  * Following Clean Architecture pattern
  */
 
-import type { IStorageRepository } from "@/application/repositories/IStorageRepository";
+import type {
+  IStorageRepository,
+  UploadFileDTO,
+} from "@/application/repositories/IStorageRepository";
 
 // ============================================================
 // RESULT TYPES (For API Routes)
@@ -64,6 +67,38 @@ export class StoragePresenter {
         success: false,
         error: message,
       };
+    }
+  }
+
+  async uploadImage(data: UploadFileDTO): Promise<UploadFileResult> {
+    try {
+      const url = await this.storageRepo.uploadImage(data);
+      return { success: true, url };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลด";
+      return { success: false, error: message };
+    }
+  }
+
+  async uploadBase64(
+    base64Data: string,
+    fileName: string,
+    bucket: string,
+    folder?: string,
+  ): Promise<UploadFileResult> {
+    try {
+      const url = await this.storageRepo.uploadBase64(
+        base64Data,
+        fileName,
+        bucket,
+        folder,
+      );
+      return { success: true, url };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลด";
+      return { success: false, error: message };
     }
   }
 }

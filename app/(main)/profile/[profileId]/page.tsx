@@ -1,4 +1,5 @@
 import { createBaseMetadata } from "@/config/metadata";
+import { Avatar } from "@/presentation/components/ui";
 import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import {
   Award,
@@ -8,7 +9,6 @@ import {
   FileText,
   Heart,
   MapPin,
-  User,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -76,22 +76,12 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
             {/* Avatar with ring */}
             <div className="relative shrink-0">
-              <div className="relative h-28 w-28 overflow-hidden rounded-full bg-muted ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32">
-                {profile.avatarUrl &&
-                (profile.avatarUrl.startsWith("http") ||
-                  profile.avatarUrl.startsWith("/")) ? (
-                  <Image
-                    src={profile.avatarUrl}
-                    alt={profile.displayName}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <User className="h-14 w-14 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
+              <Avatar
+                src={profile.avatarUrl}
+                alt={profile.displayName}
+                name={profile.displayName}
+                className="h-28 w-28 ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32"
+              />
               {profile.isVerified && (
                 <div className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                   <BadgeCheck className="h-5 w-5" />

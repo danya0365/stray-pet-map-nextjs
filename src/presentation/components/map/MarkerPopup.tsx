@@ -1,11 +1,11 @@
 "use client";
 
 import type { PetPost } from "@/domain/entities/pet-post";
-import { Badge } from "@/presentation/components/ui";
+import { Avatar, Badge } from "@/presentation/components/ui";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { ArrowRight, Clock, MapPin, User } from "lucide-react";
+import { ArrowRight, Clock, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Popup } from "react-map-gl/maplibre";
@@ -72,20 +72,12 @@ export function MarkerPopup({ post, onClose }: MarkerPopupProps) {
               href={`/profile/${post.owner.profileId}`}
               className="flex items-center gap-1.5 text-xs text-foreground/60 hover:text-primary"
             >
-              <div className="relative h-4 w-4 shrink-0 overflow-hidden rounded-full bg-muted">
-                {post.owner.avatarUrl &&
-                (post.owner.avatarUrl.startsWith("http") ||
-                  post.owner.avatarUrl.startsWith("/")) ? (
-                  <Image
-                    src={post.owner.avatarUrl}
-                    alt={post.owner.displayName}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <User className="h-full w-full p-0.5 text-muted-foreground" />
-                )}
-              </div>
+              <Avatar
+                src={post.owner.avatarUrl}
+                alt={post.owner.displayName}
+                name={post.owner.displayName}
+                className="h-4 w-4 shrink-0"
+              />
               <span className="truncate">{post.owner.displayName}</span>
             </Link>
           )}

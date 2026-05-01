@@ -2,12 +2,12 @@
 
 import type { PetPost } from "@/domain/entities/pet-post";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
-import { Badge } from "@/presentation/components/ui";
+import { Avatar, Badge } from "@/presentation/components/ui";
 import { cn } from "@/presentation/lib/cn";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Clock, MapPin, User } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -100,20 +100,12 @@ export function PetPostCard({ post, className }: PetPostCardProps) {
             className="flex items-center gap-1.5 text-xs text-foreground/60 hover:text-primary"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full bg-muted">
-              {post.owner.avatarUrl &&
-              (post.owner.avatarUrl.startsWith("http") ||
-                post.owner.avatarUrl.startsWith("/")) ? (
-                <Image
-                  src={post.owner.avatarUrl}
-                  alt={post.owner.displayName}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <User className="h-full w-full p-0.5 text-muted-foreground" />
-              )}
-            </div>
+            <Avatar
+              src={post.owner.avatarUrl}
+              alt={post.owner.displayName}
+              name={post.owner.displayName}
+              className="h-5 w-5 shrink-0"
+            />
             <span className="truncate">{post.owner.displayName}</span>
           </Link>
         )}

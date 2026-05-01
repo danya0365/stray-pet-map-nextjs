@@ -1,9 +1,9 @@
 "use client";
 
 import type { ProfileWithBadges } from "@/domain/entities/badge";
+import { Avatar } from "@/presentation/components/ui";
 import { cn } from "@/presentation/lib/cn";
 import { Award, Loader2, Medal, Trophy } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { BadgeDisplay } from "./BadgeDisplay";
 
@@ -111,19 +111,12 @@ function LeaderboardItem({
 
         {/* Avatar & Info */}
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {profile.avatarUrl && profile.avatarUrl.startsWith("http") ? (
-            <Image
-              src={profile.avatarUrl}
-              alt={profile.displayName}
-              width={48}
-              height={48}
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-xl">
-              👤
-            </div>
-          )}
+          <Avatar
+            src={profile.avatarUrl}
+            alt={profile.displayName}
+            name={profile.displayName}
+            size={48}
+          />
           <div className="min-w-0">
             <p className="truncate font-semibold">{profile.displayName}</p>
             <p className="text-sm text-muted-foreground">

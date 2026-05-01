@@ -4,10 +4,10 @@ import type {
   DonationLeaderboardEntry,
   DonationStats,
 } from "@/domain/entities/donation";
+import { Avatar } from "@/presentation/components/ui";
 import type { LeaderboardViewModel } from "@/presentation/presenters/donation/DonationPresenter";
 import { useDonationPresenter } from "@/presentation/presenters/donation/useDonationPresenter";
 import { Crown, Heart, Medal, PawPrint, Sparkles, Trophy } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
@@ -169,22 +169,13 @@ export function DonationLeaderboardView({ initialViewModel }: Props) {
                     )}
                   </div>
 
-                  {/* Avatar */}
-                  <div className="h-12 w-12 overflow-hidden rounded-full bg-muted">
-                    {entry.avatarUrl ? (
-                      <Image
-                        src={entry.avatarUrl}
-                        alt={entry.donorName}
-                        width={48}
-                        height={48}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
-                        {entry.donorName.charAt(0)}
-                      </div>
-                    )}
-                  </div>
+                  <Avatar
+                    src={entry.avatarUrl}
+                    alt={entry.donorName}
+                    name={entry.donorName}
+                    size={48}
+                    fallbackClassName="bg-primary/10 text-primary"
+                  />
 
                   {/* Info */}
                   <div className="flex-1">
