@@ -15,11 +15,12 @@ import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
   AlertTriangle,
+  Archive,
   ArrowLeft,
   CheckCircle,
   Clock,
   Construction,
-  Flag,
+  Edit,
   Heart,
   MapPin,
   Scissors,
@@ -94,7 +95,6 @@ interface PetDetailViewProps {
   onCloseAdoptionModal: () => void;
   onOpenCloseModal: () => void;
   onCloseCloseModal: () => void;
-  onOpenReportModal: () => void;
   onCloseReportModal: () => void;
   onCloseComingSoon: () => void;
   onAdoptClick: () => void;
@@ -120,7 +120,6 @@ export function PetDetailView({
   onCloseCloseModal,
   onAdoptClick,
   onOpenCloseModal,
-  onOpenReportModal,
   onCloseReportModal,
   onCloseComingSoon,
   onFoundPetClick,
@@ -413,14 +412,25 @@ export function PetDetailView({
               <Share2 className="h-3.5 w-3.5" />
               แชร์
             </button>
-            <button
-              type="button"
-              onClick={onOpenReportModal}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted"
-            >
-              <Flag className="h-3.5 w-3.5" />
-              รายงาน
-            </button>
+            {isOwner && (
+              <>
+                <Link
+                  href={`/posts/${post.id}/edit`}
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                  Edit
+                </Link>
+                <button
+                  onClick={onOpenCloseModal}
+                  className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+                  type="button"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  Close
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

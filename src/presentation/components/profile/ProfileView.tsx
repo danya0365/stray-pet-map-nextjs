@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const ROLE_LABELS: Record<
@@ -751,6 +752,7 @@ function UserPostsSection({
   onDeletePost: (postId: string) => Promise<boolean>;
   isDeletingPost: string | null;
 }) {
+  const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
     null,
   );
@@ -914,7 +916,7 @@ function UserPostsSection({
                           alert("โพสต์ที่จบแล้วไม่สามารถแก้ไขได้");
                           return;
                         }
-                        alert("ฟีเจอร์แก้ไขโพสต์กำลังพัฒนา");
+                        router.push(`/posts/${post.id}/edit`);
                       }}
                       disabled={!!post.outcome}
                       className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"

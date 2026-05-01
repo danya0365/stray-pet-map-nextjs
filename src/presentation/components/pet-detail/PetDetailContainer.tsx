@@ -130,7 +130,6 @@ export function PetDetailContainer({
       onCloseAdoptionModal={closeAdoptionModal}
       onOpenCloseModal={openCloseModal}
       onCloseCloseModal={closeCloseModal}
-      onOpenReportModal={reportModal.open}
       onCloseReportModal={reportModal.close}
       onCloseComingSoon={comingSoonModal.close}
       onAdoptClick={handleAdoptClick}
