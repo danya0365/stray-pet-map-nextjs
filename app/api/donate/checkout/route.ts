@@ -1,5 +1,5 @@
 import type { DonationTargetType } from "@/domain/entities/donation";
-import { createServerDonationPresenter } from "@/presentation/presenters/donation/DonationPresenterServerFactory";
+import { createAdminDonationPresenter } from "@/presentation/presenters/donation/DonationAdminPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // POST /api/donate/checkout - สร้าง Stripe checkout session สำหรับ donation
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     // Create checkout session via presenter
-    const presenter = createServerDonationPresenter();
+    const presenter = createAdminDonationPresenter();
     const result = await presenter.createCheckoutSession({
       amount,
       message,

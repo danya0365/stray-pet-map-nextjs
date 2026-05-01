@@ -1,4 +1,4 @@
-import { createServerDonationPresenter } from "@/presentation/presenters/donation/DonationPresenterServerFactory";
+import { createAdminDonationPresenter } from "@/presentation/presenters/donation/DonationAdminPresenterServerFactory";
 import { createServerStripePresenter } from "@/presentation/presenters/stripe/StripePresenterServerFactory";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     // ✅ API Route เป็นคนตัดสินใจว่า event นี้ควรไปไหน (No presenter calling presenter)
     if (stripePresenter.isDonationCheckoutCompleted(verifyResult)) {
       const session = verifyResult.event.data.object as Stripe.Checkout.Session;
-      const donationPresenter = createServerDonationPresenter();
+      const donationPresenter = createAdminDonationPresenter();
 
       const result = await donationPresenter.processCheckoutCompleted(session);
 

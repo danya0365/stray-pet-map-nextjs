@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
  */
 export async function GET() {
   try {
-    const presenter = createServerDonationPresenter();
+    const presenter = await createServerDonationPresenter();
     const result = await presenter.getStats();
 
     if (!result.success) {

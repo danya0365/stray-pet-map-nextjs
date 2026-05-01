@@ -50,6 +50,11 @@ export interface WebhookVerificationResult {
   error?: string;
 }
 
+export interface LeaderboardViewModel {
+  entries: DonationLeaderboardEntry[];
+  stats: DonationStats | null;
+}
+
 /**
  * Presenter for donation operations
  * ✅ Receives repositories via constructor injection
@@ -319,6 +324,33 @@ export class DonationPresenter {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       return { success: false, error: errorMessage };
+    }
+  }
+
+  // ============================================================
+  // VIEW MODEL (For Server Components)
+  // ============================================================
+
+  /**
+   * Get view model for leaderboard page
+   * Used by Server Component for initial data + SEO
+   */
+  async getViewModel(): Promise<LeaderboardViewModel> {
+    try {
+      const [leaderboardResult, statsResult] = await Promise.all([
+        this.getLeaderboardWeekly(10),
+        this.getStats(),
+      ]);
+
+      return {
+        entries: leaderboardResult.success
+          ? (leaderboardResult.data ?? [])
+          : [],
+        stats: statsResult.success ? (statsResult.data ?? null) : null,
+      };
+    } catch (error) {
+      console.error("Error getting leaderboard view model:", error);
+      return { entries: [], stats: null };
     }
   }
 

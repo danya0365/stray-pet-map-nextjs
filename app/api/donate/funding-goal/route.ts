@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const presenter = createServerDonationPresenter();
+    const presenter = await createServerDonationPresenter();
     const goal = await presenter.getPetFundingGoal(petPostId);
 
     return NextResponse.json({ goal });

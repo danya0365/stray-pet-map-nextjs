@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const presenter = createServerDonationPresenter();
+    const presenter = await createServerDonationPresenter();
     const donation = await presenter.findByStripeSessionId(sessionId);
 
     return NextResponse.json({ donation });

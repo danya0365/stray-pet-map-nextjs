@@ -1,4 +1,4 @@
-import { createServerDonationPresenter } from "@/presentation/presenters/donation/DonationPresenterServerFactory";
+import { createAdminDonationPresenter } from "@/presentation/presenters/donation/DonationAdminPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 /**
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const presenter = createServerDonationPresenter();
+    const presenter = createAdminDonationPresenter();
     const donation = await presenter.completeDonation(
       donationId,
       paymentIntentId,

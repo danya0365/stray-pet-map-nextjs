@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const presenter = createServerDonationPresenter();
+    const presenter = await createServerDonationPresenter();
     const hasDonated = await presenter.hasDonatedThisMonth(donorId);
 
     return NextResponse.json({ hasDonated });

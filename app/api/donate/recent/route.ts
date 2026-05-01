@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    const presenter = createServerDonationPresenter();
+    const presenter = await createServerDonationPresenter();
     const donations = await presenter.getRecentDonations(limit);
 
     return NextResponse.json({ donations });

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const presenter = createServerDonationPresenter();
+    const presenter = await createServerDonationPresenter();
     const result =
       type === "weekly"
         ? await presenter.getLeaderboardWeekly(limit)

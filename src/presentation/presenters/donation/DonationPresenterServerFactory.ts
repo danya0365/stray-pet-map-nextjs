@@ -1,22 +1,21 @@
 /**
  * DonationPresenterServerFactory
- * Factory for creating DonationPresenter instances on the server side
+ * Factory for creating DonationPresenter instances for Server Components
+ * Uses Supabase server client with cookies (respects RLS)
  * Following Clean Architecture pattern
  */
 
-import { StripeRepository } from "@/infrastructure/repositories/stripe/StripeRepository";
 import { SupabaseDonationRepository } from "@/infrastructure/repositories/supabase/SupabaseDonationRepository";
-import { createAdminSupabaseClient } from "@/infrastructure/supabase/admin";
+import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { DonationPresenter } from "./DonationPresenter";
 
 /**
- * Factory for creating server-side DonationPresenter
- * Uses Supabase repository with admin client for webhook processing
+ * Factory for creating DonationPresenter for Server Components
+ * Uses Supabase server client with cookies
  */
-export function createServerDonationPresenter(): DonationPresenter {
-  const adminClient = createAdminSupabaseClient();
-  const donationRepo = new SupabaseDonationRepository(adminClient);
-  const stripeRepo = new StripeRepository();
+export async function createServerDonationPresenter(): Promise<DonationPresenter> {
+  const supabase = await createServerSupabaseClient();
+  const donationRepo = new SupabaseDonationRepository(supabase);
 
-  return new DonationPresenter(donationRepo, stripeRepo);
+  return new DonationPresenter(donationRepo);
 }
