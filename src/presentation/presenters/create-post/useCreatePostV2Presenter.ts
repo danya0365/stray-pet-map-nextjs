@@ -15,6 +15,7 @@ import type {
   PetPostPurpose,
   PetType,
 } from "@/domain/entities/pet-post";
+import { compressImage } from "@/presentation/lib/image-compressor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CreatePostPresenter,
@@ -230,11 +231,21 @@ export function useCreatePostV2Presenter(
   // ── Image handling ──────────────────────────────────
 
   const handleImageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
-      setImageFile(file);
+      try {
+        const compressedBlob = await compressImage(file);
+        const compressedFile = new File([compressedBlob], file.name, {
+          type: compressedBlob.type,
+        });
+        setImageFile(compressedFile);
+      } catch {
+        // Fallback to original if compression fails
+        setImageFile(file);
+      }
+
       setStepErrors((prev) => {
         if (!("image" in prev)) return prev;
         const next = { ...prev };
@@ -385,9 +396,7 @@ export function useCreatePostV2Presenter(
     } catch (err) {
       if (isMountedRef.current) {
         const message =
-          err instanceof Error
-            ? err.message
-            : "เกิดข้อผิดพลาด กรุณาลองใหม่";
+          err instanceof Error ? err.message : "เกิดข้อผิดพลาด กรุณาลองใหม่";
         setError(message);
       }
     } finally {

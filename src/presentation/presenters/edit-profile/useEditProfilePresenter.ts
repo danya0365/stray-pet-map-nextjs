@@ -1,6 +1,7 @@
 "use client";
 
 import type { AuthProfile } from "@/application/repositories/IAuthRepository";
+import { compressImage } from "@/presentation/lib/image-compressor";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -149,7 +150,17 @@ export function useEditProfilePresenter(
     }
   }, [presenter, fullName, username, bio, avatarUrl, router, setStoreProfile]);
 
-  const handleFileSelect = useCallback((file: File) => {
+  const handleFileSelect = useCallback(async (file: File) => {
+    let processedFile = file;
+    try {
+      const compressedBlob = await compressImage(file);
+      processedFile = new File([compressedBlob], file.name, {
+        type: compressedBlob.type,
+      });
+    } catch {
+      // Fallback to original if compression fails
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       if (isMountedRef.current) {
@@ -159,7 +170,7 @@ export function useEditProfilePresenter(
         setCropOpen(true);
       }
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
   }, []);
 
   const confirmCrop = useCallback(async () => {

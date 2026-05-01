@@ -189,13 +189,17 @@ export class SupabaseStorageRepository implements IStorageRepository {
     } = await this.supabase.auth.getUser();
     if (!user) throw new Error("กรุณาเข้าสู่ระบบก่อนอัปโหลด");
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // Compress server-side using sharp (belt-and-suspenders)
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const compressedBuffer = await this.compressImage(buffer);
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
     const filePath = `${user.id}/${fileName}`;
 
     const { error } = await this.supabase.storage
       .from(THUMBNAIL_BUCKET)
-      .upload(filePath, file, {
+      .upload(filePath, compressedBuffer, {
+        contentType: "image/jpeg",
         cacheControl: "3600",
         upsert: false,
       });
@@ -223,13 +227,17 @@ export class SupabaseStorageRepository implements IStorageRepository {
     } = await this.supabase.auth.getUser();
     if (!user) throw new Error("กรุณาเข้าสู่ระบบก่อนอัปโหลด");
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // Compress server-side using sharp (belt-and-suspenders)
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const compressedBuffer = await this.compressImage(buffer);
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
     const filePath = `${user.id}/${fileName}`;
 
     const { error } = await this.supabase.storage
       .from("avatars")
-      .upload(filePath, file, {
+      .upload(filePath, compressedBuffer, {
+        contentType: "image/jpeg",
         cacheControl: "3600",
         upsert: false,
       });
