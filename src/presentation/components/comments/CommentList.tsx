@@ -11,12 +11,14 @@ interface CommentListProps {
   loading?: boolean;
   loadingMore?: boolean;
   hasMore?: boolean;
+  loadingReplies?: Set<string>;
   onReply: (parentId: string, content: string) => void;
   onEdit: (commentId: string, content: string) => void;
   onDelete: (commentId: string) => void;
   onToggleLike: (commentId: string) => void;
   onAddReaction: (commentId: string, type: CommentReactionType) => void;
   onRemoveReaction: (commentId: string) => void;
+  onLoadReplies?: (commentId: string) => void;
   onLoadMore?: () => void;
   isSubmitting?: boolean;
 }
@@ -28,12 +30,14 @@ export function CommentList({
   loading = false,
   loadingMore = false,
   hasMore = false,
+  loadingReplies,
   onReply,
   onEdit,
   onDelete,
   onToggleLike,
   onAddReaction,
   onRemoveReaction,
+  onLoadReplies,
   onLoadMore,
   isSubmitting = false,
 }: CommentListProps) {
@@ -89,6 +93,8 @@ export function CommentList({
             onToggleLike={onToggleLike}
             onAddReaction={onAddReaction}
             onRemoveReaction={onRemoveReaction}
+            onLoadReplies={onLoadReplies}
+            isLoadingReplies={loadingReplies?.has(comment.id)}
             isSubmitting={isSubmitting}
           />
         ))}

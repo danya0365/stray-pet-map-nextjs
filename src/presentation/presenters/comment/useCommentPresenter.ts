@@ -42,6 +42,7 @@ export interface CommentFormState {
 export interface CommentPresenterState {
   thread: CommentThreadState;
   form: CommentFormState;
+  loadingReplies: Set<string>;
   showAuthPrompt: boolean;
   gamificationMessage: string | null;
 }
@@ -55,6 +56,7 @@ export interface CommentPresenterActions {
   refreshComments: () => Promise<void>;
   createComment: (content: string) => Promise<void>;
   createReply: (parentCommentId: string, content: string) => Promise<void>;
+  loadReplies: (parentCommentId: string) => Promise<void>;
   updateComment: (commentId: string, content: string) => Promise<void>;
   deleteComment: (commentId: string) => Promise<void>;
   toggleLike: (commentId: string) => Promise<void>;
@@ -112,6 +114,9 @@ export function useCommentPresenter(
   const [gamificationMessage, setGamificationMessage] = useState<string | null>(
     null,
   );
+
+  // Reply loading state (per comment id)
+  const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
 
   // Update ref when petPostId changes
   useEffect(() => {
@@ -281,20 +286,23 @@ export function useCommentPresenter(
 
         if (isMountedRef.current) {
           if (result.success && result.data) {
-            // Update parent comment's reply count and add reply
-            setComments((prev) =>
-              prev.map((comment) => {
+            // Recursively find parent at any depth and append reply
+            const appendReply = (list: Comment[]): Comment[] =>
+              list.map((comment) => {
                 if (comment.id === parentCommentId) {
-                  const reply = result.data!.comment;
                   return {
                     ...comment,
                     replyCount: comment.replyCount + 1,
-                    replies: [...(comment.replies || []), reply],
+                    replies: [...(comment.replies || []), result.data!.comment],
                   };
                 }
+                if (comment.replies && comment.replies.length > 0) {
+                  return { ...comment, replies: appendReply(comment.replies) };
+                }
                 return comment;
-              }),
-            );
+              });
+
+            setComments((prev) => appendReply(prev));
             setTotalCount((prev) => prev + 1);
             setReplyToState(null);
 
@@ -322,6 +330,60 @@ export function useCommentPresenter(
       }
     },
     [isAuthenticated, user?.id, presenter],
+  );
+
+  // ============================================================================
+  // Load Replies (lazy)
+  // ============================================================================
+
+  const loadReplies = useCallback(
+    async (parentCommentId: string) => {
+      setLoadingReplies((prev) => new Set(prev).add(parentCommentId));
+      setThreadError(null);
+
+      try {
+        const result = await presenter.getReplies(parentCommentId, {
+          pagination: { type: "cursor" as const, limit: 10 },
+        });
+
+        if (isMountedRef.current) {
+          if (result.success && result.data) {
+            const mergeReplies = (list: Comment[]): Comment[] =>
+              list.map((comment) => {
+                if (comment.id === parentCommentId) {
+                  return {
+                    ...comment,
+                    replies: result.data!.replies,
+                  };
+                }
+                if (comment.replies && comment.replies.length > 0) {
+                  return { ...comment, replies: mergeReplies(comment.replies) };
+                }
+                return comment;
+              });
+
+            setComments((prev) => mergeReplies(prev));
+          } else {
+            setThreadError(result.error || "Failed to load replies");
+          }
+        }
+      } catch (err) {
+        if (isMountedRef.current) {
+          setThreadError(
+            err instanceof Error ? err.message : "Failed to load replies",
+          );
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setLoadingReplies((prev) => {
+            const next = new Set(prev);
+            next.delete(parentCommentId);
+            return next;
+          });
+        }
+      }
+    },
+    [presenter],
   );
 
   // ============================================================================
@@ -687,6 +749,7 @@ export function useCommentPresenter(
         loadingMore,
         error: threadError,
       },
+      loadingReplies,
       form: {
         isSubmitting,
         error: formError,
@@ -702,6 +765,7 @@ export function useCommentPresenter(
       refreshComments,
       createComment,
       createReply,
+      loadReplies,
       updateComment,
       deleteComment,
       toggleLike,

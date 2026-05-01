@@ -28,6 +28,7 @@ export function CommentSection({
 
   const {
     thread: { comments, totalCount, loading, loadingMore, hasMore, error },
+    loadingReplies,
     form: { isSubmitting, error: formError, replyTo, editComment },
     showAuthPrompt,
     gamificationMessage,
@@ -36,6 +37,7 @@ export function CommentSection({
   const {
     createComment,
     createReply,
+    loadReplies,
     updateComment,
     deleteComment,
     toggleLike,
@@ -153,12 +155,14 @@ export function CommentSection({
         loading={loading}
         loadingMore={loadingMore}
         hasMore={hasMore}
+        loadingReplies={loadingReplies}
         onReply={(parentId, content) => createReply(parentId, content)}
         onEdit={(commentId, content) => updateComment(commentId, content)}
         onDelete={deleteComment}
         onToggleLike={toggleLike}
         onAddReaction={addReaction}
         onRemoveReaction={removeReaction}
+        onLoadReplies={loadReplies}
         onLoadMore={loadMore}
         isSubmitting={isSubmitting}
       />

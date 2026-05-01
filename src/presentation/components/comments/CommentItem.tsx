@@ -5,7 +5,13 @@ import { Avatar } from "@/presentation/components/ui";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { MessageSquare, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { CommentForm } from "./CommentForm";
 import { CommentReactions } from "./CommentReactions";
@@ -22,6 +28,8 @@ interface CommentItemProps {
   onToggleLike: (commentId: string) => void;
   onAddReaction: (commentId: string, type: CommentReactionType) => void;
   onRemoveReaction: (commentId: string) => void;
+  onLoadReplies?: (commentId: string) => void;
+  isLoadingReplies?: boolean;
   isSubmitting?: boolean;
 }
 
@@ -34,6 +42,8 @@ export function CommentItem({
   onToggleLike,
   onAddReaction,
   onRemoveReaction,
+  onLoadReplies,
+  isLoadingReplies = false,
   isSubmitting = false,
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
@@ -42,6 +52,9 @@ export function CommentItem({
 
   const isOwner = currentUserId === comment.profileId;
   const hasReplies = comment.replies && comment.replies.length > 0;
+  const hasUnloadedReplies =
+    comment.replyCount > 0 &&
+    (!comment.replies || comment.replies.length === 0);
 
   // Handle deleted comment
   if (comment.isDeleted) {
@@ -132,6 +145,27 @@ export function CommentItem({
                 <span>ตอบกลับ</span>
               </button>
 
+              {/* Load replies button (lazy) */}
+              {hasUnloadedReplies && onLoadReplies && (
+                <button
+                  type="button"
+                  onClick={() => onLoadReplies(comment.id)}
+                  disabled={isLoadingReplies}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                >
+                  {isLoadingReplies ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <MessageSquare className="h-3.5 w-3.5" />
+                  )}
+                  <span>
+                    {isLoadingReplies
+                      ? "กำลังโหลด..."
+                      : `ดูตอบกลับ (${comment.replyCount})`}
+                  </span>
+                </button>
+              )}
+
               {/* More actions (owner only) */}
               {isOwner && (
                 <div className="relative">
@@ -208,6 +242,8 @@ export function CommentItem({
                   onToggleLike={onToggleLike}
                   onAddReaction={onAddReaction}
                   onRemoveReaction={onRemoveReaction}
+                  onLoadReplies={onLoadReplies}
+                  isLoadingReplies={isLoadingReplies}
                   isSubmitting={isSubmitting}
                 />
               ))}
