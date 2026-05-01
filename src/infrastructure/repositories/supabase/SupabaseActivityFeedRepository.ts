@@ -1,7 +1,8 @@
 /**
  * SupabaseActivityFeedRepository
- * Merges pet_posts + comments into a unified activity feed
- * Clean Architecture - Infrastructure layer
+ * Queries the activity_feed_items materialized view for O(1) feed reads.
+ * View refreshes via triggers on pet_posts/comments writes.
+ * Clean Architecture — Infrastructure layer
  */
 
 import type {
@@ -17,6 +18,10 @@ import type {
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Types from Supabase schema
+type ActivityFeedRow =
+  Database["public"]["Views"]["activity_feed_items"]["Row"];
+
 export class SupabaseActivityFeedRepository implements IActivityFeedRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
 
@@ -25,137 +30,77 @@ export class SupabaseActivityFeedRepository implements IActivityFeedRepository {
   ): Promise<ActivityFeedResult> {
     const limit = query.limit ?? 20;
 
-    // Fetch recent posts (with owner profile)
-    let postQuery = this.supabase
-      .from("pet_posts")
-      .select(
-        `
-        id, title, description, purpose, status, outcome,
-        thumbnail_url, province, created_at, updated_at,
-        profile_id,
-        profiles:profile_id (id, full_name, avatar_url, level)
-      `,
-      )
-      .eq("is_active", true)
-      .eq("is_archived", false)
-      .order("updated_at", { ascending: false })
+    let q = this.supabase
+      .from("activity_feed_items")
+      .select("*")
+      .order("occurred_at", { ascending: false })
       .limit(limit);
 
     if (query.cursor) {
-      postQuery = postQuery.lt("updated_at", query.cursor);
+      q = q.lt("occurred_at", query.cursor);
     }
 
-    // Fetch recent comments (with profile)
-    let commentQuery = this.supabase
-      .from("comments")
-      .select(
-        `
-        id, content, pet_post_id, parent_comment_id, created_at,
-        profile_id,
-        profiles:profile_id (id, full_name, avatar_url, level)
-      `,
-      )
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (query.cursor) {
-      commentQuery = commentQuery.lt("created_at", query.cursor);
-    }
-
-    const [
-      { data: posts, error: postError },
-      { data: comments, error: commentError },
-    ] = await Promise.all([postQuery, commentQuery]);
-
-    if (postError) console.error("ActivityFeed post fetch error:", postError);
-    if (commentError)
-      console.error("ActivityFeed comment fetch error:", commentError);
-
-    // Build activity items from posts
-    const postItems: ActivityItem[] = (posts || []).map((p) => {
-      const profiles = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
-      const outcome = p.outcome;
-      const status = p.status;
-
-      let type: ActivityType = "new_post";
-      if (outcome === "owner_found" || outcome === "rehomed") {
-        type = "status_changed";
-      }
-
-      const payload: ActivityPayload = {
-        postId: p.id,
-        postTitle: p.title,
-        postThumbnailUrl: p.thumbnail_url ?? undefined,
-        postPurpose: p.purpose ?? undefined,
-        postStatus: status ?? undefined,
-        postOutcome: outcome ?? undefined,
-      };
-
-      return {
-        id: `post_${p.id}`,
-        type,
-        actor: {
-          id: profiles?.id ?? p.profile_id,
-          displayName: profiles?.full_name ?? "ผู้ใช้",
-          avatarUrl: profiles?.avatar_url ?? undefined,
-          level: profiles?.level ?? 1,
-        },
-        payload,
-        occurredAt: (p.updated_at ?? p.created_at) || new Date().toISOString(),
-        createdAt: p.created_at || new Date().toISOString(),
-        updatedAt: (p.updated_at ?? p.created_at) || new Date().toISOString(),
-      };
-    });
-
-    // Build activity items from comments
-    const commentItems: ActivityItem[] = (comments || []).map((c) => {
-      const profiles = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
-      const isReply = !!c.parent_comment_id;
-
-      const type: ActivityType = isReply ? "comment_reply" : "new_comment";
-      const payload: ActivityPayload = {
-        postId: c.pet_post_id,
-        commentId: c.id,
-        commentContent: c.content,
-        parentCommentId: c.parent_comment_id ?? undefined,
-      };
-
-      return {
-        id: `comment_${c.id}`,
-        type,
-        actor: {
-          id: profiles?.id ?? c.profile_id,
-          displayName: profiles?.full_name ?? "ผู้ใช้",
-          avatarUrl: profiles?.avatar_url ?? undefined,
-          level: profiles?.level ?? 1,
-        },
-        payload,
-        occurredAt: c.created_at || new Date().toISOString(),
-        createdAt: c.created_at || new Date().toISOString(),
-        updatedAt: c.created_at || new Date().toISOString(),
-      };
-    });
-
-    // Merge and sort by occurredAt desc
-    let allItems = [...postItems, ...commentItems];
-    allItems.sort(
-      (a, b) =>
-        new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
-    );
-
-    // Apply type filter if provided
     if (query.types && query.types.length > 0) {
-      allItems = allItems.filter((item) => query.types!.includes(item.type));
+      q = q.in("type", query.types);
     }
 
-    // Slice to limit
-    const items = allItems.slice(0, limit);
-    const hasMore = allItems.length > limit;
+    const { data, error } = await q;
+
+    if (error) {
+      console.error("ActivityFeed view query error:", error);
+      throw new Error(error.message || "ไม่สามารถโหลดกิจกรรมได้");
+    }
+
+    const rows = (data ?? []) as ActivityFeedRow[];
+
+    const items: ActivityItem[] = rows.map((r) => {
+      const type = this.mapType(r.type!, r.post_outcome);
+
+      const payload: ActivityPayload = {
+        postId: r.post_id ?? undefined,
+        postTitle: r.post_title ?? undefined,
+        postThumbnailUrl: r.post_thumbnail ?? undefined,
+        postPurpose: r.post_purpose ?? undefined,
+        postStatus: r.post_status ?? undefined,
+        postOutcome: r.post_outcome ?? undefined,
+        commentId: r.comment_id ?? undefined,
+        commentContent: r.comment_content ?? undefined,
+        parentCommentId: r.parent_comment_id ?? undefined,
+      };
+
+      const occurredAt = r.occurred_at || new Date().toISOString();
+
+      return {
+        id: r.id!,
+        type,
+        actor: {
+          id: r.actor_id!,
+          displayName: r.actor_name || "ผู้ใช้",
+          avatarUrl: r.actor_avatar ?? undefined,
+          level: r.actor_level ?? 1,
+        },
+        payload,
+        occurredAt,
+        createdAt: occurredAt,
+        updatedAt: occurredAt,
+      };
+    });
+
+    const hasMore = items.length === limit;
     const nextCursor = hasMore
       ? items[items.length - 1]?.occurredAt
       : undefined;
 
     return { items, hasMore, nextCursor };
+  }
+
+  private mapType(rawType: string, outcome: string | null): ActivityType {
+    if (
+      rawType === "new_post" &&
+      (outcome === "owner_found" || outcome === "rehomed")
+    ) {
+      return "status_changed";
+    }
+    return rawType as ActivityType;
   }
 }

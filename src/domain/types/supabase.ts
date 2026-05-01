@@ -931,6 +931,27 @@ export type Database = {
       }
     }
     Views: {
+      activity_feed_items: {
+        Row: {
+          actor_avatar: string | null
+          actor_id: string | null
+          actor_level: number | null
+          actor_name: string | null
+          comment_content: string | null
+          comment_id: string | null
+          id: string | null
+          occurred_at: string | null
+          parent_comment_id: string | null
+          post_id: string | null
+          post_outcome: string | null
+          post_purpose: string | null
+          post_status: string | null
+          post_thumbnail: string | null
+          post_title: string | null
+          type: string | null
+        }
+        Relationships: []
+      }
       comment_leaderboard_alltime: {
         Row: {
           avatar_url: string | null
@@ -1288,6 +1309,7 @@ export type Database = {
       is_moderator_or_admin: { Args: never; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       migrate_profile_roles: { Args: never; Returns: undefined }
+      refresh_activity_feed: { Args: never; Returns: undefined }
       set_profile_active: { Args: { profile_id: string }; Returns: boolean }
       set_profile_role: {
         Args: {
