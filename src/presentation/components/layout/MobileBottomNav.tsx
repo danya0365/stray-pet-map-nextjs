@@ -2,13 +2,14 @@
 
 import { cn } from "@/presentation/lib/cn";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
-import { Heart, Home, MapPin, PlusCircle, User } from "lucide-react";
+import { Activity, Heart, Home, MapPin, PlusCircle, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/", label: "หน้าแรก", icon: Home },
   { href: "/map", label: "แผนที่", icon: MapPin },
+  { href: "/updates", label: "อัปเดต", icon: Activity },
   { href: "/posts/create", label: "โพสต์", icon: PlusCircle },
   { href: "/favorites", label: "โปรด", icon: Heart },
   { href: "/profile", label: "โปรไฟล์", icon: User },
