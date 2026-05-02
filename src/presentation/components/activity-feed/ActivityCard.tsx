@@ -29,62 +29,46 @@ const TYPE_CONFIG: Record<
   ActivityType,
   {
     label: string;
-    color: string;
-    bgColor: string;
-    borderColor: string;
     icon: React.ReactNode;
   }
 > = {
   new_post: {
     label: "โพสต์ใหม่",
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-200",
     icon: <Sparkles className="h-3.5 w-3.5" />,
   },
   status_changed: {
     label: "มีคำตอบแล้ว",
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
     icon: <Trophy className="h-3.5 w-3.5" />,
   },
   new_comment: {
     label: "ความคิดเห็นใหม่",
-    color: "text-sky-600",
-    bgColor: "bg-sky-50",
-    borderColor: "border-sky-200",
     icon: <MessageCircle className="h-3.5 w-3.5" />,
   },
   comment_reply: {
     label: "ตอบกลับ",
-    color: "text-indigo-600",
-    bgColor: "bg-indigo-50",
-    borderColor: "border-indigo-200",
     icon: <MessageSquare className="h-3.5 w-3.5" />,
   },
   like_milestone: {
     label: "ถูกใจ",
-    color: "text-rose-600",
-    bgColor: "bg-rose-50",
-    borderColor: "border-rose-200",
     icon: <Heart className="h-3.5 w-3.5" />,
   },
   badge_unlock: {
     label: "Badge ใหม่",
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50",
-    borderColor: "border-yellow-200",
     icon: <Trophy className="h-3.5 w-3.5" />,
   },
   post_expiring_soon: {
     label: "ใกล้หมดอายุ",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50",
-    borderColor: "border-orange-200",
     icon: <AlertTriangle className="h-3.5 w-3.5" />,
   },
 };
+
+function activityStyle(type: ActivityType) {
+  return {
+    color: `var(--activity-${type}-text)`,
+    backgroundColor: `var(--activity-${type}-bg)`,
+    borderColor: `var(--activity-${type}-border)`,
+  };
+}
 
 export function ActivityCard({ activity, index }: ActivityCardProps) {
   const config = TYPE_CONFIG[activity.type];
@@ -97,9 +81,6 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
 
   const cardBase =
     "group rounded-xl border bg-card p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5";
-  const cardBorder = isSuccessStory
-    ? "border-emerald-300 bg-gradient-to-br from-emerald-50/60 to-white"
-    : `border-border ${config.borderColor}`;
 
   const linkHref = activity.payload.postId
     ? `/pets/${activity.payload.postId}`
@@ -107,8 +88,16 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
 
   return (
     <div
-      className={`${cardBase} ${cardBorder}`}
-      style={{ animationDelay: `${index * 50}ms` }}
+      className={`${cardBase} ${isSuccessStory ? "" : "border-border"}`}
+      style={{
+        animationDelay: `${index * 50}ms`,
+        ...(isSuccessStory
+          ? {
+              borderColor: "var(--activity-status_changed-border)",
+              background: `linear-gradient(to bottom right, var(--success-card-from), var(--success-card-to))`,
+            }
+          : { borderColor: activityStyle(activity.type).borderColor }),
+      }}
     >
       {/* Header: actor + type badge */}
       <div className="flex items-start justify-between gap-3">
@@ -135,7 +124,8 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
         </div>
 
         <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.color} ${config.bgColor}`}
+          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+          style={activityStyle(activity.type)}
         >
           {config.icon}
           {config.label}
@@ -165,7 +155,13 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
                 </span>
               )}
               {isSuccessStory && (
-                <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                <div
+                  className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={{
+                    backgroundColor: "var(--success-badge-bg)",
+                    color: "var(--success-badge-text)",
+                  }}
+                >
                   <Trophy className="h-3 w-3" />
                   {activity.payload.postOutcome === "owner_found"
                     ? "เจอเจ้าของแล้ว"
@@ -195,7 +191,13 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
               {activity.payload.postTitle ?? "โพสต์ใหม่"}
             </h3>
             {isSuccessStory && (
-              <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <div
+                className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{
+                  backgroundColor: "var(--success-badge-bg)",
+                  color: "var(--success-badge-text)",
+                }}
+              >
                 <Trophy className="h-3 w-3" />
                 {activity.payload.postOutcome === "owner_found"
                   ? "เจอเจ้าของแล้ว"
