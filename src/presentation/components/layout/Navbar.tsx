@@ -72,6 +72,7 @@ export function Navbar() {
 
   const handleSignOut = useCallback(async () => {
     await signOut();
+    useAuthStore.getState().reset();
     setUserMenuOpen(false);
     router.push("/");
     router.refresh();
