@@ -37,10 +37,15 @@ export async function GET(request: NextRequest) {
       pagination = { type: "cursor" as const, cursor, limit };
     }
 
+    // Authenticate to fetch user-specific interaction state
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
+
     const presenter = await createServerCommentPresenter();
     const result = await presenter.getThread(petPostId, {
       pagination,
       sortBy,
+      viewerProfileId: authViewModel.profile?.id,
     });
 
     if (!result.success) {

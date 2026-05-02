@@ -187,9 +187,16 @@ export class SupabaseCommentRepository implements ICommentRepository {
     const commentIds = comments.map((c) => c.id);
     const reactions = await this.fetchReactionsForComments(commentIds);
 
-    // Map comments with author info and reactions
+    // Fetch user interactions if viewerProfileId provided
+    const viewerProfileId = options.viewerProfileId;
+    const userInteractions = viewerProfileId
+      ? await this.fetchUserInteractionsForComments(commentIds, viewerProfileId)
+      : new Map();
+
+    // Map comments with author info, reactions, and user interactions
     const mappedComments = comments.map((c) => {
-      const comment = this.mapToComment(c);
+      const interaction = userInteractions.get(c.id);
+      const comment = this.mapToComment(c, interaction);
       comment.reactionCounts =
         reactions.get(comment.id) || defaultReactionCounts;
       return comment;
@@ -327,8 +334,24 @@ export class SupabaseCommentRepository implements ICommentRepository {
           : undefined;
     }
 
+    // Fetch reactions for these replies
+    const commentIds = comments.map((c) => c.id);
+    const reactions = await this.fetchReactionsForComments(commentIds);
+
+    // Fetch user interactions if viewerProfileId provided
+    const viewerProfileId = options.viewerProfileId;
+    const userInteractions = viewerProfileId
+      ? await this.fetchUserInteractionsForComments(commentIds, viewerProfileId)
+      : new Map();
+
     return {
-      replies: comments.map((c) => this.mapToComment(c)),
+      replies: comments.map((c) => {
+        const interaction = userInteractions.get(c.id);
+        const comment = this.mapToComment(c, interaction);
+        comment.reactionCounts =
+          reactions.get(comment.id) || defaultReactionCounts;
+        return comment;
+      }),
       hasMore,
       nextCursor,
     };
@@ -636,7 +659,13 @@ export class SupabaseCommentRepository implements ICommentRepository {
   // Private Helpers
   // ============================================================================
 
-  private mapToComment(data: CommentWithProfile): Comment {
+  private mapToComment(
+    data: CommentWithProfile,
+    userInteraction?: {
+      hasLiked: boolean;
+      reaction: CommentReactionType | null;
+    },
+  ): Comment {
     const profile = data.profiles;
 
     return {
@@ -664,6 +693,8 @@ export class SupabaseCommentRepository implements ICommentRepository {
       replyCount: data.reply_count,
       likeCount: data.like_count,
       reactionCounts: defaultReactionCounts,
+      userHasLiked: userInteraction?.hasLiked ?? false,
+      userReaction: userInteraction?.reaction ?? undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
@@ -737,6 +768,69 @@ export class SupabaseCommentRepository implements ICommentRepository {
     });
 
     return reactionMap;
+  }
+
+  private async fetchUserInteractionsForComments(
+    commentIds: string[],
+    profileId: string,
+  ): Promise<
+    Map<string, { hasLiked: boolean; reaction: CommentReactionType | null }>
+  > {
+    if (commentIds.length === 0) {
+      return new Map();
+    }
+
+    // Batch fetch likes and reactions in parallel
+    const [
+      { data: likesData, error: likesError },
+      { data: reactionsData, error: reactionsError },
+    ] = await Promise.all([
+      this.supabase
+        .from("comment_likes")
+        .select("comment_id")
+        .in("comment_id", commentIds)
+        .eq("profile_id", profileId),
+      this.supabase
+        .from("comment_reactions")
+        .select("comment_id, reaction_type")
+        .in("comment_id", commentIds)
+        .eq("profile_id", profileId),
+    ]);
+
+    if (likesError) {
+      console.error("Error fetching user likes:", likesError);
+    }
+    if (reactionsError) {
+      console.error("Error fetching user reactions:", reactionsError);
+    }
+
+    const interactionMap = new Map<
+      string,
+      { hasLiked: boolean; reaction: CommentReactionType | null }
+    >();
+
+    // Initialize all as no interaction
+    commentIds.forEach((id) => {
+      interactionMap.set(id, { hasLiked: false, reaction: null });
+    });
+
+    // Populate likes
+    (likesData || []).forEach((row) => {
+      const interaction = interactionMap.get(row.comment_id);
+      if (interaction) {
+        interaction.hasLiked = true;
+      }
+    });
+
+    // Populate reactions
+    (reactionsData || []).forEach((row) => {
+      const interaction = interactionMap.get(row.comment_id);
+      if (interaction && row.reaction_type) {
+        interaction.reaction = row.reaction_type as CommentReactionType;
+      }
+    });
+
+    return interactionMap;
   }
 
   private buildCommentTree(

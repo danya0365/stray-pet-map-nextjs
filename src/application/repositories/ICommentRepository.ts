@@ -20,6 +20,7 @@ import type { PaginationMode } from "@/domain/types/pagination";
 export interface CommentListBaseOptions {
   depth?: number;
   sortBy?: "newest" | "oldest" | "popular";
+  viewerProfileId?: string; // For fetching user-specific interaction state
 }
 
 export type CommentListOptions = CommentListBaseOptions & {
@@ -28,6 +29,7 @@ export type CommentListOptions = CommentListBaseOptions & {
 
 export type CommentReplyOptions = {
   pagination: PaginationMode;
+  viewerProfileId?: string; // For fetching user-specific interaction state
 };
 
 export interface CommentReplyResult {
