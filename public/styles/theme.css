@@ -52,6 +52,40 @@
   --success-badge-text: #047857;
   --success-card-from: rgba(16, 185, 129, 0.1);
   --success-card-to: rgba(255, 255, 255, 0);
+
+  /* Badge tiers */
+  --badge-bronze: #d97706;
+  --badge-silver: #9ca3af;
+  --badge-gold: #eab308;
+  --badge-platinum: #06b6d4;
+
+  /* Tooltip */
+  --tooltip-bg: #111827;
+  --tooltip-text: #ffffff;
+  --tooltip-muted: #d1d5db;
+  --tooltip-dim: #9ca3af;
+
+  /* Badge backgrounds — light */
+  --badge-bg-amber: #fef3c7;
+  --badge-text-amber: #b45309;
+  --badge-bg-emerald: #d1fae5;
+  --badge-text-emerald: #047857;
+  --badge-bg-blue: #dbeafe;
+  --badge-text-blue: #1d4ed8;
+  --badge-bg-purple: #ede9fe;
+  --badge-text-purple: #6d28d9;
+  --badge-bg-orange: #ffedd5;
+  --badge-text-orange: #c2410c;
+  --badge-bg-red: #fee2e2;
+  --badge-text-red: #b91c1c;
+  --badge-bg-yellow: #fef9c3;
+  --badge-text-yellow: #a16207;
+  --badge-bg-teal: #ccfbf1;
+  --badge-text-teal: #0f766e;
+  --badge-bg-indigo: #e0e7ff;
+  --badge-text-indigo: #3730a3;
+  --badge-bg-pink: #fce7f3;
+  --badge-text-pink: #be185d;
 }
 
 .dark {
@@ -100,6 +134,40 @@
   --success-badge-text: #34d399;
   --success-card-from: rgba(16, 185, 129, 0.15);
   --success-card-to: rgba(37, 34, 32, 0);
+
+  /* Badge tiers — dark */
+  --badge-bronze: #f59e0b;
+  --badge-silver: #e5e7eb;
+  --badge-gold: #facc15;
+  --badge-platinum: #22d3ee;
+
+  /* Tooltip — dark */
+  --tooltip-bg: #1f2937;
+  --tooltip-text: #f9fafb;
+  --tooltip-muted: #d1d5db;
+  --tooltip-dim: #9ca3af;
+
+  /* Badge backgrounds — dark */
+  --badge-bg-amber: #451a03;
+  --badge-text-amber: #fbbf24;
+  --badge-bg-emerald: #022c22;
+  --badge-text-emerald: #34d399;
+  --badge-bg-blue: #172554;
+  --badge-text-blue: #60a5fa;
+  --badge-bg-purple: #3b0764;
+  --badge-text-purple: #c084fc;
+  --badge-bg-orange: #431407;
+  --badge-text-orange: #fb923c;
+  --badge-bg-red: #450a0a;
+  --badge-text-red: #f87171;
+  --badge-bg-yellow: #422006;
+  --badge-text-yellow: #facc15;
+  --badge-bg-teal: #042f2e;
+  --badge-text-teal: #2dd4bf;
+  --badge-bg-indigo: #1e1b4b;
+  --badge-text-indigo: #818cf8;
+  --badge-bg-pink: #500724;
+  --badge-text-pink: #f472b6;
 }
 
 @theme inline {

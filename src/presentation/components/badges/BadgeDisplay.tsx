@@ -1,7 +1,16 @@
 "use client";
 
 import type { Badge, BadgeTier } from "@/domain/entities/badge";
+import { BADGE_DEFINITIONS } from "@/domain/entities/badge";
 import { cn } from "@/presentation/lib/cn";
+
+function badgeStyle(type: Badge["type"]) {
+  const key = BADGE_DEFINITIONS[type]?.color ?? "blue";
+  return {
+    backgroundColor: `var(--badge-bg-${key})`,
+    color: `var(--badge-text-${key})`,
+  };
+}
 
 interface BadgeDisplayProps {
   badge: Badge;
@@ -9,12 +18,16 @@ interface BadgeDisplayProps {
   showTooltip?: boolean;
 }
 
-const tierConfig: Record<BadgeTier, { label: string; border: string }> = {
-  bronze: { label: "ทองแดง", border: "border-amber-600" },
-  silver: { label: "เงิน", border: "border-gray-400" },
-  gold: { label: "ทอง", border: "border-yellow-500" },
-  platinum: { label: "แพลตินัม", border: "border-cyan-500" },
+const tierConfig: Record<BadgeTier, { label: string }> = {
+  bronze: { label: "ทองแดง" },
+  silver: { label: "เงิน" },
+  gold: { label: "ทอง" },
+  platinum: { label: "แพลตินัม" },
 };
+
+function tierColor(tier: BadgeTier) {
+  return `var(--badge-${tier})`;
+}
 
 export function BadgeDisplay({
   badge,
@@ -33,12 +46,14 @@ export function BadgeDisplay({
     <div className="group relative">
       <div
         className={cn(
-          "flex items-center justify-center rounded-full border-2 bg-white shadow-sm transition-all",
+          "flex items-center justify-center rounded-full border-2 bg-card shadow-sm transition-all",
           "hover:scale-110 hover:shadow-md",
           sizeClasses[size],
-          tier.border,
-          badge.color,
         )}
+        style={{
+          borderColor: tierColor(badge.tier),
+          ...badgeStyle(badge.type),
+        }}
         title={showTooltip ? `${badge.name} (${tier.label})` : undefined}
       >
         {badge.icon}
@@ -47,17 +62,33 @@ export function BadgeDisplay({
       {/* Tooltip */}
       {showTooltip && (
         <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-48 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="rounded-lg bg-gray-900 px-3 py-2 text-center text-sm text-white shadow-lg">
+          <div
+            className="rounded-lg px-3 py-2 text-center text-sm shadow-lg"
+            style={{
+              backgroundColor: "var(--tooltip-bg)",
+              color: "var(--tooltip-text)",
+            }}
+          >
             <p className="font-semibold">{badge.name}</p>
-            <p className="text-xs text-gray-300">{tier.label}</p>
+            <p className="text-xs" style={{ color: "var(--tooltip-muted)" }}>
+              {tier.label}
+            </p>
             {badge.earnedValue && (
-              <p className="mt-1 text-xs text-gray-400">
+              <p
+                className="mt-1 text-xs"
+                style={{ color: "var(--tooltip-dim)" }}
+              >
                 ทำได้ {badge.earnedValue} ครั้ง
               </p>
             )}
-            <p className="mt-1 text-xs text-gray-400">{badge.description}</p>
+            <p className="mt-1 text-xs" style={{ color: "var(--tooltip-dim)" }}>
+              {badge.description}
+            </p>
             {/* Arrow */}
-            <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900" />
+            <div
+              className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45"
+              style={{ backgroundColor: "var(--tooltip-bg)" }}
+            />
           </div>
         </div>
       )}
@@ -71,10 +102,8 @@ export function BadgeCompact({ badge }: { badge: Badge }) {
 
   return (
     <div
-      className={cn(
-        "flex items-center gap-2 rounded-full px-3 py-1.5",
-        badge.color,
-      )}
+      className={cn("flex items-center gap-2 rounded-full px-3 py-1.5")}
+      style={badgeStyle(badge.type)}
     >
       <span className="text-lg">{badge.icon}</span>
       <div className="flex flex-col">

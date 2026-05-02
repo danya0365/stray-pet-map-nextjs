@@ -26,7 +26,7 @@ export interface Badge {
   name: string;
   description: string;
   icon: string; // Lucide icon name หรือ emoji
-  color: string; // Tailwind color class
+  color: string; // Semantic color key (e.g. "blue")
   awardedAt: string;
   earnedValue?: number; // ค่าที่ทำให้ได้รับ badge (เช่น จำนวนโพสต์)
 }
@@ -64,56 +64,56 @@ export const BADGE_DEFINITIONS: Record<
     name: "นักช่วยเหลือมือใหม่",
     description: "สร้างโพสต์ช่วยเหลือสัตว์ครั้งแรก",
     icon: "🌟",
-    color: "bg-amber-100 text-amber-700",
+    color: "amber",
     tiers: ["bronze"],
   },
   successful_adoption: {
     name: "ผู้ให้บ้านที่อบอุ่น",
     description: "ช่วยหาบ้านใหม่ให้สัตว์จรจัดสำเร็จ",
     icon: "🏠",
-    color: "bg-emerald-100 text-emerald-700",
+    color: "emerald",
     tiers: ["bronze", "silver", "gold", "platinum"],
   },
   pet_finder: {
     name: "นักสืบสัตว์เลี้ยง",
     description: "ช่วยตามหาสัตว์หายและเจอเจ้าของ",
     icon: "🔍",
-    color: "bg-blue-100 text-blue-700",
+    color: "blue",
     tiers: ["bronze", "silver", "gold"],
   },
   rescue_hero: {
     name: "ฮีโร่แมวจร",
     description: "ช่วยเหลือแมวจรจัดในชุมชน",
     icon: "🦸",
-    color: "bg-purple-100 text-purple-700",
+    color: "purple",
     tiers: ["bronze", "silver", "gold"],
   },
   active_helper: {
     name: "นักช่วยเหลือขยัน",
     description: "สร้างโพสต์ช่วยเหลือครบ 5 โพสต์",
     icon: "⚡",
-    color: "bg-orange-100 text-orange-700",
+    color: "orange",
     tiers: ["silver"],
   },
   super_helper: {
     name: "ซูเปอร์ฮีโร่สัตว์",
     description: "สร้างโพสต์ช่วยเหลือครบ 20 โพสต์",
     icon: "🦸‍♂️",
-    color: "bg-red-100 text-red-700",
+    color: "red",
     tiers: ["gold"],
   },
   quick_responder: {
     name: "สายฟ้า",
     description: "ตอบรับคำขอรับเลี้ยงภายใน 24 ชั่วโมง",
     icon: "⚡",
-    color: "bg-yellow-100 text-yellow-700",
+    color: "yellow",
     tiers: ["silver"],
   },
   verified_rescuer: {
     name: "นักช่วยเหลือที่ได้รับการยืนยัน",
     description: "ยืนยันตัวตนและมีประวัติช่วยเหลือที่ดี",
     icon: "✓",
-    color: "bg-teal-100 text-teal-700",
+    color: "teal",
     tiers: ["platinum"],
   },
   // Comment badges
@@ -121,42 +121,42 @@ export const BADGE_DEFINITIONS: Record<
     name: "เสียงแรก",
     description: "คอมเมนต์ครั้งแรกในชุมชน",
     icon: "💬",
-    color: "bg-blue-100 text-blue-700",
+    color: "blue",
     tiers: ["bronze"],
   },
   active_commenter: {
     name: "นักพูดคุยขยัน",
     description: "คอมเมนต์ครบ 50/200/500 ครั้ง",
     icon: "💬",
-    color: "bg-indigo-100 text-indigo-700",
+    color: "indigo",
     tiers: ["bronze", "silver", "gold"],
   },
   helpful_responder: {
     name: "ผู้ให้คำแนะนำ",
     description: "มีคน reply คอมเมนต์ของคุณ 20 ครั้ง",
     icon: "🤝",
-    color: "bg-emerald-100 text-emerald-700",
+    color: "emerald",
     tiers: ["silver"],
   },
   community_connector: {
     name: "นักเชื่อมโยง",
     description: "สร้างการสนทนาที่มีส่วนร่วมลึกซึ้ง",
     icon: "🔗",
-    color: "bg-purple-100 text-purple-700",
+    color: "purple",
     tiers: ["gold"],
   },
   comment_streak: {
     name: "ไม่มีวันหยุด",
     description: "คอมเมนต์ต่อเนื่อง 7/30/100 วัน",
     icon: "🔥",
-    color: "bg-orange-100 text-orange-700",
+    color: "orange",
     tiers: ["silver", "gold", "platinum"],
   },
   liked_commenter: {
     name: "คนดังในชุมชน",
     description: "ได้รับ 100/500/2000 likes จากคอมเมนต์",
     icon: "❤️",
-    color: "bg-pink-100 text-pink-700",
+    color: "pink",
     tiers: ["bronze", "silver", "gold"],
   },
 };
