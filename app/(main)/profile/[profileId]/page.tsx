@@ -230,9 +230,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
                     <span
                       className={`absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold shadow-lg ${
                         post.status === "available"
-                          ? "bg-emerald-500 text-white"
+                          ? "bg-emerald-500/90 text-white"
                           : post.status === "adopted"
-                            ? "bg-blue-500 text-white"
+                            ? "bg-blue-500/90 text-white"
                             : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -245,9 +245,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
                             : "รอดำเนินการ"}
                     </span>
                     {/* Hover overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 transition-colors group-hover:bg-foreground/10">
                       <div className="translate-y-4 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100">
-                        <div className="flex items-center gap-1 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur-sm">
+                        <div className="flex items-center gap-1 rounded-full border border-border/50 bg-card/95 px-4 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur-sm">
                           ดูรายละเอียด
                           <ChevronRight className="h-4 w-4" />
                         </div>
