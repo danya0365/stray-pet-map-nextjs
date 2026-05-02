@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * EditPostView
+ * ✅ Redesigned to match CreatePostV2View styling
+ * ✅ All colors use semantic tokens — no hardcoded Tailwind colors
+ * ✅ Card-based sections with StepHeader, SuggestField, ToggleRow
+ */
+
 import type {
   PetGender,
   PetPost,
@@ -8,98 +15,195 @@ import type {
   PetType,
 } from "@/domain/entities/pet-post";
 import { cn } from "@/presentation/lib/cn";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Scissors, Syringe } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEditPostPresenter } from "./useEditPostPresenter";
 
-interface EditPostViewProps {
-  post: PetPost;
-  petTypes: PetType[];
-}
+// ── Constants (UI-only) ──────────────────────────────────
 
-function Input({
-  label,
-  value,
-  onChange,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-}) {
+const BREED_SUGGESTIONS_BY_SLUG: Record<string, string[]> = {
+  dog: [
+    "ไทยหลังอาน",
+    "ชิวาวา",
+    "ปอมเมอเรเนียน",
+    "พุดเดิ้ล",
+    "บางแก้ว",
+    "ชิสุ",
+    "บีเกิล",
+    "พันทาง",
+  ],
+  cat: [
+    "วิเชียรมาศ",
+    "เปอร์เซีย",
+    "สก็อตติชโฟลด์",
+    "อเมริกันชอร์ตแฮร์",
+    "บริติชชอร์ตแฮร์",
+    "แร็กดอลล์",
+    "เมนคูน",
+    "พันทาง",
+  ],
+};
+
+const COLOR_SUGGESTIONS = [
+  "ขาว",
+  "ดำ",
+  "น้ำตาล",
+  "ส้ม",
+  "เทา",
+  "ครีม",
+  "ดำ-ขาว",
+  "น้ำตาล-ขาว",
+  "สามสี",
+  "ลายเสือ",
+];
+
+const AGE_SUGGESTIONS = [
+  "ไม่ถึง 1 เดือน",
+  "1-3 เดือน",
+  "3-6 เดือน",
+  "6-12 เดือน",
+  "1-2 ปี",
+  "2-5 ปี",
+  "มากกว่า 5 ปี",
+  "ไม่แน่ใจ",
+];
+
+const GENDER_OPTIONS = [
+  { value: "male" as const, label: "ผู้", icon: "♂️" },
+  { value: "female" as const, label: "เมีย", icon: "♀️" },
+  { value: "unknown" as const, label: "ไม่ทราบ", icon: "❓" },
+];
+
+const PURPOSE_OPTIONS = [
+  { value: "lost_pet" as PetPostPurpose, label: "ตามหาน้อง" },
+  { value: "rehome_pet" as PetPostPurpose, label: "น้องหาบ้าน" },
+  { value: "community_cat" as PetPostPurpose, label: "น้องแมวจร" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "available" as PetPostStatus, label: "Available" },
+  { value: "pending" as PetPostStatus, label: "Pending" },
+  { value: "adopted" as PetPostStatus, label: "Adopted" },
+  { value: "missing" as PetPostStatus, label: "Missing" },
+];
+
+// ── Shared styles ─────────────────────────────────────────
+
+const inputClass =
+  "w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary";
+
+// ── Sub-components ──────────────────────────────────────
+
+function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-foreground">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary"
-      />
+    <div>
+      <h2 className="text-base font-semibold">{title}</h2>
+      <p className="text-sm text-foreground/50">{subtitle}</p>
     </div>
   );
 }
 
-function Select({
+function SuggestField({
   label,
+  placeholder,
+  suggestions,
   value,
   onChange,
-  options,
+  name,
 }: {
   label: string;
+  placeholder: string;
+  suggestions: string[];
   value: string;
   onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  name?: string;
 }) {
+  const fieldId = name ?? label;
+  const isSelected = (s: string) => value === s;
+
   return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-foreground">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary"
+    <div>
+      <label
+        htmlFor={fieldId}
+        className="mb-1.5 block text-sm font-medium text-foreground/60"
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
+        {label}
+      </label>
+      <input
+        id={fieldId}
+        name={name}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inputClass}
+      />
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(isSelected(s) ? "" : s)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs transition-colors",
+              isSelected(s)
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
+            )}
+          >
+            {s}
+          </button>
         ))}
-      </select>
+      </div>
     </div>
   );
 }
 
-function Toggle({
+function ToggleRow({
+  icon: Icon,
   label,
-  checked,
+  value,
   onChange,
 }: {
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
-  checked: boolean;
+  value: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-3 cursor-pointer">
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "flex h-6 w-10 items-center rounded-full transition-colors",
-          checked ? "bg-primary" : "bg-gray-200",
-        )}
-      >
-        <span
-          className={cn(
-            "inline-block h-5 w-5 rounded-full bg-white shadow transition-transform",
-            checked ? "translate-x-5" : "translate-x-0.5",
-          )}
-        />
-      </button>
-      <span className="text-sm text-foreground">{label}</span>
-    </label>
+    <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-foreground/40" />
+        <span className="text-sm">{label}</span>
+      </div>
+      <div className="flex gap-1">
+        {[true, false].map((v) => (
+          <button
+            key={String(v)}
+            type="button"
+            onClick={() => onChange(v)}
+            className={cn(
+              "rounded-lg px-3 py-1 text-xs font-medium transition-colors",
+              value === v
+                ? v === true
+                  ? "bg-primary/10 text-primary"
+                  : "bg-destructive/10 text-destructive"
+                : "text-foreground/40 hover:bg-muted",
+            )}
+          >
+            {v === true ? "ใช่" : "ไม่"}
+          </button>
+        ))}
+      </div>
+    </div>
   );
+}
+
+// ── Main View ────────────────────────────────────────────
+
+interface EditPostViewProps {
+  post: PetPost;
+  petTypes: PetType[];
 }
 
 export function EditPostView({ post, petTypes }: EditPostViewProps) {
@@ -116,6 +220,9 @@ export function EditPostView({ post, petTypes }: EditPostViewProps) {
   const { form, submitting, error } = state;
   const { setField, submit, hasChanges } = actions;
 
+  const selectedPetTypeSlug =
+    petTypes.find((p) => p.id === form.petTypeId)?.slug ?? "dog";
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center gap-4">
@@ -131,8 +238,12 @@ export function EditPostView({ post, petTypes }: EditPostViewProps) {
         </div>
       </div>
 
+      {/* Error banner */}
       {error && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div
+          role="alert"
+          className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -144,127 +255,250 @@ export function EditPostView({ post, petTypes }: EditPostViewProps) {
         }}
         className="space-y-6"
       >
-        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-base font-semibold">Basic Info</h2>
-          <Input
-            label="Title"
-            value={form.title}
-            onChange={(v: string) => setField("title", v)}
+        {/* Basic Info */}
+        <fieldset className="rounded-xl border border-border bg-card p-4 space-y-4">
+          <StepHeader
+            title="ข้อมูลหลัก"
+            subtitle="ชื่อเรื่องและรายละเอียดของโพสต์"
           />
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">
-              Description
+
+          <div>
+            <label
+              htmlFor="edit-title"
+              className="mb-1.5 block text-sm font-medium text-foreground/60"
+            >
+              ชื่อเรื่อง *
+            </label>
+            <input
+              id="edit-title"
+              name="title"
+              value={form.title}
+              onChange={(e) => setField("title", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-description"
+              className="mb-1.5 block text-sm font-medium text-foreground/60"
+            >
+              รายละเอียด
             </label>
             <textarea
+              id="edit-description"
+              name="description"
               value={form.description}
               onChange={(e) => setField("description", e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary"
+              className={cn(inputClass, "resize-none")}
             />
           </div>
-        </div>
+        </fieldset>
 
-        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-base font-semibold">Pet Details</h2>
-          <Select
-            label="Pet Type"
-            value={form.petTypeId}
-            onChange={(v: string) => setField("petTypeId", v)}
-            options={[
-              { value: "", label: "Select type" },
-              ...petTypes.map((pt) => ({
-                value: pt.id,
-                label: `${pt.icon} ${pt.name}`,
-              })),
-            ]}
+        {/* Pet Details */}
+        <fieldset className="rounded-xl border border-border bg-card p-4 space-y-4">
+          <StepHeader
+            title="ข้อมูลสัตว์เลี้ยง"
+            subtitle="ชนิด พันธุ์ สี เพศ และอายุ"
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Breed"
-              value={form.breed}
-              onChange={(v: string) => setField("breed", v)}
+
+          {/* Pet Type */}
+          <div>
+            <label
+              htmlFor="edit-pet-type"
+              className="mb-1.5 block text-sm font-medium text-foreground/60"
+            >
+              ชนิดสัตว์ *
+            </label>
+            <select
+              id="edit-pet-type"
+              name="petTypeId"
+              value={form.petTypeId}
+              onChange={(e) => setField("petTypeId", e.target.value)}
+              className={inputClass}
+            >
+              <option value="">เลือกชนิด</option>
+              {petTypes.map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {pt.icon} {pt.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Breed & Color */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SuggestField
+              name="breed"
+              label="พันธุ์"
+              placeholder="พิมพ์พันธุ์เอง..."
+              suggestions={
+                BREED_SUGGESTIONS_BY_SLUG[selectedPetTypeSlug] ??
+                BREED_SUGGESTIONS_BY_SLUG["dog"]
+              }
+              value={form.breed ?? ""}
+              onChange={(v) => setField("breed", v)}
             />
-            <Input
-              label="Color"
-              value={form.color}
-              onChange={(v: string) => setField("color", v)}
+            <SuggestField
+              name="color"
+              label="สี"
+              placeholder="พิมพ์สีเอง..."
+              suggestions={COLOR_SUGGESTIONS}
+              value={form.color ?? ""}
+              onChange={(v) => setField("color", v)}
             />
           </div>
-          <Select
-            label="Gender"
-            value={form.gender}
-            onChange={(v: string) => setField("gender", v as PetGender)}
-            options={[
-              { value: "unknown", label: "Unknown" },
-              { value: "male", label: "Male" },
-              { value: "female", label: "Female" },
-            ]}
-          />
-          <Select
-            label="Age"
-            value={form.estimatedAge}
-            onChange={(v: string) => setField("estimatedAge", v)}
-            options={[
-              { value: "", label: "Select age" },
-              { value: "puppy", label: "Puppy (<1 yr)" },
-              { value: "young", label: "Young (1-3 yrs)" },
-              { value: "adult", label: "Adult (3-7 yrs)" },
-              { value: "senior", label: "Senior (>7 yrs)" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-        </div>
 
-        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-base font-semibold">Status & Purpose</h2>
-          <Select
-            label="Purpose"
-            value={form.purpose}
-            onChange={(v: string) => setField("purpose", v as PetPostPurpose)}
-            options={[
-              { value: "lost_pet", label: "Lost Pet" },
-              { value: "rehome_pet", label: "Rehome Pet" },
-              { value: "community_cat", label: "Community Cat" },
-            ]}
-          />
-          <Select
-            label="Status"
-            value={form.status}
-            onChange={(v: string) => setField("status", v as PetPostStatus)}
-            options={[
-              { value: "available", label: "Available" },
-              { value: "pending", label: "Pending" },
-              { value: "adopted", label: "Adopted" },
-              { value: "missing", label: "Missing" },
-            ]}
-          />
-        </div>
+          {/* Gender */}
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-foreground/60">
+              เพศ *
+            </legend>
+            <div className="flex gap-2">
+              {GENDER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setField("gender", opt.value as PetGender)}
+                  className={cn(
+                    "flex flex-1 flex-col items-center gap-1 rounded-xl border py-3 transition-all",
+                    form.gender === opt.value
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border hover:bg-muted/50",
+                  )}
+                >
+                  <span className="text-lg">{opt.icon}</span>
+                  <span
+                    className={cn(
+                      "text-xs font-medium",
+                      form.gender === opt.value
+                        ? "text-primary"
+                        : "text-foreground/60",
+                    )}
+                  >
+                    {opt.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
-        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-base font-semibold">Health</h2>
-          <Toggle
-            label="Vaccinated"
-            checked={form.isVaccinated}
-            onChange={(v: boolean) => setField("isVaccinated", v)}
+          {/* Age */}
+          <SuggestField
+            name="estimatedAge"
+            label="อายุโดยประมาณ"
+            placeholder="พิมพ์อายุเอง..."
+            suggestions={AGE_SUGGESTIONS}
+            value={form.estimatedAge ?? ""}
+            onChange={(v) => setField("estimatedAge", v)}
           />
-          <Toggle
-            label="Neutered / Spayed"
-            checked={form.isNeutered}
-            onChange={(v: boolean) => setField("isNeutered", v)}
-          />
-        </div>
+        </fieldset>
 
-        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-base font-semibold">Location</h2>
-          <Input
-            label="Province"
-            value={form.province}
-            onChange={(v: string) => setField("province", v)}
+        {/* Status & Purpose */}
+        <fieldset className="rounded-xl border border-border bg-card p-4 space-y-4">
+          <StepHeader
+            title="สถานะและจุดประสงค์"
+            subtitle="อัปเดตสถานะและวัตถุประสงค์ของโพสต์"
           />
+
+          <div>
+            <label
+              htmlFor="edit-purpose"
+              className="mb-1.5 block text-sm font-medium text-foreground/60"
+            >
+              จุดประสงค์ *
+            </label>
+            <select
+              id="edit-purpose"
+              name="purpose"
+              value={form.purpose}
+              onChange={(e) =>
+                setField("purpose", e.target.value as PetPostPurpose)
+              }
+              className={inputClass}
+            >
+              {PURPOSE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-status"
+              className="mb-1.5 block text-sm font-medium text-foreground/60"
+            >
+              สถานะ *
+            </label>
+            <select
+              id="edit-status"
+              name="status"
+              value={form.status}
+              onChange={(e) =>
+                setField("status", e.target.value as PetPostStatus)
+              }
+              className={inputClass}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </fieldset>
+
+        {/* Health */}
+        <fieldset className="rounded-xl border border-border bg-card p-4 space-y-2">
+          <StepHeader title="สุขภาพ" subtitle="ข้อมูลสุขภาพของน้อง" />
+          <ToggleRow
+            icon={Syringe}
+            label="ฉีดวัคซีนแล้ว"
+            value={form.isVaccinated}
+            onChange={(v) => setField("isVaccinated", v)}
+          />
+          <ToggleRow
+            icon={Scissors}
+            label="ทำหมันแล้ว"
+            value={form.isNeutered}
+            onChange={(v) => setField("isNeutered", v)}
+          />
+        </fieldset>
+
+        {/* Location */}
+        <fieldset className="rounded-xl border border-border bg-card p-4 space-y-4">
+          <StepHeader title="ตำแหน่ง" subtitle="จังหวัดและพิกัด GPS" />
+
+          <div>
+            <label
+              htmlFor="edit-province"
+              className="mb-1.5 block text-sm font-medium text-foreground/60"
+            >
+              จังหวัด
+            </label>
+            <input
+              id="edit-province"
+              name="province"
+              value={form.province ?? ""}
+              onChange={(e) => setField("province", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Latitude</label>
+            <div>
+              <label
+                htmlFor="edit-latitude"
+                className="mb-1.5 block text-sm font-medium text-foreground/60"
+              >
+                Latitude
+              </label>
               <input
+                id="edit-latitude"
+                name="latitude"
                 type="number"
                 step="any"
                 value={form.latitude ?? ""}
@@ -276,12 +510,19 @@ export function EditPostView({ post, petTypes }: EditPostViewProps) {
                       | null,
                   )
                 }
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                className={inputClass}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Longitude</label>
+            <div>
+              <label
+                htmlFor="edit-longitude"
+                className="mb-1.5 block text-sm font-medium text-foreground/60"
+              >
+                Longitude
+              </label>
               <input
+                id="edit-longitude"
+                name="longitude"
                 type="number"
                 step="any"
                 value={form.longitude ?? ""}
@@ -293,26 +534,27 @@ export function EditPostView({ post, petTypes }: EditPostViewProps) {
                       | null,
                   )
                 }
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                className={inputClass}
               />
             </div>
           </div>
-        </div>
+        </fieldset>
 
+        {/* Buttons */}
         <div className="flex items-center gap-3 pt-2">
           <button
             type="submit"
             disabled={!hasChanges || submitting}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            {submitting ? "Saving..." : "Save Changes"}
+            {submitting ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
           </button>
           <Link
             href={`/pets/${post.id}`}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Cancel
+            ยกเลิก
           </Link>
         </div>
       </form>
