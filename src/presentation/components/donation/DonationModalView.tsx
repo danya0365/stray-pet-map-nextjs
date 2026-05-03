@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { ToggleSwitch } from "./ToggleSwitch";
 
 const PRESET_ICONS = [Coffee, Heart, Zap, Rocket] as const;
 
@@ -193,45 +194,27 @@ export function DonationModalView({
 
             {/* Toggles */}
             <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  {showOnLeaderboard ? (
-                    <Trophy className="h-4 w-4 text-yellow-500" />
-                  ) : (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span>แสดงในกระดานผู้สนับสนุน</span>
-                </div>
-                <button
-                  onClick={() =>
-                    actions.setShowOnLeaderboard(!showOnLeaderboard)
-                  }
-                  className={`relative h-5 w-9 rounded-full transition-colors ${showOnLeaderboard ? "bg-primary" : "bg-muted"}`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${showOnLeaderboard ? "left-4.5" : "left-0.5"}`}
-                  />
-                </button>
-              </div>
+              <ToggleSwitch
+                checked={showOnLeaderboard}
+                onChange={() =>
+                  actions.setShowOnLeaderboard(!showOnLeaderboard)
+                }
+                label="แสดงในกระดานผู้สนับสนุน"
+                onIcon={Trophy}
+                onIconClass="text-yellow-500"
+                offIcon={EyeOff}
+                offIconClass="text-muted-foreground"
+              />
               {isGuest && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    {isAnonymous ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <User className="h-4 w-4 text-primary" />
-                    )}
-                    <span>ไม่ประสงค์ออกนาม</span>
-                  </div>
-                  <button
-                    onClick={() => actions.setIsAnonymous(!isAnonymous)}
-                    className={`relative h-5 w-9 rounded-full transition-colors ${isAnonymous ? "bg-primary" : "bg-muted"}`}
-                  >
-                    <span
-                      className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${isAnonymous ? "left-4.5" : "left-0.5"}`}
-                    />
-                  </button>
-                </div>
+                <ToggleSwitch
+                  checked={isAnonymous}
+                  onChange={() => actions.setIsAnonymous(!isAnonymous)}
+                  label="ไม่ประสงค์ออกนาม"
+                  offIcon={User}
+                  offIconClass="text-primary"
+                  onIcon={EyeOff}
+                  onIconClass="text-muted-foreground"
+                />
               )}
             </div>
 
