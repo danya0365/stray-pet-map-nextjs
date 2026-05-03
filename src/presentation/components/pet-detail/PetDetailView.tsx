@@ -87,6 +87,7 @@ interface PetDetailViewProps {
   isAdoptionModalOpen: boolean;
   isCloseModalOpen: boolean;
   isClosingPost: boolean;
+  isDonationEnabled: boolean;
   isReportModalOpen: boolean;
   isComingSoonModalOpen: boolean;
   comingSoonFeature: string;
@@ -112,6 +113,7 @@ export function PetDetailView({
   isAdoptionModalOpen,
   isCloseModalOpen,
   isClosingPost,
+  isDonationEnabled,
   isReportModalOpen,
   isComingSoonModalOpen,
   comingSoonFeature,
@@ -296,6 +298,7 @@ export function PetDetailView({
             goal={fundingGoal}
             petName={post.title}
             onDonateClick={onDonateClick}
+            enabled={isDonationEnabled}
           />
 
           {/* Actions */}

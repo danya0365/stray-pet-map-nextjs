@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURE_FLAGS } from "@/config/features";
 import type { DonationTargetType } from "@/domain/entities/donation";
 import { useDonationForm } from "@/presentation/presenters/donation/useDonationForm";
 import { DonationModalView } from "./DonationModalView";
@@ -36,14 +37,17 @@ export function DonationModal({
   userEmail,
   isGuest = true,
 }: DonationModalProps) {
-  const initialTargetType: DonationTargetType = petPostId ? "pet" : "fund";
+  const isPetDonationEnabled = FEATURE_FLAGS.petDonationEnabled && !!petPostId;
+  const initialTargetType: DonationTargetType = isPetDonationEnabled
+    ? "pet"
+    : "fund";
 
   const [formState, formActions] = useDonationForm({
     onDonate,
     initialTargetType,
     initialDonorName: userDisplayName,
     initialDonorEmail: userEmail,
-    petPostId,
+    petPostId: isPetDonationEnabled ? petPostId : undefined,
   });
 
   return (
@@ -52,8 +56,8 @@ export function DonationModal({
       onClose={onClose}
       state={formState}
       actions={formActions}
-      petName={petName}
-      petPostId={petPostId}
+      petName={isPetDonationEnabled ? petName : undefined}
+      petPostId={isPetDonationEnabled ? petPostId : undefined}
       isGuest={isGuest}
     />
   );

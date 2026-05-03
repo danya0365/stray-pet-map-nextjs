@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURE_FLAGS } from "@/config/features";
 import { useDonation } from "@/presentation/hooks/useDonation";
 import { createContext, ReactNode, useContext, useState } from "react";
 import { DonationModal } from "./DonationModal";
@@ -51,6 +52,7 @@ export function DonationProvider({
   }>({});
 
   const openForPet = (petPostId: string, petName: string) => {
+    if (!FEATURE_FLAGS.petDonationEnabled) return;
     setPetContext({ petPostId, petName });
     open();
   };

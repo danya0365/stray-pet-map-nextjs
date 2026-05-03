@@ -1,4 +1,5 @@
 "use client";
+import { FEATURE_FLAGS } from "@/config/features";
 import type {
   DonationFormActions,
   DonationFormState,
@@ -48,6 +49,12 @@ export function DonationModalView({
   isGuest = true,
 }: Props) {
   if (!isOpen) return null;
+
+  // Guard: disable pet-specific donations when feature flag is off
+  if (state.targetType === "pet" && !FEATURE_FLAGS.petDonationEnabled) {
+    return null;
+  }
+
   const {
     targetType,
     selectedAmount,
@@ -106,7 +113,9 @@ export function DonationModalView({
 
           <div className="space-y-5 p-6">
             {/* Modes */}
-            <div className="grid grid-cols-3 gap-2">
+            <div
+              className={`grid gap-2 ${FEATURE_FLAGS.petDonationEnabled ? "grid-cols-3" : "grid-cols-2"}`}
+            >
               <button
                 onClick={() => actions.setTargetType("dev")}
                 className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${targetType === "dev" ? a : i}`}
@@ -123,19 +132,21 @@ export function DonationModalView({
                 <span className="text-sm font-medium">แพลตฟอร์ม</span>
                 <span className="text-[10px] opacity-70">พัฒนาต่อ</span>
               </button>
-              <button
-                onClick={() => actions.setTargetType("pet")}
-                disabled={!petPostId}
-                className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${targetType === "pet" ? a : i} ${!petPostId ? "cursor-not-allowed opacity-50" : ""}`}
-              >
-                <PawPrint className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {petName ? `น้อง${petName}` : "ผู้ดูแลน้อง"}
-                </span>
-                <span className="text-[10px] opacity-70">
-                  {petName ? "ส่งต่อผู้ดูแล" : "ไปที่หน้าน้อง"}
-                </span>
-              </button>
+              {FEATURE_FLAGS.petDonationEnabled && (
+                <button
+                  onClick={() => actions.setTargetType("pet")}
+                  disabled={!petPostId}
+                  className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${targetType === "pet" ? a : i} ${!petPostId ? "cursor-not-allowed opacity-50" : ""}`}
+                >
+                  <PawPrint className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {petName ? `น้อง${petName}` : "ผู้ดูแลน้อง"}
+                  </span>
+                  <span className="text-[10px] opacity-70">
+                    {petName ? "ส่งต่อผู้ดูแล" : "ไปที่หน้าน้อง"}
+                  </span>
+                </button>
+              )}
             </div>
 
             {targetType === "pet" && !petPostId && (

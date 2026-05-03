@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURE_FLAGS } from "@/config/features";
 import { useDonationContext } from "@/presentation/components/donation";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
 import { usePetDetailPresenter } from "@/presentation/presenters/pet-detail/usePetDetailPresenter";
@@ -123,6 +124,7 @@ export function PetDetailContainer({
       isAdoptionModalOpen={isAdoptionModalOpen}
       isCloseModalOpen={isCloseModalOpen}
       isClosingPost={isClosingPost}
+      isDonationEnabled={FEATURE_FLAGS.petDonationEnabled}
       isReportModalOpen={reportModal.isOpen}
       isComingSoonModalOpen={comingSoonModal.isOpen}
       comingSoonFeature={comingSoonModal.feature}
