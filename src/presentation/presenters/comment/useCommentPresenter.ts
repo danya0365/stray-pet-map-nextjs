@@ -20,6 +20,46 @@ import type { CommentPresenter } from "./CommentPresenter";
 import { createClientCommentPresenter } from "./CommentPresenterClientFactory";
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/** Collect all comment IDs recursively (including nested replies) */
+function collectCommentIds(comments: Comment[]): string[] {
+  const ids: string[] = [];
+  for (const comment of comments) {
+    ids.push(comment.id);
+    if (comment.replies && comment.replies.length > 0) {
+      ids.push(...collectCommentIds(comment.replies));
+    }
+  }
+  return ids;
+}
+
+/** Merge user interaction state into comments recursively */
+function mergeUserInteractions(
+  comments: Comment[],
+  interactions: Map<
+    string,
+    { hasLiked: boolean; reaction: CommentReactionType | null }
+  >,
+): Comment[] {
+  return comments.map((comment) => {
+    const interaction = interactions.get(comment.id);
+    const updated: Comment = interaction
+      ? {
+          ...comment,
+          userHasLiked: interaction.hasLiked,
+          userReaction: interaction.reaction ?? undefined,
+        }
+      : { ...comment };
+    if (updated.replies && updated.replies.length > 0) {
+      updated.replies = mergeUserInteractions(updated.replies, interactions);
+    }
+    return updated;
+  });
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -145,7 +185,29 @@ export function useCommentPresenter(
 
         if (isMountedRef.current) {
           if (result.success && result.data) {
-            setComments(result.data.topLevelComments);
+            let topLevelComments = result.data.topLevelComments;
+
+            // Hydrate user interaction state for authenticated users
+            if (isAuthenticated && user?.id) {
+              const ids = collectCommentIds(topLevelComments);
+              if (ids.length > 0) {
+                try {
+                  const interactions =
+                    await presenter.getUserInteractionsForComments(
+                      ids,
+                      user.id,
+                    );
+                  topLevelComments = mergeUserInteractions(
+                    topLevelComments,
+                    interactions,
+                  );
+                } catch (e) {
+                  console.error("Error fetching user interactions:", e);
+                }
+              }
+            }
+
+            setComments(topLevelComments);
             setTotalCount(result.data.totalComments);
             setHasMore(result.data.hasMore);
             setNextCursor(result.data.nextCursor);
@@ -165,7 +227,7 @@ export function useCommentPresenter(
         }
       }
     },
-    [presenter],
+    [presenter, isAuthenticated, user?.id],
   );
 
   // Load more comments using cursor pagination
@@ -182,7 +244,23 @@ export function useCommentPresenter(
 
       if (isMountedRef.current) {
         if (result.success && result.data) {
-          setComments((prev) => [...prev, ...result.data!.topLevelComments]);
+          let newComments = result.data.topLevelComments;
+
+          // Hydrate user interaction state for authenticated users
+          if (isAuthenticated && user?.id) {
+            const ids = collectCommentIds(newComments);
+            if (ids.length > 0) {
+              try {
+                const interactions =
+                  await presenter.getUserInteractionsForComments(ids, user.id);
+                newComments = mergeUserInteractions(newComments, interactions);
+              } catch (e) {
+                console.error("Error fetching user interactions:", e);
+              }
+            }
+          }
+
+          setComments((prev) => [...prev, ...newComments]);
           setHasMore(result.data.hasMore);
           setNextCursor(result.data.nextCursor);
         }
@@ -194,7 +272,7 @@ export function useCommentPresenter(
         setLoadingMore(false);
       }
     }
-  }, [hasMore, nextCursor, loadingMore, presenter]);
+  }, [hasMore, nextCursor, loadingMore, presenter, isAuthenticated, user?.id]);
 
   const refreshComments = useCallback(async () => {
     await loadComments(currentPetPostIdRef.current);
@@ -348,12 +426,31 @@ export function useCommentPresenter(
 
         if (isMountedRef.current) {
           if (result.success && result.data) {
+            let replies = result.data.replies;
+
+            // Hydrate user interaction state for authenticated users
+            if (isAuthenticated && user?.id) {
+              const ids = collectCommentIds(replies);
+              if (ids.length > 0) {
+                try {
+                  const interactions =
+                    await presenter.getUserInteractionsForComments(
+                      ids,
+                      user.id,
+                    );
+                  replies = mergeUserInteractions(replies, interactions);
+                } catch (e) {
+                  console.error("Error fetching user interactions:", e);
+                }
+              }
+            }
+
             const mergeReplies = (list: Comment[]): Comment[] =>
               list.map((comment) => {
                 if (comment.id === parentCommentId) {
                   return {
                     ...comment,
-                    replies: result.data!.replies,
+                    replies,
                   };
                 }
                 if (comment.replies && comment.replies.length > 0) {
@@ -383,7 +480,7 @@ export function useCommentPresenter(
         }
       }
     },
-    [presenter],
+    [presenter, isAuthenticated, user?.id],
   );
 
   // ============================================================================

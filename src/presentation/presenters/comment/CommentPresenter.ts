@@ -282,6 +282,23 @@ export class CommentPresenter {
     }
   }
 
+  async getUserInteractionsForComments(
+    commentIds: string[],
+    profileId: string,
+  ): Promise<
+    Map<string, { hasLiked: boolean; reaction: CommentReactionType | null }>
+  > {
+    try {
+      return await this.repository.getUserInteractionsForComments(
+        commentIds,
+        profileId,
+      );
+    } catch (error) {
+      console.error("Error getting batch user interactions:", error);
+      return new Map();
+    }
+  }
+
   // ============================================================================
   // Statistics & Leaderboard
   // ============================================================================

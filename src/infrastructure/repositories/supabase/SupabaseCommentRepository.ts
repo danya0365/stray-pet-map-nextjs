@@ -190,7 +190,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
     // Fetch user interactions if viewerProfileId provided
     const viewerProfileId = options.viewerProfileId;
     const userInteractions = viewerProfileId
-      ? await this.fetchUserInteractionsForComments(commentIds, viewerProfileId)
+      ? await this.getUserInteractionsForComments(commentIds, viewerProfileId)
       : new Map();
 
     // Map comments with author info, reactions, and user interactions
@@ -341,7 +341,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
     // Fetch user interactions if viewerProfileId provided
     const viewerProfileId = options.viewerProfileId;
     const userInteractions = viewerProfileId
-      ? await this.fetchUserInteractionsForComments(commentIds, viewerProfileId)
+      ? await this.getUserInteractionsForComments(commentIds, viewerProfileId)
       : new Map();
 
     return {
@@ -770,7 +770,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
     return reactionMap;
   }
 
-  private async fetchUserInteractionsForComments(
+  async getUserInteractionsForComments(
     commentIds: string[],
     profileId: string,
   ): Promise<

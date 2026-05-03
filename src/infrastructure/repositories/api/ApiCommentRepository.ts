@@ -243,6 +243,43 @@ export class ApiCommentRepository implements ICommentRepository {
     return null;
   }
 
+  async getUserInteractionsForComments(
+    commentIds: string[],
+    _profileId: string,
+  ): Promise<
+    Map<string, { hasLiked: boolean; reaction: CommentReactionType | null }>
+  > {
+    if (commentIds.length === 0) {
+      return new Map();
+    }
+
+    const params = new URLSearchParams();
+    params.set("ids", commentIds.join(","));
+
+    const res = await fetch(`${this.baseUrl}/batch-interactions?${params}`);
+
+    if (!res.ok) {
+      console.error("Error fetching batch interactions:", await res.text());
+      return new Map();
+    }
+
+    const data = (await res.json()) as {
+      interactions: Record<
+        string,
+        { hasLiked: boolean; reaction: CommentReactionType | null }
+      >;
+    };
+
+    const map = new Map<
+      string,
+      { hasLiked: boolean; reaction: CommentReactionType | null }
+    >();
+    for (const [id, interaction] of Object.entries(data.interactions || {})) {
+      map.set(id, interaction);
+    }
+    return map;
+  }
+
   // ============================================================================
   // Statistics & Gamification
   // ============================================================================

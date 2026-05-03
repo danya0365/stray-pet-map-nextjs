@@ -528,6 +528,24 @@ export class MockCommentRepository implements ICommentRepository {
     return reactions?.get(profileId) || null;
   }
 
+  async getUserInteractionsForComments(
+    commentIds: string[],
+    profileId: string,
+  ): Promise<
+    Map<string, { hasLiked: boolean; reaction: CommentReactionType | null }>
+  > {
+    const map = new Map<
+      string,
+      { hasLiked: boolean; reaction: CommentReactionType | null }
+    >();
+    for (const commentId of commentIds) {
+      const hasLiked = await this.hasLiked(commentId, profileId);
+      const reaction = await this.getUserReaction(commentId, profileId);
+      map.set(commentId, { hasLiked, reaction });
+    }
+    return map;
+  }
+
   // ============================================================================
   // Statistics & Gamification
   // ============================================================================

@@ -152,6 +152,17 @@ export interface ICommentRepository {
     profileId: string,
   ): Promise<CommentReactionType | null>;
 
+  /**
+   * Batch fetch user interactions (likes + reactions) for multiple comments
+   * @returns Map of commentId -> { hasLiked, reaction }
+   */
+  getUserInteractionsForComments(
+    commentIds: string[],
+    profileId: string,
+  ): Promise<
+    Map<string, { hasLiked: boolean; reaction: CommentReactionType | null }>
+  >;
+
   // ============================================================================
   // Statistics & Gamification
   // ============================================================================
