@@ -1,16 +1,21 @@
 "use client";
-import { FEATURE_FLAGS } from "@/config/features";
+
+import type { DonationTargetType } from "@/domain/entities/donation";
+import {
+  DONATION_MODE_CONFIG,
+  DONATION_PRESETS,
+  MODE_ACTIVE_CLASS,
+  MODE_INACTIVE_CLASS,
+} from "@/domain/entities/donation-modes";
 import type {
   DonationFormActions,
   DonationFormState,
 } from "@/presentation/presenters/donation/useDonationForm";
 import {
-  Building2,
   Coffee,
   EyeOff,
   Heart,
   Map,
-  PawPrint,
   Rocket,
   Trophy,
   User,
@@ -19,15 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const PRESETS = [
-  { value: 50, label: "50฿", icon: Coffee },
-  { value: 100, label: "100฿", icon: Heart },
-  { value: 200, label: "200฿", icon: Zap },
-  { value: 500, label: "500฿", icon: Rocket },
-];
-
-const a = "border-primary bg-primary/10 text-primary";
-const i = "border-border bg-muted/30 hover:border-primary/30";
+const PRESET_ICONS = [Coffee, Heart, Zap, Rocket] as const;
 
 interface Props {
   isOpen: boolean;
@@ -35,8 +32,8 @@ interface Props {
   state: DonationFormState;
   actions: DonationFormActions;
   petName?: string;
-  petPostId?: string;
   isGuest?: boolean;
+  availableModes: DonationTargetType[];
 }
 
 export function DonationModalView({
@@ -45,15 +42,10 @@ export function DonationModalView({
   state,
   actions,
   petName,
-  petPostId,
   isGuest = true,
+  availableModes,
 }: Props) {
   if (!isOpen) return null;
-
-  // Guard: disable pet-specific donations when feature flag is off
-  if (state.targetType === "pet" && !FEATURE_FLAGS.petDonationEnabled) {
-    return null;
-  }
 
   const {
     targetType,
@@ -69,12 +61,11 @@ export function DonationModalView({
     finalAmount,
   } = state;
 
+  const modeConfig = DONATION_MODE_CONFIG[targetType];
   const title =
     targetType === "pet" && petName
       ? `ให้ผู้ดูแลน้อง${petName}`
-      : targetType === "dev"
-        ? "ให้กำลังใจทีมงาน"
-        : "สนับสนุน StrayPetMap";
+      : modeConfig.headerTitle;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -94,19 +85,11 @@ export function DonationModalView({
             </button>
             <div className="flex flex-col items-center text-center">
               <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
-                {targetType === "pet" ? (
-                  <PawPrint className="h-8 w-8 text-primary" />
-                ) : (
-                  <Heart className="h-8 w-8 text-primary" />
-                )}
+                <modeConfig.icon className="h-8 w-8 text-primary" />
               </div>
               <h2 className="text-xl font-bold">{title}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {targetType === "pet"
-                  ? "ส่งต่อให้ผู้ดูแลน้องโดยตรง"
-                  : targetType === "dev"
-                    ? "ขอบคุณที่ให้กำลังใจพวกเรา"
-                    : "ช่วยเราพัฒนาแพลตฟอร์มต่อไป"}
+                {modeConfig.headerSubtitle}
               </p>
             </div>
           </div>
@@ -114,49 +97,33 @@ export function DonationModalView({
           <div className="space-y-5 p-6">
             {/* Modes */}
             <div
-              className={`grid gap-2 ${FEATURE_FLAGS.petDonationEnabled ? "grid-cols-3" : "grid-cols-2"}`}
+              className="grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${availableModes.length}, minmax(0, 1fr))`,
+              }}
             >
-              <button
-                onClick={() => actions.setTargetType("dev")}
-                className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${targetType === "dev" ? a : i}`}
-              >
-                <Heart className="h-4 w-4" />
-                <span className="text-sm font-medium">กำลังใจ Dev</span>
-                <span className="text-[10px] opacity-70">ให้ทีมพัฒนา</span>
-              </button>
-              <button
-                onClick={() => actions.setTargetType("fund")}
-                className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${targetType === "fund" ? a : i}`}
-              >
-                <Building2 className="h-4 w-4" />
-                <span className="text-sm font-medium">แพลตฟอร์ม</span>
-                <span className="text-[10px] opacity-70">พัฒนาต่อ</span>
-              </button>
-              {FEATURE_FLAGS.petDonationEnabled && (
-                <button
-                  onClick={() => actions.setTargetType("pet")}
-                  disabled={!petPostId}
-                  className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${targetType === "pet" ? a : i} ${!petPostId ? "cursor-not-allowed opacity-50" : ""}`}
-                >
-                  <PawPrint className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {petName ? `น้อง${petName}` : "ผู้ดูแลน้อง"}
-                  </span>
-                  <span className="text-[10px] opacity-70">
-                    {petName ? "ส่งต่อผู้ดูแล" : "ไปที่หน้าน้อง"}
-                  </span>
-                </button>
-              )}
+              {availableModes.map((mode) => {
+                const config = DONATION_MODE_CONFIG[mode];
+                const isActive = targetType === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => actions.setTargetType(mode)}
+                    className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${isActive ? MODE_ACTIVE_CLASS : MODE_INACTIVE_CLASS}`}
+                  >
+                    <config.icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {mode === "pet" && petName
+                        ? `น้อง${petName}`
+                        : config.label}
+                    </span>
+                    <span className="text-[10px] opacity-70">
+                      {config.sublabel}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-
-            {targetType === "pet" && !petPostId && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-                <p className="flex items-center gap-1.5">
-                  <span>⚠️</span>กรุณาไปที่หน้ารายละเอียดน้องก่อน แล้วกด
-                  &quot;สนับสนุน&quot;จากตรงนั้น
-                </p>
-              </div>
-            )}
 
             {/* Guest Info */}
             {isGuest && (
@@ -184,19 +151,22 @@ export function DonationModalView({
 
             {/* Amount */}
             <div className="grid grid-cols-4 gap-2">
-              {PRESETS.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => {
-                    actions.setSelectedAmount(value);
-                    actions.setCustomAmount("");
-                  }}
-                  className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${selectedAmount === value && !customAmount ? a : i}`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-xs font-medium">{label}</span>
-                </button>
-              ))}
+              {DONATION_PRESETS.map(({ value, label }, index) => {
+                const Icon = PRESET_ICONS[index];
+                return (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      actions.setSelectedAmount(value);
+                      actions.setCustomAmount("");
+                    }}
+                    className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-all ${selectedAmount === value && !customAmount ? MODE_ACTIVE_CLASS : MODE_INACTIVE_CLASS}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-xs font-medium">{label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="relative">
@@ -306,12 +276,7 @@ export function DonationModalView({
                 </span>
               ) : (
                 <span>
-                  {targetType === "pet"
-                    ? "ส่งต่อให้ผู้ดูแล"
-                    : targetType === "dev"
-                      ? "ให้กำลังใจ"
-                      : "สนับสนุน"}{" "}
-                  {finalAmount}฿
+                  {modeConfig.submitButtonText} {finalAmount}฿
                 </span>
               )}
             </button>

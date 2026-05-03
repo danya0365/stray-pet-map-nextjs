@@ -3,6 +3,7 @@
 import { FEATURE_FLAGS } from "@/config/features";
 import type { DonationTargetType } from "@/domain/entities/donation";
 import { useDonationForm } from "@/presentation/presenters/donation/useDonationForm";
+import { useMemo } from "react";
 import { DonationModalView } from "./DonationModalView";
 
 interface DonationModalProps {
@@ -42,6 +43,14 @@ export function DonationModal({
     ? "pet"
     : "fund";
 
+  const availableModes = useMemo<DonationTargetType[]>(() => {
+    const modes: DonationTargetType[] = ["dev", "fund"];
+    if (isPetDonationEnabled) {
+      modes.push("pet");
+    }
+    return modes;
+  }, [isPetDonationEnabled]);
+
   const [formState, formActions] = useDonationForm({
     onDonate,
     initialTargetType,
@@ -56,9 +65,9 @@ export function DonationModal({
       onClose={onClose}
       state={formState}
       actions={formActions}
-      petName={isPetDonationEnabled ? petName : undefined}
-      petPostId={isPetDonationEnabled ? petPostId : undefined}
+      petName={petName}
       isGuest={isGuest}
+      availableModes={availableModes}
     />
   );
 }
