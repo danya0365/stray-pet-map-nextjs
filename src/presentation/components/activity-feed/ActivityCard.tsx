@@ -6,16 +6,15 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
-  AlertTriangle,
   ArrowRight,
+  Bookmark,
   Heart,
   MessageCircle,
-  MessageSquare,
-  Sparkles,
   Trophy,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ShareIconButton } from "./ShareUpdateButton";
 
 dayjs.extend(relativeTime);
 dayjs.locale("th");
@@ -29,46 +28,38 @@ const TYPE_CONFIG: Record<
   ActivityType,
   {
     label: string;
-    icon: React.ReactNode;
+    color: string;
   }
 > = {
   new_post: {
     label: "โพสต์ใหม่",
-    icon: <Sparkles className="h-3.5 w-3.5" />,
+    color: "text-primary",
   },
   status_changed: {
     label: "มีคำตอบแล้ว",
-    icon: <Trophy className="h-3.5 w-3.5" />,
+    color: "text-green-500",
   },
   new_comment: {
-    label: "ความคิดเห็นใหม่",
-    icon: <MessageCircle className="h-3.5 w-3.5" />,
+    label: "ความคิดเห็น",
+    color: "text-blue-500",
   },
   comment_reply: {
     label: "ตอบกลับ",
-    icon: <MessageSquare className="h-3.5 w-3.5" />,
+    color: "text-blue-500",
   },
   like_milestone: {
     label: "ถูกใจ",
-    icon: <Heart className="h-3.5 w-3.5" />,
+    color: "text-rose-500",
   },
   badge_unlock: {
-    label: "Badge ใหม่",
-    icon: <Trophy className="h-3.5 w-3.5" />,
+    label: "Badge",
+    color: "text-amber-500",
   },
   post_expiring_soon: {
     label: "ใกล้หมดอายุ",
-    icon: <AlertTriangle className="h-3.5 w-3.5" />,
+    color: "text-orange-500",
   },
 };
-
-function activityStyle(type: ActivityType) {
-  return {
-    color: `var(--activity-${type}-text)`,
-    backgroundColor: `var(--activity-${type}-bg)`,
-    borderColor: `var(--activity-${type}-border)`,
-  };
-}
 
 export function ActivityCard({ activity, index }: ActivityCardProps) {
   const config = TYPE_CONFIG[activity.type];
@@ -79,135 +70,155 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
     (activity.payload.postOutcome === "owner_found" ||
       activity.payload.postOutcome === "rehomed");
 
-  const cardBase =
-    "group rounded-xl border bg-card p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5";
-
   const linkHref = activity.payload.postId
     ? `/pets/${activity.payload.postId}`
     : "#";
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${linkHref}`
+      : linkHref;
+  const shareText = activity.payload.postTitle
+    ? `🐕 ${activity.payload.postTitle} บน StrayPetMap`
+    : `อัปเดตล่าสุดจากชุมชน StrayPetMap`;
 
   return (
-    <div
-      className={`${cardBase} ${isSuccessStory ? "" : "border-border"}`}
-      style={{
-        animationDelay: `${index * 50}ms`,
-        ...(isSuccessStory
-          ? {
-              borderColor: "var(--activity-status_changed-border)",
-              background: `linear-gradient(to bottom right, var(--success-card-from), var(--success-card-to))`,
-            }
-          : { borderColor: activityStyle(activity.type).borderColor }),
-      }}
+    <article
+      className="group border-b border-border/60 px-4 py-4 transition-colors hover:bg-muted/20"
+      style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Header: actor + type badge */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Avatar
-            src={activity.actor.avatarUrl}
-            alt={activity.actor.displayName}
-            name={activity.actor.displayName}
-            className="h-8 w-8 shrink-0"
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium truncate">
-                {activity.actor.displayName}
-              </span>
-              <span className="text-xs text-foreground/40 whitespace-nowrap">
-                Lv.{activity.actor.level}
-              </span>
-            </div>
-            <span className="text-xs text-foreground/40">
+      {/* Tweet Header */}
+      <div className="flex items-start gap-3">
+        <Avatar
+          src={activity.actor.avatarUrl}
+          alt={activity.actor.displayName}
+          name={activity.actor.displayName}
+          className="h-10 w-10 shrink-0"
+        />
+
+        <div className="min-w-0 flex-1">
+          {/* Name line */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="truncate font-semibold">
+              {activity.actor.displayName}
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              Lv.{activity.actor.level}
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">·</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
               {dayjs(activity.occurredAt).fromNow()}
             </span>
+            <span className={`ml-auto text-xs font-medium ${config.color}`}>
+              {config.label}
+            </span>
+          </div>
+
+          {/* Content */}
+          <div className="mt-1">
+            {isPostActivity && activity.payload.postThumbnailUrl ? (
+              <Link href={linkHref} className="block group/link">
+                <p className="mb-2 text-[15px] leading-relaxed text-foreground">
+                  {isSuccessStory
+                    ? `🎉 ${activity.payload.postTitle ?? "โพสต์ใหม่"}`
+                    : (activity.payload.postTitle ?? "โพสต์ใหม่")}
+                </p>
+
+                {/* Image card */}
+                <div className="relative aspect-video w-full max-h-[320px] overflow-hidden rounded-xl border border-border bg-muted">
+                  <Image
+                    src={activity.payload.postThumbnailUrl}
+                    alt={activity.payload.postTitle ?? "รูปโพสต์"}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover/link:scale-[1.03]"
+                    sizes="(max-width: 768px) 100vw, 600px"
+                  />
+                </div>
+
+                <div className="mt-2 flex items-center gap-2">
+                  {activity.type === "new_post" &&
+                    activity.payload.postPurpose && (
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        {getPurposeLabel(activity.payload.postPurpose)}
+                      </span>
+                    )}
+                  {isSuccessStory && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
+                      <Trophy className="h-3 w-3" />
+                      {activity.payload.postOutcome === "owner_found"
+                        ? "เจอเจ้าของแล้ว"
+                        : "มีบ้านใหม่แล้ว"}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ) : activity.type === "new_comment" ||
+              activity.type === "comment_reply" ? (
+              <Link href={linkHref} className="block group/link">
+                <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 group-hover/link:bg-muted/50 transition-colors">
+                  <p className="text-[15px] leading-relaxed text-foreground">
+                    {activity.payload.commentContent}
+                  </p>
+                  {activity.type === "comment_reply" && (
+                    <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                      <ArrowRight className="h-3 w-3" />
+                      <span>ตอบกลับโพสต์</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ) : isPostActivity ? (
+              <Link href={linkHref} className="block group/link">
+                <p className="text-[15px] leading-relaxed text-foreground">
+                  {isSuccessStory
+                    ? `🎉 ${activity.payload.postTitle ?? "โพสต์ใหม่"}`
+                    : (activity.payload.postTitle ?? "โพสต์ใหม่")}
+                </p>
+                {isSuccessStory && (
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
+                    <Trophy className="h-3 w-3" />
+                    {activity.payload.postOutcome === "owner_found"
+                      ? "เจอเจ้าของแล้ว"
+                      : "มีบ้านใหม่แล้ว"}
+                  </span>
+                )}
+              </Link>
+            ) : activity.type === "badge_unlock" ? (
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p className="text-sm font-medium">
+                    ปลดล็อก Badge: {activity.payload.badgeName ?? "ใหม่"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {activity.payload.badgeDescription ?? ""}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Action Bar */}
+          <div className="mt-3 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <button className="group/comment flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-blue-500/10 hover:text-blue-500">
+                <MessageCircle className="h-4 w-4 text-muted-foreground group-hover/comment:text-blue-500" />
+              </button>
+              <button className="group/heart flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-rose-500/10 hover:text-rose-500">
+                <Heart className="h-4 w-4 text-muted-foreground group-hover/heart:text-rose-500" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              {activity.payload.postId && (
+                <ShareIconButton url={shareUrl} text={shareText} />
+              )}
+              <button className="group/book flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-primary/10 hover:text-primary">
+                <Bookmark className="h-4 w-4 text-muted-foreground group-hover/book:text-primary" />
+              </button>
+            </div>
           </div>
         </div>
-
-        <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-          style={activityStyle(activity.type)}
-        >
-          {config.icon}
-          {config.label}
-        </span>
       </div>
-
-      {/* Content */}
-      <div className="mt-3">
-        {isPostActivity && activity.payload.postThumbnailUrl ? (
-          <Link href={linkHref} className="flex gap-3 group/link">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-              <Image
-                src={activity.payload.postThumbnailUrl}
-                alt={activity.payload.postTitle ?? "รูปโพสต์"}
-                fill
-                className="object-cover transition-transform group-hover/link:scale-105"
-                sizes="80px"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium line-clamp-2 group-hover/link:text-primary transition-colors">
-                {activity.payload.postTitle ?? "โพสต์ใหม่"}
-              </h3>
-              {activity.type === "new_post" && activity.payload.postPurpose && (
-                <span className="mt-1 inline-block text-xs text-foreground/60">
-                  {getPurposeLabel(activity.payload.postPurpose)}
-                </span>
-              )}
-              {isSuccessStory && (
-                <div
-                  className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                  style={{
-                    backgroundColor: "var(--success-badge-bg)",
-                    color: "var(--success-badge-text)",
-                  }}
-                >
-                  <Trophy className="h-3 w-3" />
-                  {activity.payload.postOutcome === "owner_found"
-                    ? "เจอเจ้าของแล้ว"
-                    : "มีบ้านใหม่แล้ว"}
-                </div>
-              )}
-            </div>
-          </Link>
-        ) : activity.type === "new_comment" ||
-          activity.type === "comment_reply" ? (
-          <Link href={linkHref} className="block group/link">
-            <div className="rounded-lg bg-muted/50 px-3 py-2.5 group-hover/link:bg-muted transition-colors">
-              <p className="text-sm text-foreground/80 line-clamp-2">
-                {activity.payload.commentContent}
-              </p>
-              {activity.type === "comment_reply" && (
-                <div className="mt-1 flex items-center gap-1 text-xs text-foreground/50">
-                  <ArrowRight className="h-3 w-3" />
-                  <span>ตอบกลับ</span>
-                </div>
-              )}
-            </div>
-          </Link>
-        ) : isPostActivity ? (
-          <Link href={linkHref} className="block group/link">
-            <h3 className="text-sm font-medium group-hover/link:text-primary transition-colors">
-              {activity.payload.postTitle ?? "โพสต์ใหม่"}
-            </h3>
-            {isSuccessStory && (
-              <div
-                className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                style={{
-                  backgroundColor: "var(--success-badge-bg)",
-                  color: "var(--success-badge-text)",
-                }}
-              >
-                <Trophy className="h-3 w-3" />
-                {activity.payload.postOutcome === "owner_found"
-                  ? "เจอเจ้าของแล้ว"
-                  : "มีบ้านใหม่แล้ว"}
-              </div>
-            )}
-          </Link>
-        ) : null}
-      </div>
-    </div>
+    </article>
   );
 }
 
