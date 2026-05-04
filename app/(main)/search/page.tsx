@@ -1,28 +1,28 @@
-import { SupabasePetTypeRepository } from "@/infrastructure/repositories/supabase/SupabasePetTypeRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createBaseMetadata } from "@/config/metadata";
 import { SearchView } from "@/presentation/components/search/SearchView";
 import { createServerSearchPresenter } from "@/presentation/presenters/search/SearchPresenterServerFactory";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 export function generateMetadata(): Metadata {
-  return {
-    title: "ค้นหาน้อง | StrayPetMap",
-    description: "ค้นหาสัตว์จรตามสถานะ ชนิด หรือตำแหน่ง",
-  };
+  return createBaseMetadata(
+    "ค้นหาน้อง | รับเลี้ยงสัตว์จร",
+    "ค้นหาสัตว์จรตามสถานะ ชนิด สายพันธุ์ สี หรือตำแหน่ง - หาบ้านให้หมาจร แมวจร",
+    {
+      url: "/search",
+      keywords: ["ค้นหาสัตว์", "รับเลี้ยง", "หาบ้าน", "search", "filter"],
+    },
+  );
 }
 
 export default async function SearchPage() {
-  const presenter = await createServerSearchPresenter();
-  const supabase = await createServerSupabaseClient();
-  const petTypeRepo = new SupabasePetTypeRepository(supabase);
+  const searchPresenter = await createServerSearchPresenter();
 
   let viewModel = null;
   let fetchError = false;
-  const petTypes = await petTypeRepo.getAll().catch(() => []);
 
   try {
-    viewModel = await presenter.getViewModel();
+    viewModel = await searchPresenter.getViewModel();
   } catch (error) {
     console.error("Error fetching search data:", error);
     fetchError = true;
@@ -47,5 +47,5 @@ export default async function SearchPage() {
     );
   }
 
-  return <SearchView initialViewModel={viewModel} petTypes={petTypes} />;
+  return <SearchView initialViewModel={viewModel} />;
 }

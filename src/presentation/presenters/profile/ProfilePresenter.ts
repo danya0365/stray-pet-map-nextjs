@@ -10,6 +10,7 @@ import type {
 } from "@/application/repositories/IAuthRepository";
 import type { IPetPostRepository } from "@/application/repositories/IPetPostRepository";
 import type { IProfileBadgeRepository } from "@/application/repositories/IProfileBadgeRepository";
+import { createBaseMetadata, createProfileMetadata } from "@/config/metadata";
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
 import type { PetPost } from "@/domain/entities/pet-post";
 import type { User } from "@supabase/supabase-js";
@@ -104,7 +105,7 @@ export class ProfilePresenter {
         stats: {
           posts: posts?.length || 0,
           helped: helpedCount,
-          points: 0, // TODO: Get from gamification system when implemented
+          points: profile?.totalPoints ?? 0,
         },
       };
     } catch (error) {
@@ -116,11 +117,20 @@ export class ProfilePresenter {
   /**
    * Generate metadata for the page
    */
-  generateMetadata(): Metadata {
-    return {
-      title: "โปรไฟล์ของฉัน | StrayPetMap",
-      description: "จัดการโปรไฟล์และตราสัญลักษณ์ของคุณ",
-    };
+  generateMetadata(profile?: AuthProfile): Metadata {
+    if (profile) {
+      const displayName = profile.fullName || profile.username || "ผู้ใช้";
+      return createProfileMetadata(displayName, profile.avatarUrl || undefined);
+    }
+
+    return createBaseMetadata(
+      "โปรไฟล์ของฉัน | StrayPetMap",
+      "จัดการโปรไฟล์และตราสัญลักษณ์ของคุณ - ดูสถิติการช่วยเหลือสัตว์และโพสต์ของคุณ",
+      {
+        url: "/profile",
+        keywords: ["โปรไฟล์", "profile", "badges", "stats"],
+      },
+    );
   }
 
   // ============================================================
@@ -208,6 +218,44 @@ export class ProfilePresenter {
     } catch (error) {
       console.error("Error deleting post:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Update current profile
+   */
+  async updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    try {
+      return await this.authRepository.updateProfile(data);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to update profile";
+      return { profile: null, error: message };
+    }
+  }
+
+  /**
+   * Create a new profile
+   */
+  async createProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    try {
+      return await this.authRepository.createProfile(data);
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to create profile";
+      return { profile: null, error: message };
     }
   }
 }

@@ -7,13 +7,18 @@ interface PetFundingProgressProps {
   goal: PetFundingGoal | null;
   petName: string;
   onDonateClick: () => void;
+  enabled?: boolean;
 }
 
 export function PetFundingProgress({
   goal,
   petName,
   onDonateClick,
+  enabled = true,
 }: PetFundingProgressProps) {
+  if (!enabled) {
+    return null;
+  }
   if (!goal) {
     // No active funding goal
     return (

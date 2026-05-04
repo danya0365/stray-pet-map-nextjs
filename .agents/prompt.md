@@ -48,14 +48,14 @@
 ```typescript
 interface RoadMapFeature {
   id: string;
-  icon: string;           // emoji
+  icon: string; // emoji
   title: string;
   description: string;
   status: "done" | "in_progress" | "locked";
 
   // Dual-track fields
-  plannedQuarter?: string;  // เช่น "Q3 2026" — ทำแน่นอนภายใน quarter นี้
-  donationGoal?: number;    // เช่น 5000 — ถ้ายอดสะสมถึงนี้ → เริ่มทำทันที
+  plannedQuarter?: string; // เช่น "Q3 2026" — ทำแน่นอนภายใน quarter นี้
+  donationGoal?: number; // เช่น 5000 — ถ้ายอดสะสมถึงนี้ → เริ่มทำทันที
 }
 ```
 
@@ -68,6 +68,7 @@ interface RoadMapFeature {
 ### Legend / คำอธิบายที่ต้องมีในหน้า
 
 แสดง panel อธิบายระบบ dual-track ให้ user เข้าใจ:
+
 - **สถานะฟีเจอร์**: done / in_progress / locked
 - **ระบบ Dual-track**: กำหนดการ (ทำแน่นอน) vs Fast-track (บริจาคเร็วกว่า = ได้เร็วกว่า)
 
@@ -80,6 +81,7 @@ interface RoadMapFeature {
 ### Tier structure แนะนำ
 
 จัดฟีเจอร์เป็น Tier ตามยอดสะสม:
+
 - 🐾 ฟรีเสมอ (฿0) — ฟีเจอร์พื้นฐาน
 - 🌱 Seed (฿5,000)
 - 🌿 Sprout (฿15,000)
@@ -98,3 +100,14 @@ interface RoadMapFeature {
 5. **Community Note** — อธิบาย philosophy no-pressure
 6. **Donation CTA Section** — กระตุ้นบริจาค (QR placeholder, amount chips)
 
+## Prompt สำหรับ สั่ง AI ให้แก้โค้ดให้ตรงตามข้อกำหนด
+
+รีวิวอันนี้นะคับ
+
+/Users/marosdeeuma/stray-pet-map-nextjs/src/presentation/components/pet-detail/PetDetailContainer.tsx
+
+ผมอยากให้แก้ตรง fetchFundingGoal
+
+ต้องเรียก action จาก usePetDetailPresenter
+
+ตาม rules ที่เราเขียนไว้ใน /Users/marosdeeuma/stray-pet-map-nextjs/.agents/skills/create-page/references/CREATE_PAGE_PATTERN.md

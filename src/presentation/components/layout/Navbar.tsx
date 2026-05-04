@@ -5,6 +5,7 @@ import { useDonationContext } from "@/presentation/components/donation/DonationP
 import { useAuthPresenter } from "@/presentation/presenters/auth/useAuthPresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import {
+  Activity,
   Check,
   Heart,
   Loader2,
@@ -26,6 +27,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { href: "/map", label: "แผนที่", icon: MapPin },
+  { href: "/updates", label: "อัปเดต", icon: Activity },
   { href: "/search", label: "ค้นหา", icon: Search },
   { href: "/posts/create", label: "โพสต์น้อง", icon: PlusCircle },
   { href: "/favorites", label: "รายการโปรด", icon: Heart },
@@ -70,6 +72,7 @@ export function Navbar() {
 
   const handleSignOut = useCallback(async () => {
     await signOut();
+    useAuthStore.getState().reset();
     setUserMenuOpen(false);
     router.push("/");
     router.refresh();

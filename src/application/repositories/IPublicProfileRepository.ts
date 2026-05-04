@@ -1,9 +1,23 @@
+import type { PetPost } from "@/domain/entities/pet-post";
 import type {
   PublicProfile,
-  PublicProfileWithPosts,
   PublicProfileSummary,
+  PublicProfileWithPosts,
 } from "@/domain/entities/public-profile";
-import type { PetPost } from "@/domain/entities/pet-post";
+import type { PaginationMode } from "@/domain/types/pagination";
+
+// ============================================================================
+// QUERY RESULTS
+// ============================================================================
+
+export interface ProfilePostsQueryResult {
+  posts: PetPost[];
+  total: number;
+  page?: number;
+  perPage?: number;
+  nextCursor?: string | null;
+  hasMore: boolean;
+}
 
 /**
  * IPublicProfileRepository
@@ -26,20 +40,14 @@ export interface IPublicProfileRepository {
   getByIdWithPosts(profileId: string): Promise<PublicProfileWithPosts | null>;
 
   /**
-   * ดึงโพสต์ทั้งหมดของ profile นั้น (paginated)
+   * ดึงโพสต์ทั้งหมดของ profile นั้น (รองรับทั้ง offset และ cursor pagination)
    * @param profileId - UUID ของ profile
-   * @param page - หน้าที่ต้องการ (default: 1)
-   * @param perPage - จำนวนต่อหน้า (default: 10)
+   * @param pagination - รูปแบบ pagination (offset สำหรับ admin, cursor สำหรับ frontend)
    */
   getPosts(
     profileId: string,
-    page?: number,
-    perPage?: number,
-  ): Promise<{
-    posts: PetPost[];
-    total: number;
-    hasMore: boolean;
-  }>;
+    pagination: PaginationMode,
+  ): Promise<ProfilePostsQueryResult>;
 
   /**
    * ดึง profile หลายคนพร้อม badge count (สำหรับ leaderboard)

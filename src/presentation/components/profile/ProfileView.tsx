@@ -2,6 +2,7 @@
 
 import type { Badge, BadgeProgress } from "@/domain/entities/badge";
 import type { PetPost } from "@/domain/entities/pet-post";
+import { Avatar } from "@/presentation/components/ui";
 import type { ProfileViewModel } from "@/presentation/presenters/profile/ProfilePresenter";
 import { useProfilePresenter } from "@/presentation/presenters/profile/useProfilePresenter";
 import {
@@ -22,10 +23,10 @@ import {
   SwitchCamera,
   Trash2,
   Trophy,
-  User,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const ROLE_LABELS: Record<
@@ -34,20 +35,18 @@ const ROLE_LABELS: Record<
 > = {
   admin: {
     label: "ผู้ดูแลระบบ",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor:
-      "bg-amber-50 dark:bg-amber-950/30 ring-amber-200 dark:ring-amber-800",
+    color: "text-warning",
+    bgColor: "bg-warning/10 ring-warning/20",
   },
   moderator: {
     label: "อาสาตรวจสอบ",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30 ring-blue-200 dark:ring-blue-800",
+    color: "text-info",
+    bgColor: "bg-info/10 ring-info/20",
   },
   user: {
     label: "ผู้ใช้ทั่วไป",
-    color: "text-green-600 dark:text-green-400",
-    bgColor:
-      "bg-green-50 dark:bg-green-950/30 ring-green-200 dark:ring-green-800",
+    color: "text-success",
+    bgColor: "bg-success/10 ring-success/20",
   },
 };
 
@@ -71,9 +70,17 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
   const [state, actions] = useProfilePresenter(initialViewModel);
   const { viewModel, loading, error, isSwitchingProfile, isDeletingPost } =
     state;
-  const { switchProfile, refreshProfiles, deletePost } = actions;
+  const { switchProfile, refreshProfiles, deletePost, createProfile } = actions;
 
   const [showAllProfiles, setShowAllProfiles] = useState(false);
+
+  // Create profile form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createFullName, setCreateFullName] = useState("");
+  const [createUsername, setCreateUsername] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   // Badges state
   const [badgesData, setBadgesData] = useState<{
@@ -92,6 +99,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
     viewModel?.hasMultipleProfiles ||
     initialViewModel?.hasMultipleProfiles ||
     profiles.length > 1;
+  const isAdmin = profile?.role === "admin";
 
   // Fetch badges
   useEffect(() => {
@@ -153,7 +161,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
   if (error) {
     return (
       <div className="py-20 text-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-destructive">{error}</p>
       </div>
     );
   }
@@ -183,24 +191,13 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
               {/* Avatar with ring */}
               <div className="relative shrink-0">
-                <div className="relative h-28 w-28 overflow-hidden rounded-full bg-muted ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32">
-                  {profile.avatarUrl &&
-                  (profile.avatarUrl.startsWith("http") ||
-                    profile.avatarUrl.startsWith("/")) ? (
-                    <Image
-                      src={profile.avatarUrl}
-                      alt={profile.fullName || "ผู้ใช้"}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-primary">
-                      {(profile.fullName || profile.username || "U")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                <Avatar
+                  src={profile.avatarUrl}
+                  alt={profile.fullName || "ผู้ใช้"}
+                  name={profile.fullName || profile.username}
+                  className="h-28 w-28 ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32"
+                  fallbackClassName="text-4xl font-bold text-primary"
+                />
                 {/* Active indicator */}
                 <div className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-background shadow-lg">
                   <Check className="h-4 w-4" />
@@ -258,6 +255,54 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
                     ดูโปรไฟล์สาธารณะ
                   </Link>
                 </div>
+
+                {/* Compact Profile Tabs (multi-profile only) */}
+                {hasMultipleProfiles && (
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/30 pt-4">
+                    <span className="text-xs text-muted-foreground">
+                      สลับโปรไฟล์:
+                    </span>
+                    {profiles.map((p) => {
+                      const isCurrent = profile.id === p.id;
+                      const pRole = ROLE_LABELS[p.role] ?? ROLE_LABELS.user;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() =>
+                            !isCurrent && handleSwitchProfile(p.id)
+                          }
+                          disabled={isCurrent || isSwitchingProfile}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                            isCurrent
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "border border-border/50 bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
+                          } ${isSwitchingProfile && !isCurrent ? "opacity-60" : ""}`}
+                        >
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-current/10 text-[10px] font-bold">
+                            {(p.fullName || p.username || "U")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                          <span className="max-w-[80px] truncate sm:max-w-[120px]">
+                            {p.fullName || p.username || "ผู้ใช้"}
+                          </span>
+                          <span
+                            className={`rounded px-1 py-0.5 text-[9px] ${pRole.bgColor} ${pRole.color}`}
+                          >
+                            {pRole.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setShowAllProfiles(!showAllProfiles)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-foreground"
+                    >
+                      <SwitchCamera className="h-3.5 w-3.5" />
+                      จัดการโปรไฟล์
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -320,124 +365,220 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
           </div>
         </div>
 
-        {/* Profile Management - Accordion Style */}
-        {hasMultipleProfiles && (
+        {/* Expandable Profile Manager */}
+        {hasMultipleProfiles && showAllProfiles && (
           <div className="rounded-2xl border border-border/50 bg-card/50 p-6 shadow-sm">
-            <button
-              onClick={() => setShowAllProfiles(!showAllProfiles)}
-              className="flex w-full items-center justify-between"
-            >
+            <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <SwitchCamera className="h-5 w-5" />
                 </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-foreground">สลับโปรไฟล์</h3>
+                <div>
+                  <h3 className="font-semibold text-foreground">
+                    จัดการโปรไฟล์
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     {profiles.length} โปรไฟล์ในระบบ
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                  {showAllProfiles ? "ซ่อน" : "ดูทั้งหมด"}
-                </span>
-                <ChevronRight
-                  className={`h-5 w-5 text-muted-foreground transition-transform ${showAllProfiles ? "rotate-90" : ""}`}
-                />
-              </div>
-            </button>
+              <button
+                onClick={() => setShowAllProfiles(false)}
+                className="rounded-full px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              >
+                ปิด
+              </button>
+            </div>
 
-            {/* Expandable Profile List */}
-            <div
-              className={`overflow-hidden transition-all ${showAllProfiles ? "mt-4 max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}
-            >
-              <div className="space-y-2 border-t border-border/50 pt-4">
-                {profiles.map((p) => {
-                  const isCurrent = profile.id === p.id;
-                  const pRole = ROLE_LABELS[p.role] ?? ROLE_LABELS.user;
+            <div className="space-y-2">
+              {profiles.map((p) => {
+                const isCurrent = profile.id === p.id;
+                const pRole = ROLE_LABELS[p.role] ?? ROLE_LABELS.user;
 
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => !isCurrent && handleSwitchProfile(p.id)}
-                      disabled={isCurrent || isSwitchingProfile}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => !isCurrent && handleSwitchProfile(p.id)}
+                    disabled={isCurrent || isSwitchingProfile}
+                    className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                      isCurrent
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-border/50 bg-background/50 hover:border-primary/20 hover:bg-muted/30"
+                    } ${isSwitchingProfile && !isCurrent ? "opacity-60" : ""}`}
+                  >
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg font-semibold ${
                         isCurrent
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-border/50 bg-background/50 hover:border-primary/20 hover:bg-muted/30"
-                      } ${isSwitchingProfile && !isCurrent ? "opacity-60" : ""}`}
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground"
+                      }`}
                     >
-                      <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg font-semibold ${
-                          isCurrent
-                            ? "bg-primary text-white shadow-sm"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {isSwitchingProfile && !isCurrent ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          (p.fullName || p.username || "U")
-                            .charAt(0)
-                            .toUpperCase()
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`truncate font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
-                        >
-                          {p.fullName || p.username || "ผู้ใช้"}
-                        </p>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${pRole.bgColor} ${pRole.color}`}
-                        >
-                          <Shield className="h-2.5 w-2.5" />
-                          {pRole.label}
-                        </span>
-                      </div>
-
-                      {isCurrent ? (
-                        <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-[10px] font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
-                          <Check className="h-3 w-3" />
-                          ใช้งานอยู่
-                        </div>
+                      {isSwitchingProfile && !isCurrent ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
-                        <span className="text-xs text-muted-foreground">
-                          คลิกสลับ
-                        </span>
+                        (p.fullName || p.username || "U")
+                          .charAt(0)
+                          .toUpperCase()
                       )}
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
 
-              {/* Add profile hint */}
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/20 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {p.fullName || p.username || "ผู้ใช้"}
+                      </p>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${pRole.bgColor} ${pRole.color}`}
+                      >
+                        <Shield className="h-2.5 w-2.5" />
+                        {pRole.label}
+                      </span>
+                    </div>
+
+                    {isCurrent ? (
+                      <div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-[10px] font-medium text-success">
+                        <Check className="h-3 w-3" />
+                        ใช้งานอยู่
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        คลิกสลับ
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Create Profile */}
+            {!showCreateForm ? (
+              <button
+                onClick={() => {
+                  if (isAdmin) {
+                    setShowCreateForm(true);
+                    setCreateError(null);
+                  } else {
+                    setShowPermissionModal(true);
+                  }
+                }}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/20 p-3 transition-all hover:border-primary/30 hover:bg-primary/5"
+              >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                   <Plus className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  ต้องการเพิ่มโปรไฟล์? ติดต่อผู้ดูแลระบบ
+                <p className="text-xs font-medium text-muted-foreground">
+                  สร้างโปรไฟล์ใหม่
                 </p>
-              </div>
-            </div>
+              </button>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setIsCreating(true);
+                  setCreateError(null);
+                  try {
+                    const result = await createProfile({
+                      fullName: createFullName || undefined,
+                      username: createUsername || undefined,
+                    });
+                    if (result.error) {
+                      setCreateError(result.error);
+                    } else {
+                      setShowCreateForm(false);
+                      setCreateFullName("");
+                      setCreateUsername("");
+                    }
+                  } catch (err) {
+                    setCreateError(
+                      err instanceof Error ? err.message : "เกิดข้อผิดพลาด",
+                    );
+                  } finally {
+                    setIsCreating(false);
+                  }
+                }}
+                className="mt-3 space-y-3 rounded-xl border border-border/50 bg-background/50 p-4"
+              >
+                <p className="text-sm font-medium">สร้างโปรไฟล์ใหม่</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={createFullName}
+                    onChange={(e) => setCreateFullName(e.target.value)}
+                    placeholder="ชื่อที่แสดง"
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <input
+                    type="text"
+                    value={createUsername}
+                    onChange={(e) => setCreateUsername(e.target.value)}
+                    placeholder="ชื่อผู้ใช้"
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                {createError && (
+                  <p className="text-xs text-destructive">{createError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setCreateError(null);
+                      setCreateFullName("");
+                      setCreateUsername("");
+                    }}
+                    className="flex-1 rounded-lg border border-border py-2 text-xs font-medium transition-colors hover:bg-muted"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreating}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {isCreating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5" />
+                    )}
+                    สร้าง
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 
-        {/* Single profile state - show upgrade hint */}
-        {!hasMultipleProfiles && (
-          <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <User className="h-6 w-6 text-muted-foreground" />
+        {/* Permission Error Modal */}
+        {showPermissionModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowPermissionModal(false)}
+            />
+            <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold">
+                  ไม่มีสิทธิ์สร้างโปรไฟล์
+                </h3>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  คุณไม่มีสิทธิ์สร้างโปรไฟล์ใหม่
+                  <br />
+                  เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถสร้างโปรไฟล์เพิ่มได้
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionModal(false)}
+                  className="w-full rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  เข้าใจแล้ว
+                </button>
+              </div>
             </div>
-            <h3 className="font-medium">โปรไฟล์เดียว</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              คุณมีโปรไฟล์เดียวเท่านั้น
-              <br />
-              ติดต่อผู้ดูแลระบบเพื่อเพิ่มโปรไฟล์อื่น
-            </p>
           </div>
         )}
 
@@ -555,7 +696,7 @@ export function ProfileView({ initialViewModel }: ProfileViewProps) {
               <div className="mt-4 flex gap-2">
                 <Link
                   href="/posts/create"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   <Award className="h-3.5 w-3.5" />
                   สร้างโพสต์
@@ -601,6 +742,7 @@ function UserPostsSection({
   onDeletePost: (postId: string) => Promise<boolean>;
   isDeletingPost: string | null;
 }) {
+  const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
     null,
   );
@@ -617,11 +759,14 @@ function UserPostsSection({
   const statusLabels: Record<string, { label: string; color: string }> = {
     available: {
       label: "รอรับเลี้ยง",
-      color: "bg-emerald-100 text-emerald-700",
+      color: "bg-success/10 text-success",
     },
-    pending: { label: "มีคนสนใจ", color: "bg-amber-100 text-amber-700" },
-    adopted: { label: "มีบ้านแล้ว", color: "bg-blue-100 text-blue-700" },
-    missing: { label: "ตามหาน้อง", color: "bg-red-100 text-red-700" },
+    pending: { label: "มีคนสนใจ", color: "bg-warning/10 text-warning" },
+    adopted: { label: "มีบ้านแล้ว", color: "bg-info/10 text-info" },
+    missing: {
+      label: "ตามหาน้อง",
+      color: "bg-destructive/10 text-destructive",
+    },
   };
 
   const outcomeLabels: Record<string, string> = {
@@ -654,7 +799,7 @@ function UserPostsSection({
         </div>
         <Link
           href="/posts/create"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
         >
           <Plus className="h-4 w-4" />
           สร้างโพสต์
@@ -675,7 +820,7 @@ function UserPostsSection({
           </p>
           <Link
             href="/posts/create"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             สร้างโพสต์
@@ -761,7 +906,7 @@ function UserPostsSection({
                           alert("โพสต์ที่จบแล้วไม่สามารถแก้ไขได้");
                           return;
                         }
-                        alert("ฟีเจอร์แก้ไขโพสต์กำลังพัฒนา");
+                        router.push(`/posts/${post.id}/edit`);
                       }}
                       disabled={!!post.outcome}
                       className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
@@ -806,7 +951,7 @@ function UserPostsSection({
           />
           <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
                 <Trash2 className="h-6 w-6" />
               </div>
               <h3 className="mb-2 text-lg font-semibold">ยืนยันการลบ</h3>
@@ -827,7 +972,7 @@ function UserPostsSection({
                   type="button"
                   onClick={() => handleDelete(showDeleteConfirm)}
                   disabled={isDeletingPost !== null}
-                  className="flex-1 rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
                 >
                   {isDeletingPost ? "กำลังลบ..." : "ลบ"}
                 </button>

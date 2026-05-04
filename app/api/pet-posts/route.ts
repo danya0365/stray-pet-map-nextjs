@@ -2,7 +2,7 @@
  * /api/pet-posts
  * API Route for pet post CRUD operations
  *
- * ✅ Uses SupabasePetPostRepository (server-side)
+ * ✅ Uses PetPostPresenter (Clean Architecture)
  * ✅ Client components call this via ApiPetPostRepository
  * ✅ GET = query / list, POST = create
  */
@@ -13,16 +13,14 @@ import type {
   PetPostPurpose,
   PetPostStatus,
 } from "@/domain/entities/pet-post";
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // GET /api/pet-posts — query pet posts (public)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetPostRepository(supabase);
+    const presenter = await createServerPetPostPresenter();
 
     const search = searchParams.get("search") || undefined;
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -66,8 +64,13 @@ export async function GET(request: Request) {
           : { type: "offset", page, perPage },
     };
 
-    const result = await repo.query(query);
-    return NextResponse.json(result);
+    const result = await presenter.query(query);
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     // Detailed error logging for debugging
     console.error("[GET /api/pet-posts] Error:", error);
@@ -95,25 +98,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    // Check auth
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
-    }
-
     const body = await request.json();
     console.log(
       "[POST /api/pet-posts] Payload:",
       JSON.stringify(body, null, 2),
     );
-    const repo = new SupabasePetPostRepository(supabase);
-    const post = await repo.create(body);
 
-    return NextResponse.json(post, { status: 201 });
+    const presenter = await createServerPetPostPresenter();
+    const result = await presenter.create(body);
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json(result.data, { status: 201 });
   } catch (error: unknown) {
     console.error("[POST /api/pet-posts] Error:", error);
 

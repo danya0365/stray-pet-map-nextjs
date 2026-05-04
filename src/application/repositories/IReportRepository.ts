@@ -4,6 +4,7 @@
  * Following Clean Architecture - Application layer
  */
 
+import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
 
 export type ReportReason = Database["public"]["Enums"]["report_reason"];
@@ -27,6 +28,19 @@ export interface Report {
   createdAt: string;
 }
 
+// ============================================================================
+// QUERY RESULTS
+// ============================================================================
+
+export interface ReportQueryResult {
+  data: Report[];
+  total: number;
+  page?: number;
+  perPage?: number;
+  nextCursor?: string | null;
+  hasMore: boolean;
+}
+
 export interface IReportRepository {
   /**
    * Create a new report
@@ -34,9 +48,10 @@ export interface IReportRepository {
   create(params: CreateReportParams): Promise<Report>;
 
   /**
-   * Get reports by the current user
+   * Get reports by the current user (รองรับทั้ง offset และ cursor pagination)
+   * @param pagination - รูปแบบ pagination (offset สำหรับ admin, cursor สำหรับ frontend)
    */
-  getMyReports(): Promise<Report[]>;
+  getMyReports(pagination?: PaginationMode): Promise<ReportQueryResult>;
 
   /**
    * Check if user has already reported a post

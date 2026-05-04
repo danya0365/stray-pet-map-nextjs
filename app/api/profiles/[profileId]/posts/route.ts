@@ -1,5 +1,4 @@
-import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import { NextResponse } from "next/server";
 
 interface RouteParams {
@@ -7,12 +6,12 @@ interface RouteParams {
 }
 
 // GET /api/profiles/[profileId]/posts - ดึงโพสต์ทั้งหมดของผู้ใช้
+// Supports both offset and cursor pagination
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { profileId } = await params;
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") ?? "1", 10);
-    const perPage = parseInt(searchParams.get("perPage") ?? "10", 10);
+    const paginationType = searchParams.get("paginationType") || "cursor";
 
     if (!profileId) {
       return NextResponse.json(
@@ -21,24 +20,32 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePublicProfileRepository(supabase);
-
-    // ตรวจสอบว่า profile มีอยู่จริง
-    const exists = await repo.exists(profileId);
-    if (!exists) {
-      return NextResponse.json(
-        { error: "Profile not found" },
-        { status: 404 },
-      );
+    // Build pagination based on type
+    let pagination;
+    if (paginationType === "offset") {
+      // Offset pagination (for admin)
+      const page = parseInt(searchParams.get("page") ?? "1", 10);
+      const perPage = parseInt(searchParams.get("perPage") ?? "10", 10);
+      pagination = { type: "offset" as const, page, perPage };
+    } else {
+      // Cursor pagination (for frontend load more)
+      const cursor = searchParams.get("cursor") || undefined;
+      const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+      pagination = { type: "cursor" as const, cursor, limit };
     }
 
-    const result = await repo.getPosts(profileId, page, perPage);
+    const presenter = await createServerPublicProfilePresenter();
+    const result = await presenter.getPosts(profileId, pagination);
 
-    return NextResponse.json({
-      success: true,
-      ...result,
-    });
+    if (!result.success) {
+      if (result.error === "Profile not found") {
+        return NextResponse.json({ error: result.error }, { status: 404 });
+      }
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    // Return the data directly from the ProfilePostsQueryResult
+    return NextResponse.json(result.data);
   } catch (error) {
     console.error("Error fetching profile posts:", error);
     return NextResponse.json(

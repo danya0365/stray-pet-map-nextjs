@@ -1,5 +1,6 @@
-import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createBaseMetadata } from "@/config/metadata";
+import { Avatar } from "@/presentation/components/ui";
+import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import {
   Award,
   BadgeCheck,
@@ -8,9 +9,8 @@ import {
   FileText,
   Heart,
   MapPin,
-  User,
 } from "lucide-react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,37 +23,44 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { profileId } = await params;
-  const supabase = await createServerSupabaseClient();
-  const repo = new SupabasePublicProfileRepository(supabase);
-  const profile = await repo.getById(profileId);
+  const presenter = await createServerPublicProfilePresenter();
+  const result = await presenter.getById(profileId);
 
-  if (!profile) {
-    return {
-      title: "ไม่พบโปรไฟล์ | StrayPetMap",
-    };
+  if (!result.success || !result.profile) {
+    return createBaseMetadata(
+      "ไม่พบโปรไฟล์ | StrayPetMap",
+      "ไม่พบข้อมูลโปรไฟล์ที่ต้องการ",
+    );
   }
 
-  return {
-    title: `${profile.displayName} | StrayPetMap`,
-    description:
-      profile.bio ??
-      `โปรไฟล์ของ ${profile.displayName} บน StrayPetMap - แพลตฟอร์มช่วยเหลือสัตว์จรจัด`,
-  };
+  const profile = result.profile;
+
+  return createBaseMetadata(
+    `${profile.displayName} | StrayPetMap`,
+    profile.bio ??
+      `โปรไฟล์ของ ${profile.displayName} บน StrayPetMap - ดูโพสต์และผลงานการช่วยเหลือสัตว์`,
+    {
+      url: `/profile/${profileId}`,
+      image: profile.avatarUrl || undefined,
+      keywords: ["โปรไฟล์", "profile", "นักช่วยเหลือ", "badges"],
+    },
+  );
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { profileId } = await params;
-  const supabase = await createServerSupabaseClient();
-  const repo = new SupabasePublicProfileRepository(supabase);
+  const presenter = await createServerPublicProfilePresenter();
 
-  const [profile, postsResult] = await Promise.all([
-    repo.getById(profileId),
-    repo.getPosts(profileId, 1, 12),
+  const [profileResult, postsResult] = await Promise.all([
+    presenter.getById(profileId),
+    presenter.getPosts(profileId, { type: "offset", page: 1, perPage: 12 }),
   ]);
 
-  if (!profile) {
+  if (!profileResult.success || !profileResult.profile) {
     notFound();
   }
+
+  const profile = profileResult.profile;
 
   const { stats, badges, badgeProgress } = profile;
 
@@ -69,22 +76,12 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
             {/* Avatar with ring */}
             <div className="relative shrink-0">
-              <div className="relative h-28 w-28 overflow-hidden rounded-full bg-muted ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32">
-                {profile.avatarUrl &&
-                (profile.avatarUrl.startsWith("http") ||
-                  profile.avatarUrl.startsWith("/")) ? (
-                  <Image
-                    src={profile.avatarUrl}
-                    alt={profile.displayName}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <User className="h-14 w-14 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
+              <Avatar
+                src={profile.avatarUrl}
+                alt={profile.displayName}
+                name={profile.displayName}
+                className="h-28 w-28 ring-4 ring-primary/20 ring-offset-4 ring-offset-background sm:h-32 sm:w-32"
+              />
               {profile.isVerified && (
                 <div className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                   <BadgeCheck className="h-5 w-5" />
@@ -194,11 +191,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
               โพสต์ล่าสุด
             </h2>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium text-muted-foreground">
-              {postsResult.total}
+              {postsResult.data?.total ?? 0}
             </span>
           </div>
 
-          {postsResult.posts.length === 0 ? (
+          {!postsResult.data || postsResult.data.posts.length === 0 ? (
             <div className="rounded-2xl border border-border/50 bg-card/50 py-16 text-center">
               <div className="mb-3 flex justify-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -209,7 +206,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {postsResult.posts.map((post) => (
+              {postsResult.data?.posts.map((post) => (
                 <Link
                   key={post.id}
                   href={`/pets/${post.id}`}
@@ -233,9 +230,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
                     <span
                       className={`absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold shadow-lg ${
                         post.status === "available"
-                          ? "bg-emerald-500 text-white"
+                          ? "bg-emerald-500/90 text-white"
                           : post.status === "adopted"
-                            ? "bg-blue-500 text-white"
+                            ? "bg-blue-500/90 text-white"
                             : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -248,9 +245,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
                             : "รอดำเนินการ"}
                     </span>
                     {/* Hover overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 transition-colors group-hover:bg-foreground/10">
                       <div className="translate-y-4 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100">
-                        <div className="flex items-center gap-1 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur-sm">
+                        <div className="flex items-center gap-1 rounded-full border border-border/50 bg-card/95 px-4 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur-sm">
                           ดูรายละเอียด
                           <ChevronRight className="h-4 w-4" />
                         </div>
@@ -281,7 +278,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           )}
 
           {/* Load More */}
-          {postsResult.hasMore && (
+          {postsResult.data?.hasMore && (
             <div className="mt-8 text-center">
               <button className="group inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5">
                 ดูเพิ่มเติม

@@ -1,5 +1,4 @@
-import { SupabasePublicProfileRepository } from "@/infrastructure/repositories/supabase/SupabasePublicProfileRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPublicProfilePresenter } from "@/presentation/presenters/public-profile/PublicProfilePresenterServerFactory";
 import { NextResponse } from "next/server";
 
 interface RouteParams {
@@ -15,12 +14,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
       return NextResponse.json({ exists: false }, { status: 400 });
     }
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePublicProfileRepository(supabase);
+    const presenter = await createServerPublicProfilePresenter();
+    const result = await presenter.exists(profileId);
 
-    const exists = await repo.exists(profileId);
+    if (!result.success) {
+      return NextResponse.json({ exists: false }, { status: 500 });
+    }
 
-    return NextResponse.json({ exists });
+    return NextResponse.json({ exists: result.exists });
   } catch (error) {
     console.error("Error checking profile existence:", error);
     return NextResponse.json({ exists: false }, { status: 500 });

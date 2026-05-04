@@ -1,3 +1,4 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { CreatePostV2View } from "@/presentation/components/create-post/CreatePostV2View";
 import { createServerCreatePostPresenter } from "@/presentation/presenters/create-post/CreatePostPresenterServerFactory";
 import type { Metadata } from "next";
@@ -7,10 +8,14 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 export function generateMetadata(): Metadata {
-  return {
-    title: "โพสต์น้อง | StrayPetMap",
-    description: "โพสต์น้องสัตว์จรเพื่อช่วยตามหาบ้านหรือเจ้าของ",
-  };
+  return createBaseMetadata(
+    "โพสต์น้อง | ช่วยหาบ้านให้สัตว์จร",
+    "โพสต์น้องสัตว์จรเพื่อช่วยตามหาบ้านหรือเจ้าของ - สร้างโพสต์ใหม่ง่ายๆ ด้วยขั้นตอนแค่ 4 ขั้น",
+    {
+      url: "/posts/create",
+      keywords: ["โพสต์น้อง", "ช่วยสัตว์", "หาบ้าน", "create", "post"],
+    },
+  );
 }
 
 export default async function CreatePostPage() {

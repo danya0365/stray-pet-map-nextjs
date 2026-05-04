@@ -1,12 +1,16 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { Code, Heart, Mail, MapPin, Users } from "lucide-react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "เกี่ยวกับเรา | StrayPetMap",
-  description:
-    "ทำความรู้จัก StrayPetMap - แพลตฟอร์มช่วยเหลือสัตว์จรจัดโดยคนไทย เพื่อคนไทย",
-};
+export const metadata: Metadata = createBaseMetadata(
+  "เกี่ยวกับเรา | StrayPetMap",
+  "ทำความรู้จัก StrayPetMap - แพลตฟอร์มช่วยเหลือสัตว์จรจัดโดยคนไทย เพื่อคนไทย",
+  {
+    url: "/about",
+    keywords: ["เกี่ยวกับเรา", "ช่วยสัตว์", "บริจาค", "about", "mission"],
+  },
+);
 
 export default function AboutPage() {
   return (

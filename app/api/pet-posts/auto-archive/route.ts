@@ -1,5 +1,4 @@
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // POST /api/pet-posts/auto-archive - ปิดโพสต์ที่หมดอายุอัตโนมัติ
@@ -14,38 +13,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetPostRepository(supabase);
-
-    // ดึงโพสต์ที่หมดอายุผ่าน Repository (สร้างมาเกิน 90 วัน)
+    const presenter = await createServerPetPostPresenter();
     const EXPIRY_DAYS = 90;
-    const expiredPosts = await repo.findExpiredPosts(EXPIRY_DAYS);
 
-    // ปิดโพสต์ที่หมดอายุทั้งหมด
-    const archivedPosts: string[] = [];
-    const failedPosts: string[] = [];
+    // Auto-archive via presenter
+    const result = await presenter.autoArchive(EXPIRY_DAYS);
 
-    for (const post of expiredPosts) {
-      try {
-        await repo.update(post.id, {
-          outcome: "expired",
-          resolvedAt: new Date().toISOString(),
-          isArchived: true,
-          isActive: false,
-        });
-        archivedPosts.push(post.id);
-      } catch (err) {
-        console.error(`Failed to archive post ${post.id}:`, err);
-        failedPosts.push(post.id);
-      }
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      archived: archivedPosts.length,
-      failed: failedPosts.length,
-      postIds: archivedPosts,
-      failedIds: failedPosts,
+      archived: result.archived,
+      failed: result.failed,
+      postIds: result.postIds,
+      failedIds: result.failedIds,
       expiryDays: EXPIRY_DAYS,
     });
   } catch (error) {
@@ -67,26 +50,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetPostRepository(supabase);
-
+    const presenter = await createServerPetPostPresenter();
     const EXPIRY_DAYS = 90;
     const WARNING_DAYS = 7;
 
-    // ดึงข้อมูลผ่าน Repository Methods
-    const willExpire = await repo.findExpiredPosts(EXPIRY_DAYS);
-    const willWarn = await repo.findExpiringSoonPosts(
+    // ดึงข้อมูล preview ผ่าน Presenter
+    const result = await presenter.previewAutoArchive(
       EXPIRY_DAYS,
       WARNING_DAYS,
     );
 
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
     return NextResponse.json({
       expiryDays: EXPIRY_DAYS,
       warningDays: WARNING_DAYS,
-      willExpire,
-      willWarn,
-      expireCount: willExpire.length,
-      warnCount: willWarn.length,
+      willExpire: result.willExpire,
+      willWarn: result.willWarn,
+      expireCount: result.expireCount,
+      warnCount: result.warnCount,
     });
   } catch (error) {
     console.error("Auto-archive stats error:", error);

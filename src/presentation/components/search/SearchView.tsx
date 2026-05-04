@@ -1,6 +1,5 @@
 "use client";
 
-import type { PetType } from "@/domain/entities/pet-post";
 import { PetPostCard } from "@/presentation/components/home/PetPostCard";
 import type { SearchViewModel } from "@/presentation/presenters/search/SearchPresenter";
 import { useSearchPresenter } from "@/presentation/presenters/search/useSearchPresenter";
@@ -10,10 +9,9 @@ import { SearchFilterBar } from "./SearchFilterBar";
 
 interface SearchViewProps {
   initialViewModel?: SearchViewModel;
-  petTypes?: PetType[];
 }
 
-export function SearchView({ initialViewModel, petTypes }: SearchViewProps) {
+export function SearchView({ initialViewModel }: SearchViewProps) {
   const [state, actions] = useSearchPresenter(initialViewModel);
   const { viewModel, loading, loadingMore, error, nearBy } = state;
 
@@ -28,7 +26,7 @@ export function SearchView({ initialViewModel, petTypes }: SearchViewProps) {
         onSearchChange={actions.search}
         onFiltersChange={actions.setFilters}
         resultCount={viewModel?.result.total}
-        petTypes={petTypes}
+        petTypes={initialViewModel?.petTypes}
       />
 
       {/* Near By */}

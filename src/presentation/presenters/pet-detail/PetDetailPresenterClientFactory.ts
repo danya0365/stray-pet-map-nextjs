@@ -6,13 +6,15 @@
 
 "use client";
 
+import { ApiDonationRepository } from "@/infrastructure/repositories/api/ApiDonationRepository";
 import { ApiPetPostRepository } from "@/infrastructure/repositories/api/ApiPetPostRepository";
 import { PetDetailPresenter } from "./PetDetailPresenter";
 
 export class PetDetailPresenterClientFactory {
   static create(): PetDetailPresenter {
     const repository = new ApiPetPostRepository();
-    return new PetDetailPresenter(repository);
+    const donationRepository = new ApiDonationRepository();
+    return new PetDetailPresenter(repository, donationRepository);
   }
 }
 

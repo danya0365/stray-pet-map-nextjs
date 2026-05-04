@@ -1,10 +1,9 @@
 "use client";
 
-import type { PetFundingGoal } from "@/domain/entities/donation";
+import { FEATURE_FLAGS } from "@/config/features";
 import { useDonationContext } from "@/presentation/components/donation";
-import { usePetDetailPresenter } from "@/presentation/hooks/usePetDetailPresenter";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
-import { createBrowserClient } from "@supabase/ssr";
+import { usePetDetailPresenter } from "@/presentation/presenters/pet-detail/usePetDetailPresenter";
 import { useEffect, useState } from "react";
 import { PetDetailView } from "./PetDetailView";
 
@@ -41,6 +40,8 @@ interface PetDetailContainerProps {
 export function PetDetailContainer({
   initialViewModel,
 }: PetDetailContainerProps) {
+  const [state, actions] = usePetDetailPresenter({ initialViewModel });
+
   const {
     viewModel,
     isOwner,
@@ -48,16 +49,18 @@ export function PetDetailContainer({
     isAdoptionModalOpen,
     isCloseModalOpen,
     isClosingPost,
+    fundingGoal,
+  } = state;
+
+  const {
     openAdoptionModal,
     closeAdoptionModal,
     openCloseModal,
     closeCloseModal,
     handleAdoptClick,
     handleClosePost,
-  } = usePetDetailPresenter({ initialViewModel });
-
-  // Fetch funding goal
-  const [fundingGoal, setFundingGoal] = useState<PetFundingGoal | null>(null);
+    fetchFundingGoal,
+  } = actions;
 
   // Report modal state
   const reportModal = useModalState(false);
@@ -65,48 +68,17 @@ export function PetDetailContainer({
   // Coming Soon modal state
   const comingSoonModal = useComingSoonModal();
 
+  // Fetch funding goal via presenter action
   useEffect(() => {
-    const fetchFundingGoal = async () => {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
-
-      const { data } = await supabase
-        .from("pet_post_funding_goals")
-        .select("*")
-        .eq("pet_post_id", viewModel.post.id)
-        .eq("is_active", true)
-        .single();
-
-      if (data) {
-        setFundingGoal({
-          id: data.id,
-          petPostId: data.pet_post_id,
-          goalType: data.goal_type as
-            | "medical"
-            | "food"
-            | "shelter"
-            | "transport"
-            | "other",
-          targetAmount: Number(data.target_amount),
-          currentAmount: Number(data.current_amount),
-          description: data.description || undefined,
-          deadline: data.deadline ? new Date(data.deadline) : undefined,
-          isActive: data.is_active,
-          createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at),
-        });
-      }
-    };
-
-    fetchFundingGoal();
-  }, [viewModel.post.id]);
+    if (!viewModel?.post.id) return;
+    fetchFundingGoal(viewModel.post.id);
+  }, [viewModel?.post.id, fetchFundingGoal]);
 
   // Donation handling
   const { openForPet } = useDonationContext();
 
   const handleDonateClick = () => {
+    if (!viewModel) return;
     openForPet(viewModel.post.id, viewModel.post.title);
   };
 
@@ -116,6 +88,7 @@ export function PetDetailContainer({
   };
 
   const handleShareClick = () => {
+    if (!viewModel) return;
     // Try native share API first, fallback to coming soon
     if (navigator.share) {
       navigator
@@ -132,6 +105,16 @@ export function PetDetailContainer({
     }
   };
 
+  if (!viewModel) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">ไม่พบข้อมูลน้องที่ค้นหา</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PetDetailView
       viewModel={viewModel}
@@ -141,6 +124,7 @@ export function PetDetailContainer({
       isAdoptionModalOpen={isAdoptionModalOpen}
       isCloseModalOpen={isCloseModalOpen}
       isClosingPost={isClosingPost}
+      isDonationEnabled={FEATURE_FLAGS.petDonationEnabled}
       isReportModalOpen={reportModal.isOpen}
       isComingSoonModalOpen={comingSoonModal.isOpen}
       comingSoonFeature={comingSoonModal.feature}
@@ -148,7 +132,6 @@ export function PetDetailContainer({
       onCloseAdoptionModal={closeAdoptionModal}
       onOpenCloseModal={openCloseModal}
       onCloseCloseModal={closeCloseModal}
-      onOpenReportModal={reportModal.open}
       onCloseReportModal={reportModal.close}
       onCloseComingSoon={comingSoonModal.close}
       onAdoptClick={handleAdoptClick}

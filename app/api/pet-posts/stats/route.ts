@@ -2,28 +2,32 @@
  * /api/pet-posts/stats
  * API Route for pet post statistics
  *
+ * ✅ Uses PetPostPresenter (Clean Architecture)
  * ✅ GET = getStats (public)
  */
 
 import type { PetPostStatus } from "@/domain/entities/pet-post";
-import { SupabasePetPostRepository } from "@/infrastructure/repositories/supabase/SupabasePetPostRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPetPostPresenter } from "@/presentation/presenters/pet-post/PetPostPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 // GET /api/pet-posts/stats — get pet post statistics (public)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetPostRepository(supabase);
+    const presenter = await createServerPetPostPresenter();
 
     const statusParam = searchParams.get("status");
     const status = statusParam
       ? (statusParam.split(",") as PetPostStatus[])
       : undefined;
 
-    const stats = await repo.getStats(status ? { status } : undefined);
-    return NextResponse.json(stats);
+    const result = await presenter.getStats(status ? { status } : undefined);
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ไม่สามารถโหลดสถิติได้";

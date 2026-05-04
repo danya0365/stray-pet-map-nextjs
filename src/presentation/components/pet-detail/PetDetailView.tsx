@@ -4,27 +4,28 @@ import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
 import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
 import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
+import { CommentSection } from "@/presentation/components/comments";
 import { PetFundingProgress } from "@/presentation/components/donation/PetFundingProgress";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
 import { ReportModal } from "@/presentation/components/report/ReportModal";
-import { Badge } from "@/presentation/components/ui";
+import { Avatar, Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
   AlertTriangle,
+  Archive,
   ArrowLeft,
   CheckCircle,
   Clock,
   Construction,
-  Flag,
+  Edit,
   Heart,
   MapPin,
   Scissors,
   Share2,
   Syringe,
-  User,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -86,6 +87,7 @@ interface PetDetailViewProps {
   isAdoptionModalOpen: boolean;
   isCloseModalOpen: boolean;
   isClosingPost: boolean;
+  isDonationEnabled: boolean;
   isReportModalOpen: boolean;
   isComingSoonModalOpen: boolean;
   comingSoonFeature: string;
@@ -93,7 +95,6 @@ interface PetDetailViewProps {
   onCloseAdoptionModal: () => void;
   onOpenCloseModal: () => void;
   onCloseCloseModal: () => void;
-  onOpenReportModal: () => void;
   onCloseReportModal: () => void;
   onCloseComingSoon: () => void;
   onAdoptClick: () => void;
@@ -112,6 +113,7 @@ export function PetDetailView({
   isAdoptionModalOpen,
   isCloseModalOpen,
   isClosingPost,
+  isDonationEnabled,
   isReportModalOpen,
   isComingSoonModalOpen,
   comingSoonFeature,
@@ -119,7 +121,6 @@ export function PetDetailView({
   onCloseCloseModal,
   onAdoptClick,
   onOpenCloseModal,
-  onOpenReportModal,
   onCloseReportModal,
   onCloseComingSoon,
   onFoundPetClick,
@@ -225,22 +226,12 @@ export function PetDetailView({
               href={`/profile/${post.owner.profileId}`}
               className="flex items-center gap-3 rounded-xl border border-border/40 bg-card p-3 transition-all hover:shadow-md"
             >
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
-                {post.owner.avatarUrl &&
-                (post.owner.avatarUrl.startsWith("http") ||
-                  post.owner.avatarUrl.startsWith("/")) ? (
-                  <Image
-                    src={post.owner.avatarUrl}
-                    alt={post.owner.displayName}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
+              <Avatar
+                src={post.owner.avatarUrl}
+                alt={post.owner.displayName}
+                name={post.owner.displayName}
+                className="h-10 w-10 shrink-0"
+              />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-foreground/50">โพสต์โดย</p>
                 <p className="truncate text-sm font-medium">
@@ -307,6 +298,7 @@ export function PetDetailView({
             goal={fundingGoal}
             petName={post.title}
             onDonateClick={onDonateClick}
+            enabled={isDonationEnabled}
           />
 
           {/* Actions */}
@@ -412,14 +404,25 @@ export function PetDetailView({
               <Share2 className="h-3.5 w-3.5" />
               แชร์
             </button>
-            <button
-              type="button"
-              onClick={onOpenReportModal}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted"
-            >
-              <Flag className="h-3.5 w-3.5" />
-              รายงาน
-            </button>
+            {isOwner && (
+              <>
+                <Link
+                  href={`/posts/${post.id}/edit`}
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                  Edit
+                </Link>
+                <button
+                  onClick={onOpenCloseModal}
+                  className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+                  type="button"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  Close
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -446,6 +449,11 @@ export function PetDetailView({
         petPostId={post.id}
         petTitle={post.title}
       />
+
+      {/* Comments Section */}
+      <div className="lg:col-span-5">
+        <CommentSection petPostId={post.id} />
+      </div>
 
       {/* Coming Soon Modal */}
       {isComingSoonModalOpen && (

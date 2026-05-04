@@ -4,6 +4,7 @@
  * Following Clean Architecture - Infrastructure layer
  */
 
+import type { IDonationRepository } from "@/application/repositories/IDonationRepository";
 import type {
   CreateDonationParams,
   Donation,
@@ -12,14 +13,34 @@ import type {
   PetFundingGoal,
   RecentDonation,
 } from "@/domain/entities/donation";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/domain/types/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export class SupabaseDonationRepository {
-  private supabase: SupabaseClient;
+// Types from Supabase schema
+type DonationRow = Database["public"]["Tables"]["donations"]["Row"];
+type DonationLeaderboardAllTimeRow =
+  Database["public"]["Views"]["donation_leaderboard_alltime"]["Row"];
+type DonationLeaderboardWeeklyRow =
+  Database["public"]["Views"]["donation_leaderboard_weekly"]["Row"];
+type PetPostFundingGoalRow =
+  Database["public"]["Tables"]["pet_post_funding_goals"]["Row"];
 
-  constructor(supabaseUrl: string, supabaseKey: string) {
-    this.supabase = createClient(supabaseUrl, supabaseKey);
-  }
+// Recent donation with joined pet post data
+type RecentDonationWithPet = Pick<
+  DonationRow,
+  "id" | "donor_name" | "amount" | "target_type" | "message" | "created_at"
+> & {
+  pet_posts: { name: string } | null;
+};
+
+/**
+ * SupabaseDonationRepository
+ * Supabase implementation for donation CRUD operations
+ * ✅ Receives SupabaseClient via constructor (injected by factory)
+ * ✅ Following Clean Architecture - Infrastructure layer
+ */
+export class SupabaseDonationRepository implements IDonationRepository {
+  constructor(private readonly supabase: SupabaseClient<Database>) {}
 
   /**
    * Create a new donation record
@@ -188,14 +209,14 @@ export class SupabaseDonationRepository {
       return [];
     }
 
-    return data.map((d: unknown) => ({
-      id: (d as { id: string }).id,
-      donorName: (d as { donor_name: string }).donor_name,
-      amount: Number((d as { amount: number }).amount),
-      targetType: (d as { target_type: "pet" | "fund" }).target_type,
-      petName: (d as { pet_posts: { name: string } | null }).pet_posts?.name,
-      message: (d as { message: string | null }).message || undefined,
-      createdAt: new Date((d as { created_at: string }).created_at),
+    return (data as RecentDonationWithPet[]).map((d) => ({
+      id: d.id,
+      donorName: d.donor_name,
+      amount: Number(d.amount),
+      targetType: d.target_type as "pet" | "fund",
+      petName: d.pet_posts?.name,
+      message: d.message ?? undefined,
+      createdAt: new Date(d.created_at),
     }));
   }
 
@@ -231,7 +252,7 @@ export class SupabaseDonationRepository {
     }
 
     const totalAmount = (data || []).reduce(
-      (sum: number, d: { amount: number }) => sum + Number(d.amount),
+      (sum, d) => sum + Number(d.amount),
       0,
     );
     return { count: data?.length || 0, amount: totalAmount };
@@ -260,59 +281,78 @@ export class SupabaseDonationRepository {
     return (data?.length || 0) > 0;
   }
 
+  async getTodayDonations(
+    donorId: string,
+  ): Promise<{ points_awarded: number }[]> {
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data, error } = await this.supabase
+      .from("donations")
+      .select("points_awarded")
+      .eq("donor_id", donorId)
+      .gte("created_at", today)
+      .lt("created_at", today + "T23:59:59");
+
+    if (error) return [];
+    return data || [];
+  }
+
+  async awardBadges(donorId: string): Promise<void> {
+    await this.supabase.rpc("check_and_award_badges", {
+      target_profile_id: donorId,
+    });
+  }
+
   // Mappers
-  private mapToDonation(data: Record<string, unknown>): Donation {
+  private mapToDonation(data: DonationRow): Donation {
     return {
-      id: data.id as string,
-      donorId: data.donor_id as string | null,
-      donorName: data.donor_name as string,
-      donorEmail: data.donor_email as string | undefined,
-      isAnonymous: data.is_anonymous as boolean,
+      id: data.id,
+      donorId: data.donor_id,
+      donorName: data.donor_name,
+      donorEmail: data.donor_email ?? undefined,
+      isAnonymous: data.is_anonymous ?? false,
       targetType: data.target_type as "pet" | "fund",
-      petPostId: data.pet_post_id as string | null,
+      petPostId: data.pet_post_id,
       amount: Number(data.amount),
-      currency: data.currency as string,
+      currency: data.currency,
       paymentMethod: data.payment_method as "stripe_promptpay" | "stripe_card",
       paymentStatus: data.payment_status as
         | "pending"
         | "completed"
         | "failed"
         | "refunded",
-      stripeSessionId: data.stripe_session_id as string | undefined,
-      stripePaymentIntentId: data.stripe_payment_intent_id as
-        | string
-        | undefined,
-      message: data.message as string | undefined,
-      showOnLeaderboard: data.show_on_leaderboard as boolean,
+      stripeSessionId: data.stripe_session_id ?? undefined,
+      stripePaymentIntentId: data.stripe_payment_intent_id ?? undefined,
+      message: data.message ?? undefined,
+      showOnLeaderboard: data.show_on_leaderboard ?? true,
       pointsAwarded: Number(data.points_awarded),
-      createdAt: new Date(data.created_at as string),
-      completedAt: data.completed_at
-        ? new Date(data.completed_at as string)
-        : undefined,
-      updatedAt: new Date(data.updated_at as string),
+      createdAt: new Date(data.created_at),
+      completedAt: data.completed_at ? new Date(data.completed_at) : undefined,
+      updatedAt: new Date(data.updated_at),
     };
   }
 
   private mapToLeaderboardEntry(
-    data: Record<string, unknown>,
+    data: DonationLeaderboardAllTimeRow | DonationLeaderboardWeeklyRow,
   ): DonationLeaderboardEntry {
+    const weeklyData = data as DonationLeaderboardWeeklyRow;
     return {
-      donorId: data.donor_id as string,
-      donorName: data.donor_name as string,
-      avatarUrl: data.avatar_url as string | undefined,
-      level: Number(data.level) || 1,
-      totalAmount: Number(data.total_amount),
-      donationCount: Number(data.donation_count),
-      lastDonationAt: data.last_donation_at
-        ? new Date(data.last_donation_at as string)
+      donorId: data.donor_id!,
+      donorName: data.donor_name ?? "ผู้ใจดี",
+      avatarUrl: data.avatar_url ?? undefined,
+      level: data.level ?? 1,
+      totalAmount: Number(data.total_amount ?? 0),
+      donationCount: Number(data.donation_count ?? 0),
+      lastDonationAt: weeklyData.last_donation_at
+        ? new Date(weeklyData.last_donation_at)
         : undefined,
     };
   }
 
-  private mapToFundingGoal(data: Record<string, unknown>): PetFundingGoal {
+  private mapToFundingGoal(data: PetPostFundingGoalRow): PetFundingGoal {
     return {
-      id: data.id as string,
-      petPostId: data.pet_post_id as string,
+      id: data.id,
+      petPostId: data.pet_post_id,
       goalType: data.goal_type as
         | "medical"
         | "food"
@@ -321,11 +361,11 @@ export class SupabaseDonationRepository {
         | "other",
       targetAmount: Number(data.target_amount),
       currentAmount: Number(data.current_amount),
-      description: data.description as string | undefined,
-      deadline: data.deadline ? new Date(data.deadline as string) : undefined,
-      isActive: data.is_active as boolean,
-      createdAt: new Date(data.created_at as string),
-      updatedAt: new Date(data.updated_at as string),
+      description: data.description ?? undefined,
+      deadline: data.deadline ? new Date(data.deadline) : undefined,
+      isActive: data.is_active,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     };
   }
 }

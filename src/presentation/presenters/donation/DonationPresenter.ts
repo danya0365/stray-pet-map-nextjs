@@ -5,9 +5,17 @@
  * Following Clean Architecture pattern
  */
 
-import type { CreateDonationParams } from "@/domain/entities/donation";
-import type { SupabaseDonationRepository } from "@/infrastructure/repositories/supabase/SupabaseDonationRepository";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { IDonationRepository } from "@/application/repositories/IDonationRepository";
+import type { IStripeRepository } from "@/application/repositories/IStripeRepository";
+import type {
+  CreateDonationParams,
+  Donation,
+  DonationLeaderboardEntry,
+  DonationStats,
+  DonationTargetType,
+  PetFundingGoal,
+  RecentDonation,
+} from "@/domain/entities/donation";
 import type Stripe from "stripe";
 
 export interface WebhookProcessingResult {
@@ -17,6 +25,36 @@ export interface WebhookProcessingResult {
   error?: string;
 }
 
+export interface LeaderboardResult {
+  success: boolean;
+  data?: DonationLeaderboardEntry[];
+  error?: string;
+}
+
+export interface StatsResult {
+  success: boolean;
+  data?: DonationStats;
+  error?: string;
+}
+
+export interface CheckoutResult {
+  success: boolean;
+  sessionUrl?: string;
+  sessionId?: string;
+  error?: string;
+}
+
+export interface WebhookVerificationResult {
+  success: boolean;
+  event?: Stripe.Event;
+  error?: string;
+}
+
+export interface LeaderboardViewModel {
+  entries: DonationLeaderboardEntry[];
+  stats: DonationStats | null;
+}
+
 /**
  * Presenter for donation operations
  * ✅ Receives repositories via constructor injection
@@ -24,9 +62,92 @@ export interface WebhookProcessingResult {
  */
 export class DonationPresenter {
   constructor(
-    private readonly donationRepo: SupabaseDonationRepository,
-    private readonly adminClient: SupabaseClient,
+    private readonly donationRepo: IDonationRepository,
+    private readonly stripeRepo?: IStripeRepository,
   ) {}
+
+  // ============================================================
+  // CHECKOUT CREATION (For API Routes)
+  // ============================================================
+
+  /**
+   * Create Stripe checkout session
+   * Used by /api/donate/checkout route
+   */
+  async createCheckoutSession(params: {
+    amount: number;
+    message?: string;
+    successUrl: string;
+    cancelUrl: string;
+    targetType: DonationTargetType;
+    petPostId?: string;
+    donorName?: string;
+    donorEmail?: string;
+    isAnonymous?: boolean;
+    showOnLeaderboard?: boolean;
+  }): Promise<CheckoutResult> {
+    if (!this.stripeRepo) {
+      return { success: false, error: "Stripe repository not available" };
+    }
+
+    try {
+      const result = await this.stripeRepo.createCheckoutSession({
+        amount: params.amount,
+        message: params.message,
+        successUrl: params.successUrl,
+        cancelUrl: params.cancelUrl,
+        targetType: params.targetType,
+        petPostId: params.petPostId,
+        donorName: params.donorName,
+        donorEmail: params.donorEmail,
+        isAnonymous: params.isAnonymous,
+        showOnLeaderboard: params.showOnLeaderboard,
+      });
+
+      return {
+        success: true,
+        sessionUrl: result.url,
+        sessionId: result.sessionId,
+      };
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create checkout session",
+      };
+    }
+  }
+
+  /**
+   * Verify Stripe webhook event signature
+   * Used by /api/webhook/stripe route
+   */
+  async verifyWebhookEvent(
+    payload: string,
+    signature: string,
+    webhookSecret: string,
+  ): Promise<WebhookVerificationResult> {
+    if (!this.stripeRepo) {
+      return { success: false, error: "Stripe repository not available" };
+    }
+
+    try {
+      const event = await this.stripeRepo.constructEvent(
+        payload,
+        signature,
+        webhookSecret,
+      );
+      return { success: true, event };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown signature error";
+      console.error("Webhook signature verification failed:", errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
 
   // ============================================================
   // WEBHOOK PROCESSING (For API Routes)
@@ -140,17 +261,10 @@ export class DonationPresenter {
     }
 
     // Check daily cap
-    const today = new Date().toISOString().split("T")[0];
+    const todayDonations = await this.donationRepo.getTodayDonations(donorId);
 
-    const { data: todayDonations } = await this.adminClient
-      .from("donations")
-      .select("points_awarded")
-      .eq("donor_id", donorId)
-      .gte("created_at", today)
-      .lt("created_at", today + "T23:59:59");
-
-    const pointsToday = (todayDonations || []).reduce(
-      (sum: number, d: { points_awarded: number }) => sum + d.points_awarded,
+    const pointsToday = todayDonations.reduce(
+      (sum, d) => sum + d.points_awarded,
       0,
     );
 
@@ -164,8 +278,124 @@ export class DonationPresenter {
    * Award badges via RPC
    */
   private async awardBadges(donorId: string): Promise<void> {
-    await this.adminClient.rpc("check_and_award_badges", {
-      target_profile_id: donorId,
-    });
+    await this.donationRepo.awardBadges(donorId);
+  }
+
+  // ============================================================
+  // PUBLIC API METHODS
+  // ============================================================
+
+  /**
+   * Get weekly donation leaderboard
+   */
+  async getLeaderboardWeekly(limit = 10): Promise<LeaderboardResult> {
+    try {
+      const entries = await this.donationRepo.getLeaderboardWeekly(limit);
+      return { success: true, data: entries };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get all-time donation leaderboard
+   */
+  async getLeaderboardAllTime(limit = 50): Promise<LeaderboardResult> {
+    try {
+      const entries = await this.donationRepo.getLeaderboardAllTime(limit);
+      return { success: true, data: entries };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get donation statistics
+   */
+  async getStats(): Promise<StatsResult> {
+    try {
+      const stats = await this.donationRepo.getStats();
+      return { success: true, data: stats };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  // ============================================================
+  // VIEW MODEL (For Server Components)
+  // ============================================================
+
+  /**
+   * Get view model for leaderboard page
+   * Used by Server Component for initial data + SEO
+   */
+  async getViewModel(): Promise<LeaderboardViewModel> {
+    try {
+      const [leaderboardResult, statsResult] = await Promise.all([
+        this.getLeaderboardWeekly(10),
+        this.getStats(),
+      ]);
+
+      return {
+        entries: leaderboardResult.success
+          ? (leaderboardResult.data ?? [])
+          : [],
+        stats: statsResult.success ? (statsResult.data ?? null) : null,
+      };
+    } catch (error) {
+      console.error("Error getting leaderboard view model:", error);
+      return { entries: [], stats: null };
+    }
+  }
+
+  // ============================================================
+  // DIRECT REPOSITORY PASS-THROUGH (for API routes)
+  // ============================================================
+
+  async findByStripeSessionId(sessionId: string): Promise<Donation | null> {
+    return this.donationRepo.findByStripeSessionId(sessionId);
+  }
+
+  async completeDonation(
+    donationId: string,
+    paymentIntentId: string,
+    points: number,
+  ): Promise<Donation> {
+    return this.donationRepo.completeDonation(
+      donationId,
+      paymentIntentId,
+      points,
+    );
+  }
+
+  async getRecentDonations(limit = 10): Promise<RecentDonation[]> {
+    return this.donationRepo.getRecentDonations(limit);
+  }
+
+  async getPetFundingGoal(petPostId: string): Promise<PetFundingGoal | null> {
+    return this.donationRepo.getPetFundingGoal(petPostId);
+  }
+
+  async getDonorTotal(
+    donorId: string,
+  ): Promise<{ count: number; amount: number }> {
+    return this.donationRepo.getDonorTotal(donorId);
+  }
+
+  async hasDonatedThisMonth(donorId: string): Promise<boolean> {
+    return this.donationRepo.hasDonatedThisMonth(donorId);
+  }
+
+  /**
+   * Create donation (client-side checkout)
+   */
+  async create(params: CreateDonationParams): Promise<Donation> {
+    return this.donationRepo.create(params);
   }
 }

@@ -15,11 +15,22 @@ import Stripe from "stripe";
 export class StripeRepository implements IStripeRepository {
   private stripe: Stripe;
 
-  constructor(secretKey: string) {
-    if (!secretKey) {
-      throw new Error("Stripe secret key is missing");
+  /**
+   * Create StripeRepository instance
+   * @param secretKey - Optional. Uses STRIPE_SECRET_KEY env var if not provided.
+   *                    Pass a key explicitly for testing/mocking.
+   */
+  constructor(secretKey?: string) {
+    // Use provided key, or fall back to env var
+    const key = secretKey ?? process.env.STRIPE_SECRET_KEY;
+
+    if (!key) {
+      throw new Error(
+        "Stripe secret key is missing. Set STRIPE_SECRET_KEY environment variable or pass key to constructor.",
+      );
     }
-    this.stripe = new Stripe(secretKey, {
+
+    this.stripe = new Stripe(key, {
       apiVersion: "2026-03-25.dahlia",
       typescript: true,
     });

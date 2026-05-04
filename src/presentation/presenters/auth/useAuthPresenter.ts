@@ -23,6 +23,7 @@ export interface AuthPresenterState {
 
 export interface AuthPresenterActions {
   signIn: (email: string, password: string) => Promise<boolean>;
+  signInWithGoogle: () => Promise<string | null>;
   signUp: (
     email: string,
     password: string,
@@ -44,7 +45,7 @@ export function useAuthPresenter(
 
   const isMountedRef = useRef(true);
 
-  const [viewModel, setViewModel] = useState<AuthViewModel | null>(null);
+  const [viewModel] = useState<AuthViewModel | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -95,7 +96,9 @@ export function useAuthPresenter(
       setIsSuccess(false);
 
       try {
-        const result = await presenter.signUp(email, password, fullName);
+        const result = await presenter.signUp(email, password, {
+          full_name: fullName,
+        });
 
         if (isMountedRef.current) {
           if (result.success) {
@@ -131,12 +134,44 @@ export function useAuthPresenter(
     }
   }, [presenter]);
 
+  const signInWithGoogle = useCallback(async (): Promise<string | null> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await presenter.signInWithGoogle();
+
+      if (isMountedRef.current) {
+        if (result.success && result.url) {
+          return result.url;
+        } else {
+          setError(result.error || "เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+          return null;
+        }
+      }
+      return result.success ? (result.url ?? null) : null;
+    } catch (err) {
+      if (isMountedRef.current) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "เข้าสู่ระบบด้วย Google ไม่สำเร็จ";
+        setError(message);
+      }
+      return null;
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [presenter]);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
   return [
     { viewModel, loading, error, isSuccess },
-    { signIn, signUp, signOut, clearError },
+    { signIn, signInWithGoogle, signUp, signOut, clearError },
   ];
 }

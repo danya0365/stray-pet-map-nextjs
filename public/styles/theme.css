@@ -19,6 +19,73 @@
   --card-foreground: #3d3533;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #2563eb;
+  --info-foreground: #ffffff;
+
+  /* Activity type tokens */
+  --activity-new_post-text: #b45309;
+  --activity-new_post-bg: rgba(245, 158, 11, 0.12);
+  --activity-new_post-border: rgba(245, 158, 11, 0.25);
+  --activity-status_changed-text: #047857;
+  --activity-status_changed-bg: rgba(16, 185, 129, 0.12);
+  --activity-status_changed-border: rgba(16, 185, 129, 0.25);
+  --activity-new_comment-text: #0369a1;
+  --activity-new_comment-bg: rgba(14, 165, 233, 0.12);
+  --activity-new_comment-border: rgba(14, 165, 233, 0.25);
+  --activity-comment_reply-text: #4338ca;
+  --activity-comment_reply-bg: rgba(99, 102, 241, 0.12);
+  --activity-comment_reply-border: rgba(99, 102, 241, 0.25);
+  --activity-like_milestone-text: #be123c;
+  --activity-like_milestone-bg: rgba(244, 63, 94, 0.12);
+  --activity-like_milestone-border: rgba(244, 63, 94, 0.25);
+  --activity-badge_unlock-text: #a16207;
+  --activity-badge_unlock-bg: rgba(234, 179, 8, 0.12);
+  --activity-badge_unlock-border: rgba(234, 179, 8, 0.25);
+  --activity-post_expiring_soon-text: #c2410c;
+  --activity-post_expiring_soon-bg: rgba(249, 115, 22, 0.12);
+  --activity-post_expiring_soon-border: rgba(249, 115, 22, 0.25);
+  --success-badge-bg: rgba(16, 185, 129, 0.15);
+  --success-badge-text: #047857;
+  --success-card-from: rgba(16, 185, 129, 0.1);
+  --success-card-to: rgba(255, 255, 255, 0);
+
+  /* Badge tiers */
+  --badge-bronze: #d97706;
+  --badge-silver: #9ca3af;
+  --badge-gold: #eab308;
+  --badge-platinum: #06b6d4;
+
+  /* Tooltip */
+  --tooltip-bg: #111827;
+  --tooltip-text: #ffffff;
+  --tooltip-muted: #d1d5db;
+  --tooltip-dim: #9ca3af;
+
+  /* Badge backgrounds — light */
+  --badge-bg-amber: #fef3c7;
+  --badge-text-amber: #b45309;
+  --badge-bg-emerald: #d1fae5;
+  --badge-text-emerald: #047857;
+  --badge-bg-blue: #dbeafe;
+  --badge-text-blue: #1d4ed8;
+  --badge-bg-purple: #ede9fe;
+  --badge-text-purple: #6d28d9;
+  --badge-bg-orange: #ffedd5;
+  --badge-text-orange: #c2410c;
+  --badge-bg-red: #fee2e2;
+  --badge-text-red: #b91c1c;
+  --badge-bg-yellow: #fef9c3;
+  --badge-text-yellow: #a16207;
+  --badge-bg-teal: #ccfbf1;
+  --badge-text-teal: #0f766e;
+  --badge-bg-indigo: #e0e7ff;
+  --badge-text-indigo: #3730a3;
+  --badge-bg-pink: #fce7f3;
+  --badge-text-pink: #be185d;
 }
 
 .dark {
@@ -34,6 +101,73 @@
   --card-foreground: #f5ede6;
   --destructive: #fca5a5;
   --destructive-foreground: #1c1917;
+  --success: #4ade80;
+  --success-foreground: #1c1917;
+  --warning: #fbbf24;
+  --warning-foreground: #1c1917;
+  --info: #60a5fa;
+  --info-foreground: #1c1917;
+
+  /* Activity type tokens — dark mode */
+  --activity-new_post-text: #fbbf24;
+  --activity-new_post-bg: rgba(245, 158, 11, 0.15);
+  --activity-new_post-border: rgba(245, 158, 11, 0.3);
+  --activity-status_changed-text: #34d399;
+  --activity-status_changed-bg: rgba(16, 185, 129, 0.15);
+  --activity-status_changed-border: rgba(16, 185, 129, 0.3);
+  --activity-new_comment-text: #38bdf8;
+  --activity-new_comment-bg: rgba(14, 165, 233, 0.15);
+  --activity-new_comment-border: rgba(14, 165, 233, 0.3);
+  --activity-comment_reply-text: #818cf8;
+  --activity-comment_reply-bg: rgba(99, 102, 241, 0.15);
+  --activity-comment_reply-border: rgba(99, 102, 241, 0.3);
+  --activity-like_milestone-text: #fb7185;
+  --activity-like_milestone-bg: rgba(244, 63, 94, 0.15);
+  --activity-like_milestone-border: rgba(244, 63, 94, 0.3);
+  --activity-badge_unlock-text: #facc15;
+  --activity-badge_unlock-bg: rgba(234, 179, 8, 0.15);
+  --activity-badge_unlock-border: rgba(234, 179, 8, 0.3);
+  --activity-post_expiring_soon-text: #fb923c;
+  --activity-post_expiring_soon-bg: rgba(249, 115, 22, 0.15);
+  --activity-post_expiring_soon-border: rgba(249, 115, 22, 0.3);
+  --success-badge-bg: rgba(16, 185, 129, 0.2);
+  --success-badge-text: #34d399;
+  --success-card-from: rgba(16, 185, 129, 0.15);
+  --success-card-to: rgba(37, 34, 32, 0);
+
+  /* Badge tiers — dark */
+  --badge-bronze: #f59e0b;
+  --badge-silver: #e5e7eb;
+  --badge-gold: #facc15;
+  --badge-platinum: #22d3ee;
+
+  /* Tooltip — dark */
+  --tooltip-bg: #1f2937;
+  --tooltip-text: #f9fafb;
+  --tooltip-muted: #d1d5db;
+  --tooltip-dim: #9ca3af;
+
+  /* Badge backgrounds — dark */
+  --badge-bg-amber: #451a03;
+  --badge-text-amber: #fbbf24;
+  --badge-bg-emerald: #022c22;
+  --badge-text-emerald: #34d399;
+  --badge-bg-blue: #172554;
+  --badge-text-blue: #60a5fa;
+  --badge-bg-purple: #3b0764;
+  --badge-text-purple: #c084fc;
+  --badge-bg-orange: #431407;
+  --badge-text-orange: #fb923c;
+  --badge-bg-red: #450a0a;
+  --badge-text-red: #f87171;
+  --badge-bg-yellow: #422006;
+  --badge-text-yellow: #facc15;
+  --badge-bg-teal: #042f2e;
+  --badge-text-teal: #2dd4bf;
+  --badge-bg-indigo: #1e1b4b;
+  --badge-text-indigo: #818cf8;
+  --badge-bg-pink: #500724;
+  --badge-text-pink: #f472b6;
 }
 
 @theme inline {
@@ -49,6 +183,12 @@
   --color-card-foreground: var(--card-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --font-sans: var(--font-noto-sans-thai), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

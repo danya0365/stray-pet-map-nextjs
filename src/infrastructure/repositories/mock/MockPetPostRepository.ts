@@ -8,6 +8,7 @@ import type {
 import type {
   CreatePetPostPayload,
   PetPost,
+  PetPostOutcome,
   PetPostStats,
   UpdatePetPostData,
 } from "@/domain/entities/pet-post";
@@ -457,6 +458,29 @@ export class MockPetPostRepository implements IPetPostRepository {
         createdAt: item.createdAt,
         purpose: item.purpose,
       }));
+  }
+
+  async close(id: string, outcome: PetPostOutcome): Promise<PetPost> {
+    await this.delay(200);
+
+    const index = this.items.findIndex((item) => item.id === id);
+    if (index === -1) {
+      throw new Error("PetPost not found");
+    }
+
+    const closedItem: PetPost = {
+      ...this.items[index],
+      outcome,
+      status:
+        outcome === "rehomed" || outcome === "owner_found"
+          ? "adopted"
+          : "available",
+      resolvedAt: dayjs().toISOString(),
+      updatedAt: dayjs().toISOString(),
+    };
+
+    this.items[index] = closedItem;
+    return closedItem;
   }
 
   // ============================================================

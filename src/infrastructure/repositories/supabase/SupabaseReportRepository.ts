@@ -8,7 +8,9 @@ import type {
   CreateReportParams,
   IReportRepository,
   Report,
+  ReportQueryResult,
 } from "@/application/repositories/IReportRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 import type { Database } from "@/domain/types/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -44,17 +46,108 @@ export class SupabaseReportRepository implements IReportRepository {
     return this.mapToDomain(data as ReportRow);
   }
 
-  async getMyReports(): Promise<Report[]> {
-    const { data, error } = await this.supabase
+  async getMyReports(pagination?: PaginationMode): Promise<ReportQueryResult> {
+    // Base query
+    let query = this.supabase
       .from("reports")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Failed to fetch reports: ${error.message}`);
-    }
+    const isPaginated = pagination && pagination.type;
 
-    return (data as ReportRow[]).map((row) => this.mapToDomain(row));
+    if (isPaginated && pagination.type === "offset") {
+      // Offset pagination (for admin)
+      const { page, perPage } = pagination;
+      const offset = (page - 1) * perPage;
+
+      const { data, error, count } = await query.range(
+        offset,
+        offset + perPage - 1,
+      );
+
+      if (error) {
+        throw new Error(`Failed to fetch reports: ${error.message}`);
+      }
+
+      const reports = (data ?? []).map((row) =>
+        this.mapToDomain(row as ReportRow),
+      );
+      const total = count ?? 0;
+      const hasMore = offset + reports.length < total;
+
+      return {
+        data: reports,
+        total,
+        hasMore,
+        page,
+        perPage,
+      };
+    } else if (isPaginated && pagination.type === "cursor") {
+      // Cursor pagination (for frontend load more)
+      const { cursor, limit = 20 } = pagination;
+
+      if (cursor) {
+        const decodedCursor = this.decodeCursor(cursor);
+        query = query.lt("created_at", decodedCursor);
+      }
+
+      // Fetch one extra to determine hasMore
+      const { data, error, count } = await query.limit(limit + 1);
+
+      if (error) {
+        throw new Error(`Failed to fetch reports: ${error.message}`);
+      }
+
+      const slicedData = (data ?? []).slice(0, limit);
+      const reports = slicedData.map((row) =>
+        this.mapToDomain(row as ReportRow),
+      );
+      const total = count ?? 0;
+      const hasMore = (data ?? []).length > limit;
+
+      let nextCursor: string | null = null;
+      if (hasMore && slicedData.length > 0) {
+        const lastCreatedAt = slicedData[slicedData.length - 1].created_at;
+        if (lastCreatedAt) {
+          nextCursor = this.encodeCursor(lastCreatedAt);
+        }
+      }
+
+      return {
+        data: reports,
+        total,
+        hasMore,
+        nextCursor,
+      };
+    } else {
+      // No pagination - fetch all (backward compatibility)
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch reports: ${error.message}`);
+      }
+
+      const reports = (data ?? []).map((row) =>
+        this.mapToDomain(row as ReportRow),
+      );
+      const total = count ?? 0;
+
+      return {
+        data: reports,
+        total,
+        hasMore: false,
+      };
+    }
+  }
+
+  // Helper: Encode cursor
+  private encodeCursor(createdAt: string): string {
+    return Buffer.from(createdAt).toString("base64url");
+  }
+
+  // Helper: Decode cursor
+  private decodeCursor(cursor: string): string {
+    return Buffer.from(cursor, "base64url").toString("utf-8");
   }
 
   async hasReported(petPostId: string): Promise<boolean> {

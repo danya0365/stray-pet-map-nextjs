@@ -2,12 +2,12 @@
  * /api/adoption-requests/has-requested
  * API Route for checking if current user has requested a specific pet post
  *
- * ✅ Uses SupabaseAdoptionRequestRepository (server-side)
+ * ✅ Uses AdoptionRequestPresenter (Clean Architecture)
  * ✅ Query param: petPostId
  */
 
-import { SupabaseAdoptionRequestRepository } from "@/infrastructure/repositories/supabase/SupabaseAdoptionRequestRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerAdoptionRequestPresenter } from "@/presentation/presenters/adoption-request/AdoptionRequestPresenterServerFactory";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -22,23 +22,22 @@ export async function GET(request: Request) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
+    // Check auth via AuthPresenter
+    const authPresenter = await createServerAuthPresenter();
+    const authViewModel = await authPresenter.getViewModel();
 
-    // Check auth
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบ" },
-        { status: 401 },
-      );
+    if (!authViewModel.isAuthenticated) {
+      return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
     }
 
-    const repo = new SupabaseAdoptionRequestRepository(supabase);
-    const hasRequested = await repo.hasRequested(petPostId);
+    const presenter = await createServerAdoptionRequestPresenter();
+    const result = await presenter.hasRequested(petPostId);
 
-    return NextResponse.json({ hasRequested });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json({ hasRequested: result.hasRequested });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ไม่สามารถตรวจสอบสถานะได้";

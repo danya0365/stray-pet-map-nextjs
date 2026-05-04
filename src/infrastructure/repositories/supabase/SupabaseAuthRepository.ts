@@ -3,7 +3,7 @@ import type {
   IAuthRepository,
 } from "@/application/repositories/IAuthRepository";
 import type { Database } from "@/domain/types/supabase";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 
 export class SupabaseAuthRepository implements IAuthRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
@@ -13,6 +13,13 @@ export class SupabaseAuthRepository implements IAuthRepository {
       data: { user },
     } = await this.supabase.auth.getUser();
     return user;
+  }
+
+  async getSession(): Promise<Session | null> {
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+    return session;
   }
 
   async getProfile(): Promise<AuthProfile | null> {
@@ -39,6 +46,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
       createdAt: profile.created_at || undefined,
+      level: profile.level ?? 1,
+      totalPoints: profile.total_points ?? 0,
+      experiencePoints: profile.experience_points ?? 0,
     };
   }
 
@@ -86,7 +96,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
     // so the switcher can show all available profiles
     const { data: profilesData, error } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .select(
+        "id, auth_id, username, full_name, avatar_url, bio, created_at, level, total_points, experience_points",
+      )
       .eq("auth_id", user.id);
 
     if (error || !profilesData) return [];
@@ -109,6 +121,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
           bio: profile.bio,
           role: (roleData?.role as AuthProfile["role"]) ?? "user",
           createdAt: profile.created_at || undefined,
+          level: profile.level ?? 1,
+          totalPoints: profile.total_points ?? 0,
+          experiencePoints: profile.experience_points ?? 0,
         };
       }),
     );
@@ -153,7 +168,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
     // 2. Get the profile data
     const { data: profile, error: profileError } = await this.supabase
       .from("profiles")
-      .select("id, auth_id, username, full_name, avatar_url, bio, created_at")
+      .select(
+        "id, auth_id, username, full_name, avatar_url, bio, created_at, level, total_points, experience_points",
+      )
       .eq("id", profileId)
       .eq("auth_id", user.id)
       .eq("is_active", true)
@@ -177,6 +194,117 @@ export class SupabaseAuthRepository implements IAuthRepository {
       bio: profile.bio,
       role: (roleData?.role as AuthProfile["role"]) ?? "user",
       createdAt: profile.created_at || undefined,
+      level: profile.level ?? 1,
+      totalPoints: profile.total_points ?? 0,
+      experiencePoints: profile.experience_points ?? 0,
+    };
+  }
+
+  async exchangeCodeForSession(
+    code: string,
+  ): Promise<{ error: string | null }> {
+    const { error } = await this.supabase.auth.exchangeCodeForSession(code);
+    return { error: error?.message ?? null };
+  }
+
+  async updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const currentProfile = await this.getProfile();
+    if (!currentProfile) {
+      return { profile: null, error: "Profile not found" };
+    }
+
+    // Update profile
+    const { error: updateError } = await this.supabase
+      .from("profiles")
+      .update({
+        full_name: data.fullName,
+        username: data.username,
+        bio: data.bio,
+        avatar_url: data.avatarUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", currentProfile.id);
+
+    if (updateError) {
+      return { profile: null, error: updateError.message };
+    }
+
+    // Return updated profile
+    return { profile: await this.getProfile(), error: null };
+  }
+
+  async createProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const user = await this.getUser();
+    if (!user) return { profile: null, error: "Not authenticated" };
+
+    const { data: newProfile, error: insertError } = await this.supabase
+      .from("profiles")
+      .insert({
+        auth_id: user.id,
+        full_name: data.fullName,
+        username: data.username,
+        bio: data.bio,
+        avatar_url: data.avatarUrl,
+        is_active: false,
+        level: 1,
+        total_points: 0,
+        experience_points: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select(
+        "id, auth_id, username, full_name, avatar_url, bio, created_at, level, total_points, experience_points",
+      )
+      .single();
+
+    if (insertError || !newProfile) {
+      return {
+        profile: null,
+        error: insertError?.message ?? "Failed to create profile",
+      };
+    }
+
+    return {
+      profile: {
+        id: newProfile.id,
+        authId: newProfile.auth_id,
+        username: newProfile.username,
+        fullName: newProfile.full_name,
+        avatarUrl: newProfile.avatar_url,
+        bio: newProfile.bio,
+        role: "user",
+        createdAt: newProfile.created_at || undefined,
+        level: newProfile.level ?? 1,
+        totalPoints: newProfile.total_points ?? 0,
+        experiencePoints: newProfile.experience_points ?? 0,
+      },
+      error: null,
+    };
+  }
+
+  async signInWithOAuth(
+    provider: string,
+  ): Promise<{ url: string | null; error: string | null }> {
+    const { data, error } = await this.supabase.auth.signInWithOAuth({
+      provider: provider as "google",
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      },
+    });
+
+    return {
+      url: data?.url ?? null,
+      error: error?.message ?? null,
     };
   }
 }

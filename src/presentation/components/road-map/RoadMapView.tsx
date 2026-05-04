@@ -12,7 +12,6 @@ import { cn } from "@/presentation/lib/cn";
 import {
   Calendar,
   Check,
-  ChevronRight,
   Clock,
   Heart,
   Lock,
@@ -405,8 +404,9 @@ function DonationCTA() {
         {/* Donation amount chips */}
         <div className="mb-6 flex flex-wrap justify-center gap-2">
           {[50, 100, 200, 500, 1000].map((amount) => (
-            <button
+            <Link
               key={amount}
+              href={`/donate?amount=${amount}`}
               id={`donate-amount-${amount}`}
               className={cn(
                 "rounded-full border border-primary/30 px-4 py-2 text-sm font-semibold transition-all",
@@ -415,7 +415,7 @@ function DonationCTA() {
               )}
             >
               ฿{amount}
-            </button>
+            </Link>
           ))}
         </div>
 
@@ -571,20 +571,6 @@ export function RoadMapView({ initialViewModel }: RoadMapViewProps) {
           <span className="font-semibold text-primary">ทันที</span> โดยไม่ต้องรอ
           deadline ❤️
         </p>
-      </div>
-
-      {/* ── CTA ── */}
-      <DonationCTA />
-
-      {/* ── Back to home ── */}
-      <div className="text-center">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
-          ← กลับหน้าหลัก
-          <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-        </Link>
       </div>
     </div>
   );

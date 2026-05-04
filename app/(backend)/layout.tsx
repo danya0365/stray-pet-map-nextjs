@@ -1,57 +1,41 @@
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
 import { BackendLockScreen } from "@/presentation/components/backend/BackendLockScreen";
 import { BackendLoginScreen } from "@/presentation/components/backend/BackendLoginScreen";
 import { BackendMobileHeader } from "@/presentation/components/backend/BackendMobileHeader";
 import { BackendSidebar } from "@/presentation/components/backend/BackendSidebar";
+import { createServerAuthPresenter } from "@/presentation/presenters/auth/AuthPresenterServerFactory";
 
 async function getBackendAuth(): Promise<{
   status: "authenticated" | "unauthenticated" | "forbidden";
   userName?: string;
   userRole?: string;
 }> {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const presenter = await createServerAuthPresenter();
+  const result = await presenter.getCurrentUser();
 
-    if (!user) return { status: "unauthenticated" };
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("auth_id", user.id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
-    if (!profile) return { status: "unauthenticated" };
-
-    const { data: roleData } = await supabase
-      .from("profile_roles")
-      .select("role")
-      .eq("profile_id", profile.id)
-      .single();
-
-    const role = roleData?.role ?? "user";
-
-    if (role !== "admin") {
-      return {
-        status: "forbidden",
-        userName: profile.full_name ?? user.email ?? "",
-        userRole: role,
-      };
-    }
-
-    return {
-      status: "authenticated",
-      userName: profile.full_name ?? "",
-      userRole: role,
-    };
-  } catch {
+  if (!result.success || !result.user) {
     return { status: "unauthenticated" };
   }
+
+  if (!result.profile) {
+    return { status: "unauthenticated" };
+  }
+
+  const role = result.profile.role;
+  const userName = result.profile.fullName ?? result.user.email ?? "";
+
+  if (role !== "admin") {
+    return {
+      status: "forbidden",
+      userName,
+      userRole: role,
+    };
+  }
+
+  return {
+    status: "authenticated",
+    userName,
+    userRole: role,
+  };
 }
 
 export default async function BackendLayout({

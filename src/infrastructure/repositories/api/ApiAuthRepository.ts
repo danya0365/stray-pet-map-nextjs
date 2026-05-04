@@ -13,10 +13,17 @@ import type {
   AuthProfile,
   IAuthRepository,
 } from "@/application/repositories/IAuthRepository";
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 export class ApiAuthRepository implements IAuthRepository {
   private baseUrl = "/api/auth";
+
+  async getSession(): Promise<Session | null> {
+    const res = await fetch(`${this.baseUrl}/session`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.session ?? null;
+  }
 
   async getUser(): Promise<User | null> {
     const res = await fetch(`${this.baseUrl}/me`);
@@ -96,5 +103,88 @@ export class ApiAuthRepository implements IAuthRepository {
 
     const data = await res.json();
     return data.profile ?? null;
+  }
+
+  async exchangeCodeForSession(
+    code: string,
+  ): Promise<{ error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/exchange-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { error: data.error || "Exchange code failed" };
+    }
+
+    return { error: null };
+  }
+
+  async updateProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/profile`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      return {
+        profile: null,
+        error: errorData.error || "Failed to update profile",
+      };
+    }
+
+    const result = await res.json();
+    return { profile: result.profile ?? null, error: null };
+  }
+
+  async createProfile(data: {
+    fullName?: string;
+    username?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }): Promise<{ profile: AuthProfile | null; error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/profile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      return {
+        profile: null,
+        error: errorData.error || "Failed to create profile",
+      };
+    }
+
+    const result = await res.json();
+    return { profile: result.profile ?? null, error: null };
+  }
+
+  async signInWithOAuth(
+    provider: string,
+  ): Promise<{ url: string | null; error: string | null }> {
+    const res = await fetch(`${this.baseUrl}/oauth`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { url: null, error: data.error || "OAuth sign in failed" };
+    }
+
+    const data = await res.json();
+    return { url: data.url ?? null, error: null };
   }
 }

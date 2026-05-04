@@ -1,10 +1,15 @@
+import { createBaseMetadata } from "@/config/metadata";
 import { FavoritesList } from "@/presentation/components/favorites/FavoritesList";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "รายการโปรด | StrayPetMap",
-  description: "น้องที่คุณบันทึกไว้ในรายการโปรด",
-};
+export const metadata: Metadata = createBaseMetadata(
+  "รายการโปรด | น้องที่คุณบันทึกไว้",
+  "ดูรายการน้องที่คุณบันทึกไว้ในรายการโปรด - สัตว์จรที่คุณสนใจรับเลี้ยงหรือติดตาม",
+  {
+    url: "/favorites",
+    keywords: ["รายการโปรด", "บันทึก", "favorites", "bookmark"],
+  },
+);
 
 export default function FavoritesPage() {
   return (

@@ -9,7 +9,11 @@
 
 "use client";
 
-import type { IFavoriteRepository } from "@/application/repositories/IFavoriteRepository";
+import type {
+  FavoriteQueryResult,
+  IFavoriteRepository,
+} from "@/application/repositories/IFavoriteRepository";
+import type { PaginationMode } from "@/domain/types/pagination";
 
 export class ApiFavoriteRepository implements IFavoriteRepository {
   private baseUrl = "/api/favorites";
@@ -30,16 +34,33 @@ export class ApiFavoriteRepository implements IFavoriteRepository {
     return data.isFavorited ?? false;
   }
 
-  async getFavoritePostIds(): Promise<string[]> {
-    const res = await fetch(this.baseUrl);
+  async getFavoritePostIds(
+    pagination?: PaginationMode,
+  ): Promise<FavoriteQueryResult> {
+    const params = new URLSearchParams();
+
+    if (pagination) {
+      if (pagination.type === "offset") {
+        params.set("paginationType", "offset");
+        params.set("page", String(pagination.page));
+        params.set("perPage", String(pagination.perPage));
+      } else {
+        params.set("paginationType", "cursor");
+        if (pagination.cursor) {
+          params.set("cursor", pagination.cursor);
+        }
+        params.set("limit", String(pagination.limit ?? 20));
+      }
+    }
+
+    const res = await fetch(`${this.baseUrl}?${params.toString()}`);
 
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || "ไม่สามารถโหลดรายการโปรดได้");
     }
 
-    const data = await res.json();
-    return data.postIds ?? [];
+    return res.json();
   }
 
   async addFavorite(petPostId: string): Promise<void> {

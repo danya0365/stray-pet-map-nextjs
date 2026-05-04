@@ -8,7 +8,7 @@ const getCommitSha = () => {
       process.env.VERCEL_GIT_COMMIT_SHA ||
       execSync("git rev-parse HEAD").toString().trim()
     );
-  } catch (e) {
+  } catch {
     return process.env.BUILD_COMMIT_SHA || "";
   }
 };
@@ -75,6 +75,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "placedog.net" },
       { protocol: "https", hostname: "placecats.com" },
       { protocol: "https", hostname: "loremflickr.com" },
+      { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
   },
 };

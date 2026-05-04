@@ -7,6 +7,7 @@ import type {
 import type {
   CreatePetPostPayload,
   PetPost,
+  PetPostOutcome,
   PetPostPurpose,
   PetPostStats,
   PetPostStatus,
@@ -25,9 +26,14 @@ type QueryBuilder = any;
 
 type PetPostRow = Database["public"]["Tables"]["pet_posts"]["Row"];
 type PetTypeRow = Database["public"]["Tables"]["pet_types"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 type PetPostWithType = PetPostRow & {
   pet_types: PetTypeRow | null;
+};
+
+type PetPostWithOwner = PetPostWithType & {
+  profiles: Pick<ProfileRow, "id" | "full_name" | "avatar_url"> | null;
 };
 
 // ── Repository ─────────────────────────────────────────────
@@ -472,15 +478,7 @@ export class SupabasePetPostRepository implements IPetPostRepository {
     };
   }
 
-  private mapToDomainWithOwner(
-    row: PetPostWithType & {
-      profiles: {
-        id: string;
-        full_name: string | null;
-        avatar_url: string | null;
-      } | null;
-    },
-  ): PetPost {
+  private mapToDomainWithOwner(row: PetPostWithOwner): PetPost {
     const post = this.mapToDomain(row);
 
     // Add owner info if profiles data exists
@@ -602,5 +600,30 @@ export class SupabasePetPostRepository implements IPetPostRepository {
       createdAt: row.created_at ?? new Date().toISOString(),
       purpose: row.purpose,
     }));
+  }
+
+  // ปิดโพสต์ (เมื่อหาเจ้าของเจอ/รับเลี้ยงแล้ว)
+  async close(id: string, outcome: PetPostOutcome): Promise<PetPost> {
+    const { data, error } = await this.supabase
+      .from("pet_posts")
+      .update({
+        outcome,
+        status:
+          outcome === "rehomed" || outcome === "owner_found"
+            ? "adopted"
+            : "available",
+        resolved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("*, pet_types(*)")
+      .single();
+
+    if (error) {
+      console.error("Error closing post:", error);
+      throw error;
+    }
+
+    return this.mapToDomain(data as PetPostWithType);
   }
 }

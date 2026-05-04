@@ -2,21 +2,23 @@
  * /api/pet-types
  * API Route for pet type read operations
  *
- * ✅ Uses SupabasePetTypeRepository (server-side)
+ * ✅ Uses PetTypePresenter (Clean Architecture)
  * ✅ Client components call this via ApiPetTypeRepository
  */
 
-import { SupabasePetTypeRepository } from "@/infrastructure/repositories/supabase/SupabasePetTypeRepository";
-import { createServerSupabaseClient } from "@/infrastructure/supabase/server";
+import { createServerPetTypePresenter } from "@/presentation/presenters/pet-type/PetTypePresenterServerFactory";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const repo = new SupabasePetTypeRepository(supabase);
-    const petTypes = await repo.getAll();
+    const presenter = await createServerPetTypePresenter();
+    const result = await presenter.getAll();
 
-    return NextResponse.json(petTypes);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ไม่สามารถโหลดชนิดสัตว์ได้";
