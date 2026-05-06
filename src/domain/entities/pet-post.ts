@@ -48,6 +48,8 @@ export interface PetPost {
   resolvedAt: string | null; // เวลาที่โพสต์จบ
   thumbnailUrl: string;
 
+  likeCount: number;
+
   isActive: boolean;
   isArchived: boolean; // ซ่อนจาก list หลักแต่ยังเข้าถึงได้
   createdAt: string;

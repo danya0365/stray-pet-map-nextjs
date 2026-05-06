@@ -7,6 +7,7 @@ import { ClosePostModal } from "@/presentation/components/close-post/ClosePostMo
 import { CommentSection } from "@/presentation/components/comments";
 import { PetFundingProgress } from "@/presentation/components/donation/PetFundingProgress";
 import { FavoriteButton } from "@/presentation/components/favorites/FavoriteButton";
+import { PetPostLikeButton } from "@/presentation/components/pet-post-like/PetPostLikeButton";
 import { ReportModal } from "@/presentation/components/report/ReportModal";
 import { Avatar, Badge } from "@/presentation/components/ui";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
@@ -50,7 +51,7 @@ function ExpiryWarning({ createdAt }: { createdAt: string }) {
 
   return (
     <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
-      <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+      <AlertTriangle className="h-5 w-5 shrink-0" />
       <div className="flex-1">
         <p className="text-sm font-medium">โพสต์ใกล้หมดอายุ</p>
         <p className="text-xs text-amber-700">
@@ -206,17 +207,25 @@ export function PetDetailView({
             <h1 className="text-xl font-bold leading-tight sm:text-2xl">
               {post.title}
             </h1>
-            <div className="mt-2 flex items-center gap-3 text-xs text-foreground/40">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {dayjs(post.createdAt).fromNow()}
-              </span>
-              {post.province && (
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-3 text-xs text-foreground/40">
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {post.province}
+                  <Clock className="h-3 w-3" />
+                  {dayjs(post.createdAt).fromNow()}
                 </span>
-              )}
+                {post.province && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {post.province}
+                  </span>
+                )}
+              </div>
+              <PetPostLikeButton
+                petPostId={post.id}
+                initialCount={post.likeCount}
+                size="sm"
+                variant="outline"
+              />
             </div>
           </div>
 

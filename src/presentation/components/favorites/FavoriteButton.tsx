@@ -3,7 +3,7 @@
 import { cn } from "@/presentation/lib/cn";
 import { useFavoriteButton } from "@/presentation/presenters/favorites/useFavoritePresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
-import { Heart } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
@@ -58,7 +58,7 @@ export function FavoriteButton({
         className,
       )}
     >
-      <Heart className={cn(iconSize, isFavorited && "fill-current")} />
+      <Bookmark className={cn(iconSize, isFavorited && "fill-current")} />
     </button>
   );
 }

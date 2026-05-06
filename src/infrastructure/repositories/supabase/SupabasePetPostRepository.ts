@@ -471,6 +471,7 @@ export class SupabasePetPostRepository implements IPetPostRepository {
       outcome: row.outcome,
       resolvedAt: row.resolved_at,
       thumbnailUrl: row.thumbnail_url ?? "",
+      likeCount: row.like_count ?? 0,
       isActive: row.is_active,
       isArchived: row.is_archived,
       createdAt: row.created_at ?? "",
