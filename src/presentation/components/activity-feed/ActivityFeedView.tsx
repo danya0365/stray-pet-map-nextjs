@@ -121,7 +121,7 @@ export function ActivityFeedView({
           {/* Create Post CTA */}
           <div className="mt-4 px-1">
             <Link
-              href="/pets/new"
+              href="/posts/create"
               className="flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98]"
             >
               <PenSquare className="h-4 w-4" />
