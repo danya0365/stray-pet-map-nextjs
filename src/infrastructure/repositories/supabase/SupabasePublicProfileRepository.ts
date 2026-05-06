@@ -209,6 +209,7 @@ export class SupabasePublicProfileRepository implements IPublicProfileRepository
       outcome: post.outcome as PetPost["outcome"] | null,
       resolvedAt: post.resolved_at,
       thumbnailUrl: post.thumbnail_url ?? "",
+      likeCount: post.like_count ?? 0,
       isActive: post.is_active,
       isArchived: post.is_archived,
       createdAt: post.created_at ?? new Date().toISOString(),
