@@ -90,16 +90,25 @@ export function PetDetailContainer({
 
   const handleShareClick = () => {
     if (!viewModel) return;
-    // Try native share API first, fallback to coming soon
+    const url = window.location.href;
     if (navigator.share) {
       navigator
         .share({
           title: viewModel.post.title,
           text: `ดู${viewModel.post.title} ใน StrayPetMap`,
-          url: window.location.href,
+          url,
         })
         .catch(() => {
           // User cancelled or failed
+        });
+    } else if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          alert("คัดลอกลิงก์แล้ว");
+        })
+        .catch(() => {
+          comingSoonModal.open("แชร์ไปยัง Social Media");
         });
     } else {
       comingSoonModal.open("แชร์ไปยัง Social Media");
@@ -139,6 +148,7 @@ export function PetDetailContainer({
       onCloseAdoptionModal={closeAdoptionModal}
       onOpenCloseModal={openCloseModal}
       onCloseCloseModal={closeCloseModal}
+      onOpenReportModal={reportModal.open}
       onCloseReportModal={reportModal.close}
       onCloseComingSoon={comingSoonModal.close}
       onAdoptClick={handleAdoptClick}

@@ -23,6 +23,7 @@ import {
   Clock,
   Construction,
   Edit,
+  Flag,
   Heart,
   Loader2,
   MapPin,
@@ -104,6 +105,7 @@ interface PetDetailViewProps {
   onCloseAdoptionModal: () => void;
   onOpenCloseModal: () => void;
   onCloseCloseModal: () => void;
+  onOpenReportModal: () => void;
   onCloseReportModal: () => void;
   onCloseComingSoon: () => void;
   onAdoptClick: () => void;
@@ -132,6 +134,7 @@ export function PetDetailView({
   onCloseCloseModal,
   onAdoptClick,
   onOpenCloseModal,
+  onOpenReportModal,
   onCloseReportModal,
   onCloseComingSoon,
   onFoundPetClick,
@@ -159,7 +162,7 @@ export function PetDetailView({
 
       {/* Back */}
       <Link
-        href="/"
+        href="/pets"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-foreground/50 transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -461,6 +464,14 @@ export function PetDetailView({
               <Share2 className="h-3.5 w-3.5" />
               แชร์
             </button>
+            <button
+              type="button"
+              onClick={onOpenReportModal}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted"
+            >
+              <Flag className="h-3.5 w-3.5" />
+              แจ้งปัญหา
+            </button>
             {isOwner && (
               <>
                 <Link
@@ -468,7 +479,7 @@ export function PetDetailView({
                   className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
                 >
                   <Edit className="h-3.5 w-3.5" />
-                  Edit
+                  แก้ไข
                 </Link>
                 <button
                   onClick={onOpenCloseModal}
@@ -476,7 +487,7 @@ export function PetDetailView({
                   type="button"
                 >
                   <Archive className="h-3.5 w-3.5" />
-                  Close
+                  ปิดโพสต์
                 </button>
               </>
             )}
