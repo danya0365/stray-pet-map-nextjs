@@ -123,4 +123,23 @@ export class AdoptionRequestPresenter {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Update adoption request status (approve/reject)
+   * Used by /api/adoption-requests/[id]/status PATCH route
+   */
+  async updateStatus(
+    id: string,
+    status: "approved" | "rejected",
+  ): Promise<CreateResult> {
+    try {
+      const request = await this.repository.updateStatus(id, status);
+      return { success: true, data: request };
+    } catch (error) {
+      console.error("Error updating adoption request status:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update status";
+      return { success: false, error: errorMessage };
+    }
+  }
 }

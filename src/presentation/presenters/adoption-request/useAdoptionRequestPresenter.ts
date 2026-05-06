@@ -47,6 +47,11 @@ export interface AdoptionRequestPresenterActions {
     contactLineId?: string;
   }) => Promise<boolean>;
   clearSubmitError: () => void;
+  hasRequested: (petPostId: string) => Promise<boolean>;
+  updateStatus: (
+    id: string,
+    status: "approved" | "rejected",
+  ) => Promise<AdoptionRequest | null>;
 }
 
 // ============================================================================
@@ -222,6 +227,47 @@ export function useAdoptionRequestPresenter(
   );
 
   // ============================================================================
+  // Check Has Requested
+  // ============================================================================
+
+  const hasRequested = useCallback(
+    async (targetPetPostId: string): Promise<boolean> => {
+      try {
+        const result = await presenter.hasRequested(targetPetPostId);
+        if (result.success) {
+          return result.hasRequested ?? false;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    },
+    [presenter],
+  );
+
+  // ============================================================================
+  // Update Status (approve/reject)
+  // ============================================================================
+
+  const updateStatus = useCallback(
+    async (
+      id: string,
+      status: "approved" | "rejected",
+    ): Promise<AdoptionRequest | null> => {
+      try {
+        const result = await presenter.updateStatus(id, status);
+        if (result.success && result.data) {
+          return result.data;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+    [presenter],
+  );
+
+  // ============================================================================
   // UI Actions
   // ============================================================================
 
@@ -259,6 +305,8 @@ export function useAdoptionRequestPresenter(
       refreshRequests,
       createRequest,
       clearSubmitError,
+      hasRequested,
+      updateStatus,
     },
   ];
 }

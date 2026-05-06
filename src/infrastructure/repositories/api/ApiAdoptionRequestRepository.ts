@@ -107,4 +107,22 @@ export class ApiAdoptionRequestRepository implements IAdoptionRequestRepository 
     const data = await res.json();
     return data.hasRequested;
   }
+
+  async updateStatus(
+    id: string,
+    status: "approved" | "rejected",
+  ): Promise<AdoptionRequest> {
+    const res = await fetch(`${this.baseUrl}/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "ไม่สามารถอัปเดตสถานะได้");
+    }
+
+    return res.json();
+  }
 }

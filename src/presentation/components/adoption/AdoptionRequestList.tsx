@@ -1,10 +1,17 @@
 "use client";
 
 import type { AdoptionRequest } from "@/application/repositories/IAdoptionRequestRepository";
-import { Loader2, ChevronDown, Heart, User } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Inbox,
+  Loader2,
+  User,
+  XCircle,
+} from "lucide-react";
 
 dayjs.extend(relativeTime);
 dayjs.locale("th");
@@ -17,6 +24,10 @@ interface AdoptionRequestListProps {
   hasMore?: boolean;
   onLoadMore?: () => void;
   emptyMessage?: string;
+  isOwner?: boolean;
+  processingId?: string | null;
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -33,6 +44,10 @@ export function AdoptionRequestList({
   hasMore = false,
   onLoadMore,
   emptyMessage = "ยังไม่มีคำขอรับเลี้ยง",
+  isOwner = false,
+  processingId = null,
+  onApprove,
+  onReject,
 }: AdoptionRequestListProps) {
   if (loading) {
     return (
@@ -54,7 +69,7 @@ export function AdoptionRequestList({
     return (
       <div className="py-8 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-          <Heart className="h-6 w-6 text-foreground/40" />
+          <Inbox className="h-6 w-6 text-foreground/40" />
         </div>
         <p className="text-sm text-foreground/60">{emptyMessage}</p>
       </div>
@@ -65,7 +80,7 @@ export function AdoptionRequestList({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2 text-sm text-foreground/60">
-        <Heart className="h-4 w-4" />
+        <Inbox className="h-4 w-4" />
         <span>{totalCount} คำขอรับเลี้ยง</span>
       </div>
 
@@ -77,7 +92,7 @@ export function AdoptionRequestList({
             className="rounded-xl border border-border bg-card p-4"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
@@ -105,6 +120,36 @@ export function AdoptionRequestList({
                     <span>LINE: {request.contactLineId}</span>
                   )}
                 </div>
+                {isOwner && request.status === "pending" && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={processingId === request.id}
+                      onClick={() => onApprove?.(request.id)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 disabled:opacity-50"
+                    >
+                      {processingId === request.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-3 w-3" />
+                      )}
+                      อนุมัติ
+                    </button>
+                    <button
+                      type="button"
+                      disabled={processingId === request.id}
+                      onClick={() => onReject?.(request.id)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
+                    >
+                      {processingId === request.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <XCircle className="h-3 w-3" />
+                      )}
+                      ปฏิเสธ
+                    </button>
+                  </div>
+                )}
                 <p className="mt-2 text-xs text-foreground/40">
                   {dayjs(request.createdAt).fromNow()}
                 </p>

@@ -1,6 +1,7 @@
 import type {
   AdoptionRequest,
   AdoptionRequestQueryResult,
+  AdoptionRequestStatus,
   CreateAdoptionRequestPayload,
   IAdoptionRequestRepository,
 } from "@/application/repositories/IAdoptionRequestRepository";
@@ -188,6 +189,67 @@ export class SupabaseAdoptionRequestRepository implements IAdoptionRequestReposi
       .eq("is_active", true);
 
     return (count ?? 0) > 0;
+  }
+
+  async updateStatus(
+    id: string,
+    status: Exclude<AdoptionRequestStatus, "pending">,
+  ): Promise<AdoptionRequest> {
+    const profileId = await this.getProfileId();
+
+    // Verify this user owns the post associated with this request
+    const { data: requestRow, error: requestError } = await this.supabase
+      .from("adoption_requests")
+      .select("pet_post_id")
+      .eq("id", id)
+      .single();
+
+    if (requestError || !requestRow) {
+      throw new Error("ไม่พบคำขอรับเลี้ยง");
+    }
+
+    // Check ownership of the pet post
+    const { data: postRow, error: postError } = await this.supabase
+      .from("pet_posts")
+      .select("profile_id")
+      .eq("id", requestRow.pet_post_id)
+      .single();
+
+    if (postError || !postRow || postRow.profile_id !== profileId) {
+      throw new Error("คุณไม่ใช่เจ้าของโพสต์นี้");
+    }
+
+    // Update request status
+    const { data, error } = await this.supabase
+      .from("adoption_requests")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new Error("ไม่สามารถอัปเดตสถานะได้");
+    }
+
+    // If approved, auto-close the post
+    if (status === "approved") {
+      const { error: closeError } = await this.supabase
+        .from("pet_posts")
+        .update({
+          status: "adopted",
+          outcome: "rehomed",
+          resolved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", requestRow.pet_post_id);
+
+      if (closeError) {
+        console.error("Auto-close post after approve failed:", closeError);
+        // Don't throw — the request is already approved; log for monitoring
+      }
+    }
+
+    return this.mapToDomain(data);
   }
 
   private mapToDomain(row: AdoptionRequestRow): AdoptionRequest {

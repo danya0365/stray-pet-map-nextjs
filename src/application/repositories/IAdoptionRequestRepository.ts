@@ -55,4 +55,14 @@ export interface IAdoptionRequestRepository {
   ): Promise<AdoptionRequestQueryResult>;
 
   hasRequested(petPostId: string): Promise<boolean>;
+
+  /**
+   * อัปเดตสถานะคำขอรับเลี้ยง (approve/reject) — ต้องเป็นเจ้าของโพสต์
+   * @param id - UUID ของคำขอ
+   * @param status - "approved" | "rejected"
+   */
+  updateStatus(
+    id: string,
+    status: Exclude<AdoptionRequestStatus, "pending">,
+  ): Promise<AdoptionRequest>;
 }

@@ -4,7 +4,7 @@ import { FEATURE_FLAGS } from "@/config/features";
 import { useDonationContext } from "@/presentation/components/donation";
 import type { PetDetailViewModel } from "@/presentation/presenters/pet-detail/PetDetailPresenter";
 import { usePetDetailPresenter } from "@/presentation/presenters/pet-detail/usePetDetailPresenter";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PetDetailView } from "./PetDetailView";
 
 // Simple modal state hook
@@ -50,6 +50,12 @@ export function PetDetailContainer({
     isCloseModalOpen,
     isClosingPost,
     fundingGoal,
+    hasRequested,
+    isLoadingHasRequested,
+    adoptionRequests,
+    adoptionRequestsTotal,
+    adoptionRequestsLoading,
+    processingRequestId,
   } = state;
 
   const {
@@ -59,7 +65,8 @@ export function PetDetailContainer({
     closeCloseModal,
     handleAdoptClick,
     handleClosePost,
-    fetchFundingGoal,
+    handleApproveRequest,
+    handleRejectRequest,
   } = actions;
 
   // Report modal state
@@ -67,12 +74,6 @@ export function PetDetailContainer({
 
   // Coming Soon modal state
   const comingSoonModal = useComingSoonModal();
-
-  // Fetch funding goal via presenter action
-  useEffect(() => {
-    if (!viewModel?.post.id) return;
-    fetchFundingGoal(viewModel.post.id);
-  }, [viewModel?.post.id, fetchFundingGoal]);
 
   // Donation handling
   const { openForPet } = useDonationContext();
@@ -128,6 +129,12 @@ export function PetDetailContainer({
       isReportModalOpen={reportModal.isOpen}
       isComingSoonModalOpen={comingSoonModal.isOpen}
       comingSoonFeature={comingSoonModal.feature}
+      hasRequested={hasRequested}
+      isLoadingHasRequested={isLoadingHasRequested}
+      adoptionRequests={adoptionRequests}
+      adoptionRequestsTotal={adoptionRequestsTotal}
+      adoptionRequestsLoading={adoptionRequestsLoading}
+      processingRequestId={processingRequestId}
       onOpenAdoptionModal={openAdoptionModal}
       onCloseAdoptionModal={closeAdoptionModal}
       onOpenCloseModal={openCloseModal}
@@ -139,6 +146,8 @@ export function PetDetailContainer({
       onShareClick={handleShareClick}
       onClosePost={handleClosePost}
       onDonateClick={handleDonateClick}
+      onApproveRequest={handleApproveRequest}
+      onRejectRequest={handleRejectRequest}
     />
   );
 }

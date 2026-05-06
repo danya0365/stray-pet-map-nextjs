@@ -7,8 +7,10 @@
  * ✅ Follows Clean Architecture pattern
  */
 
+import type { AdoptionRequest } from "@/application/repositories/IAdoptionRequestRepository";
 import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
+import { useAdoptionRequestPresenter } from "@/presentation/presenters/adoption-request/useAdoptionRequestPresenter";
 import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +33,12 @@ export interface PetDetailPresenterState {
   isClosingPost: boolean;
   fundingGoal: PetFundingGoal | null;
   isLoadingFundingGoal: boolean;
+  hasRequested: boolean;
+  isLoadingHasRequested: boolean;
+  adoptionRequests: AdoptionRequest[];
+  adoptionRequestsTotal: number;
+  adoptionRequestsLoading: boolean;
+  processingRequestId: string | null;
 }
 
 // ── Actions ──────────────────────────────────────────────
@@ -45,6 +53,8 @@ export interface PetDetailPresenterActions {
   handleAdoptClick: () => void;
   handleClosePost: (outcome: PetPostOutcome) => Promise<void>;
   fetchFundingGoal: (petPostId: string) => Promise<void>;
+  handleApproveRequest: (id: string) => Promise<void>;
+  handleRejectRequest: (id: string) => Promise<void>;
 }
 
 // ── Hook ─────────────────────────────────────────────────
@@ -81,6 +91,23 @@ export function usePetDetailPresenter(
   const [fundingGoal, setFundingGoal] = useState<PetFundingGoal | null>(null);
   const [isLoadingFundingGoal, setIsLoadingFundingGoal] = useState(false);
 
+  // ── Adoption Request Sub-Presenter ──────────────────────
+  const [adoptionState, adoptionActions] = useAdoptionRequestPresenter({
+    petPostId: viewModel?.post.id,
+  });
+
+  // Adoption states exposed
+  const adoptionRequests = adoptionState.list.requests;
+  const adoptionRequestsTotal = adoptionState.list.totalCount;
+  const adoptionRequestsLoading = adoptionState.list.loading;
+
+  // hasRequested check for non-owner
+  const [hasRequested, setHasRequested] = useState(false);
+  const [isLoadingHasRequested, setIsLoadingHasRequested] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(
+    null,
+  );
+
   // Computed states
   const isOwner = useMemo(() => {
     if (!user?.id || !viewModel?.post.profileId) return false;
@@ -91,6 +118,59 @@ export function usePetDetailPresenter(
     if (!viewModel?.post) return false;
     return isOwner && !viewModel.post.outcome && !viewModel.post.isArchived;
   }, [isOwner, viewModel?.post]);
+
+  // hasRequested check for non-owner
+  useEffect(() => {
+    if (!viewModel?.post.id || isOwner) return;
+
+    let cancelled = false;
+    const check = async () => {
+      setIsLoadingHasRequested(true);
+      try {
+        const result = await adoptionActions.hasRequested(viewModel.post.id);
+        if (!cancelled) setHasRequested(result);
+      } catch {
+        if (!cancelled) setHasRequested(false);
+      } finally {
+        if (!cancelled) setIsLoadingHasRequested(false);
+      }
+    };
+    check();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewModel, isOwner, adoptionActions]);
+
+  // Load adoption requests for owner
+  useEffect(() => {
+    if (!viewModel?.post.id || !isOwner) return;
+    adoptionActions.loadRequests(viewModel.post.id);
+  }, [viewModel, isOwner, adoptionActions]);
+
+  // Funding goal auto-fetch
+  useEffect(() => {
+    if (!viewModel?.post.id) return;
+
+    let cancelled = false;
+    const fetch = async () => {
+      setIsLoadingFundingGoal(true);
+      try {
+        const goal = await presenter.fetchFundingGoal(viewModel.post.id);
+        if (!cancelled) setFundingGoal(goal);
+      } catch (error) {
+        console.error("Error fetching funding goal:", error);
+        if (!cancelled) setFundingGoal(null);
+      } finally {
+        if (!cancelled) setIsLoadingFundingGoal(false);
+      }
+    };
+    fetch();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewModel?.post.id, presenter]);
 
   // Load pet data
   const loadPet = useCallback(
@@ -200,6 +280,34 @@ export function usePetDetailPresenter(
     [presenter],
   );
 
+  const handleApproveRequest = useCallback(
+    async (id: string) => {
+      setProcessingRequestId(id);
+      const result = await adoptionActions.updateStatus(id, "approved");
+      if (result && viewModel?.post.id) {
+        await adoptionActions.loadRequests(viewModel.post.id);
+      } else {
+        alert("ไม่สามารถอนุมัติได้ กรุณาลองใหม่");
+      }
+      setProcessingRequestId(null);
+    },
+    [viewModel, adoptionActions],
+  );
+
+  const handleRejectRequest = useCallback(
+    async (id: string) => {
+      setProcessingRequestId(id);
+      const result = await adoptionActions.updateStatus(id, "rejected");
+      if (result && viewModel?.post.id) {
+        await adoptionActions.loadRequests(viewModel.post.id);
+      } else {
+        alert("ไม่สามารถปฏิเสธได้ กรุณาลองใหม่");
+      }
+      setProcessingRequestId(null);
+    },
+    [viewModel, adoptionActions],
+  );
+
   // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true;
@@ -220,6 +328,12 @@ export function usePetDetailPresenter(
       isClosingPost,
       fundingGoal,
       isLoadingFundingGoal,
+      hasRequested,
+      isLoadingHasRequested,
+      adoptionRequests,
+      adoptionRequestsTotal,
+      adoptionRequestsLoading,
+      processingRequestId,
     },
     {
       loadPet,
@@ -231,6 +345,8 @@ export function usePetDetailPresenter(
       handleAdoptClick,
       handleClosePost,
       fetchFundingGoal,
+      handleApproveRequest,
+      handleRejectRequest,
     },
   ];
 }

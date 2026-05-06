@@ -2,6 +2,7 @@
 
 import type { PetFundingGoal } from "@/domain/entities/donation";
 import type { PetPostOutcome } from "@/domain/entities/pet-post";
+import { AdoptionRequestList } from "@/presentation/components/adoption/AdoptionRequestList";
 import { AdoptionRequestModal } from "@/presentation/components/adoption/AdoptionRequestModal";
 import { ClosePostModal } from "@/presentation/components/close-post/ClosePostModal";
 import { CommentSection } from "@/presentation/components/comments";
@@ -23,6 +24,7 @@ import {
   Construction,
   Edit,
   Heart,
+  Loader2,
   MapPin,
   Scissors,
   Share2,
@@ -92,6 +94,12 @@ interface PetDetailViewProps {
   isReportModalOpen: boolean;
   isComingSoonModalOpen: boolean;
   comingSoonFeature: string;
+  hasRequested: boolean;
+  isLoadingHasRequested: boolean;
+  adoptionRequests: import("@/application/repositories/IAdoptionRequestRepository").AdoptionRequest[];
+  adoptionRequestsTotal: number;
+  adoptionRequestsLoading: boolean;
+  processingRequestId: string | null;
   onOpenAdoptionModal: () => void;
   onCloseAdoptionModal: () => void;
   onOpenCloseModal: () => void;
@@ -103,6 +111,8 @@ interface PetDetailViewProps {
   onShareClick: () => void;
   onClosePost: (outcome: PetPostOutcome) => Promise<void>;
   onDonateClick: () => void;
+  onApproveRequest: (id: string) => void;
+  onRejectRequest: (id: string) => void;
 }
 
 // View Component - 100% Logic-Free รับ state และ callbacks จาก props
@@ -128,6 +138,14 @@ export function PetDetailView({
   onShareClick,
   onClosePost,
   onDonateClick,
+  hasRequested,
+  isLoadingHasRequested,
+  adoptionRequests,
+  adoptionRequestsTotal,
+  adoptionRequestsLoading,
+  processingRequestId,
+  onApproveRequest,
+  onRejectRequest,
 }: PetDetailViewProps) {
   const { post } = viewModel;
   const statusInfo = statusConfig[post.status];
@@ -346,6 +364,22 @@ export function PetDetailView({
                 <CheckCircle className="h-4 w-4" />
                 จบโพสต์
               </button>
+
+              {/* Owner: Incoming Adoption Requests */}
+              {isOwner && (
+                <div className="mt-2 rounded-xl border border-border bg-card p-4">
+                  <h3 className="mb-3 text-sm font-semibold">คำขอรับเลี้ยง</h3>
+                  <AdoptionRequestList
+                    requests={adoptionRequests}
+                    totalCount={adoptionRequestsTotal}
+                    loading={adoptionRequestsLoading}
+                    isOwner
+                    processingId={processingRequestId}
+                    onApprove={onApproveRequest}
+                    onReject={onRejectRequest}
+                  />
+                </div>
+              )}
             </>
           ) : post.outcome ? (
             <div
@@ -365,16 +399,30 @@ export function PetDetailView({
           ) : (
             <>
               {(post.status === "available" || post.status === "pending") && (
-                <button
-                  type="button"
-                  onClick={onAdoptClick}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-                >
-                  <Heart className="h-4 w-4" />
-                  {post.status === "pending"
-                    ? "สนใจรับเลี้ยงเช่นกัน"
-                    : "ขอรับเลี้ยง"}
-                </button>
+                <>
+                  {isLoadingHasRequested ? (
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-muted px-6 py-3 text-sm font-medium text-foreground/50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      กำลังตรวจสอบ...
+                    </div>
+                  ) : hasRequested ? (
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-100 px-6 py-3 text-sm font-medium text-amber-700">
+                      <Heart className="h-4 w-4" />
+                      รอการตอบรับ
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={onAdoptClick}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+                    >
+                      <Heart className="h-4 w-4" />
+                      {post.status === "pending"
+                        ? "สนใจรับเลี้ยงเช่นกัน"
+                        : "ขอรับเลี้ยง"}
+                    </button>
+                  )}
+                </>
               )}
 
               {post.status === "missing" && (
