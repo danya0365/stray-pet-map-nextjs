@@ -49,6 +49,31 @@ SELECT * FROM (
   FROM public.comments c
   JOIN public.profiles ON profiles.id = c.profile_id
   WHERE c.is_deleted = false
+
+  UNION ALL
+
+  SELECT
+    'post_like_' || ppl.id AS id,
+    'post_like' AS type,
+    ppl.profile_id AS actor_id,
+    profiles.full_name AS actor_name,
+    profiles.avatar_url AS actor_avatar,
+    COALESCE(profiles.level, 1) AS actor_level,
+    ppl.pet_post_id AS post_id,
+    pp.title AS post_title,
+    pp.thumbnail_url AS post_thumbnail,
+    pp.purpose::text AS post_purpose,
+    pp.status::text AS post_status,
+    pp.outcome::text AS post_outcome,
+    NULL::uuid AS comment_id,
+    NULL::text AS comment_content,
+    NULL::uuid AS parent_comment_id,
+    ppl.created_at AS occurred_at
+  FROM public.pet_post_likes ppl
+  JOIN public.profiles ON profiles.id = ppl.profile_id
+  JOIN public.pet_posts pp ON pp.id = ppl.pet_post_id
+  WHERE pp.is_active = true AND pp.is_archived = false
+
 ) combined
 ORDER BY occurred_at DESC
 LIMIT 1000;
@@ -104,5 +129,12 @@ CREATE TRIGGER refresh_feed_on_post_change
 DROP TRIGGER IF EXISTS refresh_feed_on_comment_change ON public.comments;
 CREATE TRIGGER refresh_feed_on_comment_change
   AFTER INSERT OR UPDATE ON public.comments
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION public.trigger_refresh_activity_feed();
+
+-- Refresh on new/deleted likes
+DROP TRIGGER IF EXISTS refresh_feed_on_post_like_change ON public.pet_post_likes;
+CREATE TRIGGER refresh_feed_on_post_like_change
+  AFTER INSERT OR DELETE ON public.pet_post_likes
   FOR EACH STATEMENT
   EXECUTE FUNCTION public.trigger_refresh_activity_feed();

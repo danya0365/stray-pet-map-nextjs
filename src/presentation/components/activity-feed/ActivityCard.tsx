@@ -2,6 +2,9 @@
 
 import type { ActivityItem, ActivityType } from "@/domain/entities/activity";
 import { Avatar } from "@/presentation/components/ui";
+import { useFavoriteButton } from "@/presentation/presenters/favorites/useFavoritePresenter";
+import { usePetPostLikePresenter } from "@/presentation/presenters/pet-post-like/usePetPostLikePresenter";
+import { useAuthStore } from "@/presentation/stores/useAuthStore";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -14,6 +17,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { ShareIconButton } from "./ShareUpdateButton";
 
 dayjs.extend(relativeTime);
@@ -46,6 +51,10 @@ const TYPE_CONFIG: Record<
   comment_reply: {
     label: "ตอบกลับ",
     color: "text-blue-500",
+  },
+  post_like: {
+    label: "ถูกใจ",
+    color: "text-rose-500",
   },
   like_milestone: {
     label: "ถูกใจ",
@@ -80,6 +89,7 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
   const shareText = activity.payload.postTitle
     ? `🐕 ${activity.payload.postTitle} บน StrayPetMap`
     : `อัปเดตล่าสุดจากชุมชน StrayPetMap`;
+  const postId = activity.payload.postId;
 
   return (
     <article
@@ -154,7 +164,7 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
             ) : activity.type === "new_comment" ||
               activity.type === "comment_reply" ? (
               <Link href={linkHref} className="block group/link">
-                <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 group-hover/link:bg-muted/50 transition-colors">
+                <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 transition-colors group-hover/link:bg-muted/50">
                   <p className="text-[15px] leading-relaxed text-foreground">
                     {activity.payload.commentContent}
                   </p>
@@ -162,6 +172,29 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
                     <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                       <ArrowRight className="h-3 w-3" />
                       <span>ตอบกลับโพสต์</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ) : activity.type === "post_like" && activity.payload.postId ? (
+              <Link href={linkHref} className="block group/link">
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 transition-colors group-hover/link:bg-muted/50">
+                  <Heart className="h-5 w-5 shrink-0 text-rose-500 fill-rose-500" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground">ถูกใจโพสต์</p>
+                    <p className="text-[15px] font-medium leading-relaxed text-foreground truncate">
+                      {activity.payload.postTitle ?? "โพสต์"}
+                    </p>
+                  </div>
+                  {activity.payload.postThumbnailUrl && (
+                    <div className="relative ml-auto h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                      <Image
+                        src={activity.payload.postThumbnailUrl}
+                        alt={activity.payload.postTitle ?? "รูปโพสต์"}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
                     </div>
                   )}
                 </div>
@@ -199,26 +232,153 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
 
           {/* Action Bar */}
           <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <button className="group/comment flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-blue-500/10 hover:text-blue-500">
-                <MessageCircle className="h-4 w-4 text-muted-foreground group-hover/comment:text-blue-500" />
-              </button>
-              <button className="group/heart flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-rose-500/10 hover:text-rose-500">
-                <Heart className="h-4 w-4 text-muted-foreground group-hover/heart:text-rose-500" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
-              {activity.payload.postId && (
-                <ShareIconButton url={shareUrl} text={shareText} />
-              )}
-              <button className="group/book flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-primary/10 hover:text-primary">
-                <Bookmark className="h-4 w-4 text-muted-foreground group-hover/book:text-primary" />
-              </button>
-            </div>
+            {postId ? (
+              <WiredActionBar
+                postId={postId}
+                linkHref={linkHref}
+                shareUrl={shareUrl}
+                shareText={shareText}
+              />
+            ) : (
+              <StaticActionBar />
+            )}
           </div>
         </div>
       </div>
     </article>
+  );
+}
+
+function WiredActionBar({
+  postId,
+  linkHref,
+  shareUrl,
+  shareText,
+}: {
+  postId: string;
+  linkHref: string;
+  shareUrl: string;
+  shareText: string;
+}) {
+  const router = useRouter();
+  const { user } = useAuthStore();
+
+  const [{ isLiked, likeCount, loading: likeLoading }, { toggle: toggleLike }] =
+    usePetPostLikePresenter(postId);
+  const {
+    isFavorited,
+    loading: favLoading,
+    toggle: toggleFav,
+  } = useFavoriteButton(postId);
+
+  const handleComment = useCallback(() => {
+    router.push(`${linkHref}#comments`);
+  }, [linkHref, router]);
+
+  const handleLike = useCallback(async () => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+    if (!likeLoading) {
+      await toggleLike();
+    }
+  }, [user, likeLoading, toggleLike, router]);
+
+  const handleBookmark = useCallback(async () => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+    if (!favLoading) {
+      await toggleFav();
+    }
+  }, [user, favLoading, toggleFav, router]);
+
+  return (
+    <>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={handleComment}
+          className="group/comment flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-blue-500/10 hover:text-blue-500"
+          aria-label="แสดงความคิดเห็น"
+        >
+          <MessageCircle className="h-4 w-4 text-muted-foreground group-hover/comment:text-blue-500" />
+        </button>
+        <button
+          onClick={handleLike}
+          disabled={likeLoading}
+          className={`group/heart flex h-8 items-center justify-center rounded-full px-1.5 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50 ${
+            isLiked ? "text-rose-500" : ""
+          }`}
+          aria-label={isLiked ? "เลิกถูกใจ" : "ถูกใจ"}
+        >
+          <Heart
+            className={`h-4 w-4 ${
+              isLiked
+                ? "fill-current"
+                : "text-muted-foreground group-hover/heart:text-rose-500"
+            }`}
+          />
+          {likeCount > 0 && (
+            <span className="ml-1 text-xs text-muted-foreground">
+              {likeCount}
+            </span>
+          )}
+        </button>
+      </div>
+      <div className="flex items-center gap-1">
+        <ShareIconButton url={shareUrl} text={shareText} />
+        <button
+          onClick={handleBookmark}
+          disabled={favLoading}
+          className={`group/book flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+            isFavorited ? "text-primary" : ""
+          }`}
+          aria-label={isFavorited ? "ลบออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
+        >
+          <Bookmark
+            className={`h-4 w-4 ${
+              isFavorited
+                ? "fill-current"
+                : "text-muted-foreground group-hover/book:text-primary"
+            }`}
+          />
+        </button>
+      </div>
+    </>
+  );
+}
+
+function StaticActionBar() {
+  return (
+    <>
+      <div className="flex items-center gap-1">
+        <button
+          disabled
+          className="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full opacity-30"
+          aria-label="แสดงความคิดเห็น"
+        >
+          <MessageCircle className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <button
+          disabled
+          className="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full opacity-30"
+          aria-label="ถูกใจ"
+        >
+          <Heart className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          disabled
+          className="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full opacity-30"
+          aria-label="บุ๊คมาร์ค"
+        >
+          <Bookmark className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+    </>
   );
 }
 

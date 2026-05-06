@@ -8,6 +8,7 @@ export type ActivityType =
   | "status_changed"
   | "new_comment"
   | "comment_reply"
+  | "post_like"
   | "like_milestone"
   | "badge_unlock"
   | "post_expiring_soon";

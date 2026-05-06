@@ -523,6 +523,42 @@ export type Database = {
           },
         ]
       }
+      pet_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          pet_post_id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pet_post_id: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pet_post_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_post_likes_pet_post_id_fkey"
+            columns: ["pet_post_id"]
+            isOneToOne: false
+            referencedRelation: "pet_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_post_likes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_posts: {
         Row: {
           address: string | null
@@ -538,6 +574,7 @@ export type Database = {
           is_neutered: boolean | null
           is_vaccinated: boolean | null
           latitude: number
+          like_count: number
           longitude: number
           outcome: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id: string | null
@@ -564,6 +601,7 @@ export type Database = {
           is_neutered?: boolean | null
           is_vaccinated?: boolean | null
           latitude: number
+          like_count?: number
           longitude: number
           outcome?: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id?: string | null
@@ -590,6 +628,7 @@ export type Database = {
           is_neutered?: boolean | null
           is_vaccinated?: boolean | null
           latitude?: number
+          like_count?: number
           longitude?: number
           outcome?: Database["public"]["Enums"]["pet_post_outcome"] | null
           pet_type_id?: string | null

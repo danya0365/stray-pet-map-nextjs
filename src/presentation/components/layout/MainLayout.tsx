@@ -17,7 +17,7 @@ export function MainLayout({
   hideNavbar = false,
 }: MainLayoutProps) {
   return (
-    <DonationProvider>
+    <DonationProvider showFloatingButton={false}>
       <div className="flex min-h-screen flex-col">
         {/* Desktop Header */}
         {!hideNavbar && <Navbar />}
