@@ -109,6 +109,15 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
 
+          {/* Support Button (Mobile — icon only) */}
+          <button
+            onClick={openDonation}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 sm:hidden"
+            aria-label="ให้กำลังใจ"
+          >
+            <Heart className="h-4 w-4" />
+          </button>
+
           {/* Support Button (Desktop) */}
           <button
             onClick={openDonation}
